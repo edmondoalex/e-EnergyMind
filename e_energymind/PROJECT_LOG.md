@@ -16,6 +16,7 @@ Data export: 2026-02-08 (Europe/Rome)
 - UI energia: pulizia totale dei riferimenti termici in User/Admin.
 - Admin: selezione numero utenze (1-3) e mapping sensori energia.
 - Backend: rimosse logiche termiche, API minimal per status/config/entities.
+- Logger: dati ogni 10s su SQLite con retention 90 giorni.
 
 ## Architettura concordata
 - Motore modulare a “state machine”:
