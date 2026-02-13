@@ -126,32 +126,17 @@
           <h3 class="section">Configurazione</h3>
           <div v-if="sp" class="field">
             <label>Numero utenze</label>
-            <select v-model.number="sp.runtime.sites_count" @change="save">
+            <select v-model.number="sp.runtime.sites_count" @change="saveConfig">
               <option :value="1">1 utenza</option>
               <option :value="2">2 utenze</option>
               <option :value="3">3 utenze</option>
             </select>
             <div class="help">Imposta quante utenze elettriche gestire (1-3).</div>
           </div>
-        </div>
-
-        <div v-if="sp" class="form setpoint-grid">
-          <h3 class="section">Runtime</h3>
-          <div class="set-section">
-            <div class="section-title">Modalità</div>
-            <div class="field">
-              <label>Runtime mode</label>
-              <select v-model="sp.runtime.mode" @change="confirmMode">
-                <option value="dry-run">dry-run</option>
-                <option value="live">live</option>
-              </select>
-              <div class="help">dry-run = nessun comando agli attuatori. live = comandi reali su HA.</div>
-            </div>
-            <div class="field">
-              <label>Polling UI (ms)</label>
-              <input type="number" min="500" step="500" v-model.number="sp.runtime.ui_poll_ms"/>
-              <div class="help">Intervallo aggiornamento UI.</div>
-            </div>
+          <div v-if="sp" class="field">
+            <label>Polling UI (ms)</label>
+            <input type="number" min="500" step="500" v-model.number="sp.runtime.ui_poll_ms" @change="saveConfig"/>
+            <div class="help">Intervallo aggiornamento UI.</div>
           </div>
         </div>
 
@@ -182,183 +167,23 @@
           <button class="ghost" @click="loadAll">Ricarica</button>
         </div>
       </section>
-      <div v-if="historyModal.open" class="modal-backdrop" @click.self="closeHistory">
-        <div class="modal">
-          <div class="modal-head">
-            <div class="modal-title">Storico 24h â€” {{ historyModal.title }}</div>
-            <button class="ghost" @click="closeHistory">Chiudi</button>
-          </div>
-          <div class="modal-body">
-            <svg viewBox="0 0 600 220" class="history-chart" role="img" aria-label="Grafico storico">
-              <line :x1="historyModal.padL" :y1="historyModal.padT" :x2="historyModal.padL" :y2="historyModal.h - historyModal.padB" class="axis"/>
-              <line :x1="historyModal.padL" :y1="historyModal.h - historyModal.padB" :x2="historyModal.w - historyModal.padR" :y2="historyModal.h - historyModal.padB" class="axis"/>
-              <g v-for="t in historyModal.yTicks" :key="t.label">
-                <line :x1="historyModal.padL - 4" :y1="t.y" :x2="historyModal.padL" :y2="t.y" class="axis"/>
-                <text :x="historyModal.padL - 8" :y="t.y + 4" class="axis-label" text-anchor="end">{{ t.label }}</text>
-              </g>
-              <g v-for="t in historyModal.xTicks" :key="t.label">
-                <line :x1="t.x" :y1="historyModal.h - historyModal.padB" :x2="t.x" :y2="historyModal.h - historyModal.padB + 4" class="axis"/>
-                <text :x="t.x" :y="historyModal.h - historyModal.padB + 16" class="axis-label" text-anchor="middle">{{ t.label }}</text>
-              </g>
-              <polyline :points="historyModal.points" class="spark acs"/>
-            </svg>
-            <div class="legend small">
-              <span class="legend-item"><span class="legend-dot acs"></span>{{ historyModal.title }}</span>
-              <span class="legend-item muted">Y: Â°C ({{ historyModal.minY }}â€“{{ historyModal.maxY }})</span>
-              <span class="legend-item muted">X: {{ historyModal.rangeLabel }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div v-if="zoneModal.open" class="modal-backdrop" @click.self="closeZone">
-        <div class="modal thermo-modal">
-          <div class="modal-head">
-            <div class="modal-title">{{ zoneModal.title }}</div>
-            <button class="ghost" @click="closeZone">Chiudi</button>
-          </div>
-          <div class="thermo-body">
-            <div class="thermo-ring" :style="thermoStyle">
-              <div class="thermo-center">
-                <div class="thermo-state">{{ hvacLabel(zoneModal.hvac_action) }}</div>
-                <div class="thermo-value">{{ fmtNum(zoneModal.setpoint) }}&deg;C</div>
-                <div class="thermo-sub">T attuale {{ fmtNum(zoneModal.temperature) }}&deg;C</div>
-              </div>
-            </div>
-            <div class="thermo-controls">
-              <button class="thermo-btn" @click="changeZoneSetpoint(-0.5)">âˆ’</button>
-              <button class="thermo-btn" @click="changeZoneSetpoint(0.5)">+</button>
-            </div>
-          </div>
-        </div>
-      </div>
     </main>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+
 const tab = ref('user')
-const d = ref(null)
 const sp = ref(null)
 const ent = ref(null)
-const act = ref(null)
 const status = ref(null)
-  let pollTimer = null
-  let ws = null
 const lastUpdate = ref(null)
 const pollMs = ref(3000)
 const actions = ref([])
-const zones = ref([])
-let historySaveTimer = null
-let historyReady = false
-const history = ref({
-  t_acs: [],
-  t_acs_alto: [],
-  t_acs_medio: [],
-  t_acs_basso: [],
-  t_puffer: [],
-  t_volano: [],
-  t_volano_alto: [],
-  t_volano_basso: [],
-  t_esterna: [],
-  collettore_energy_day_kwh: [],
-  collettore_energy_total_kwh: [],
-  collettore_flow_lmin: [],
-  collettore_pwm_pct: [],
-  collettore_temp_esterna: [],
-  collettore_tsa1: [],
-  collettore_tse: [],
-  collettore_tsv: [],
-  collettore_twu: [],
-  curva_setpoint: [],
-  t_puffer_alto: [],
-  t_puffer_medio: [],
-  t_puffer_basso: [],
-  t_mandata_miscelata: [],
-  t_ritorno_miscelato: [],
-  miscelatrice_setpoint: [],
-  delta_puffer_acs: [],
-  delta_volano_acs: [],
-  delta_volano_puffer: [],
-  delta_mandata_ritorno: [],
-  kp_eff: [],
-  export_w: []
-})
-const curveXText = ref('')
-const curveYText = ref('')
-let curveSaveTimer = null
-const zoneModal = ref({ open: false, entity_id: '', title: '', temperature: 0, setpoint: 0, hvac_action: '' })
-const historyModal = ref({ open: false, title: '', points: '', minY: '-', maxY: '-', rangeLabel: '', xTicks: [], yTicks: [], w: 600, h: 220, padL: 40, padR: 10, padT: 10, padB: 20 })
-const maxPoints = 60
-  const filterAct = ref('')
-  const editingCount = ref(0)
-  const dirtyEnt = ref({})
-  const dirtyAct = ref({})
-let focusInHandler = null
-let focusOutHandler = null
-const modules = ref({
-  resistenze_volano: true,
-  volano_to_acs: false,
-  volano_to_puffer: false,
-  puffer_to_acs: false,
-  impianto: false,
-  solare: false,
-  miscelatrice: false,
-  curva_climatica: true,
-  pdc: false,
-  gas_emergenza: false,
-  caldaia_legna: false
-})
-const solareModeInit = ref(false)
-const caldaiaLegnaStartupMin = computed({
-  get: () => {
-    const s = Number(sp.value?.caldaia_legna?.startup_check_s || 0)
-    if (!Number.isFinite(s)) return 0
-    return Math.round(s / 60)
-  },
-  set: (v) => {
-    if (!sp.value?.caldaia_legna) return
-    const n = Number(v)
-    sp.value.caldaia_legna.startup_check_s = Number.isFinite(n) ? Math.max(0, Math.round(n * 60)) : 0
-  }
-})
-
-const actuatorDefs = [
-  { key: 'r1_valve_comparto_laboratorio', label: 'R1 Valvola Comparto Laboratorio (riscaldamento)', impl: false },
-  { key: 'r2_valve_comparto_mandata_imp_pt', label: 'R2 Valvola Comparto Mandata Imp PT (riscaldamento)', impl: false },
-  { key: 'r3_valve_comparto_mandata_imp_m1p', label: 'R3 Valvola Comparto Mandata Imp M+1P (riscaldamento)', impl: false },
-  { key: 'r4_valve_impianto_da_puffer', label: 'R4 Valvola Impianto da Puffer', impl: false },
-  { key: 'r5_valve_impianto_da_pdc', label: 'R5 Valvola Impianto da PDC', impl: false },
-  { key: 'r6_valve_pdc_to_integrazione_acs', label: 'R6 Valvola PDC -> Integrazione ACS', impl: true },
-  { key: 'r7_valve_pdc_to_integrazione_puffer', label: 'R7 Valvola PDC -> Integrazione Puffer', impl: true },
-  { key: 'r8_valve_solare_notte_low_temp', label: 'R8 Valvola Solare Notte/Low Temp', impl: true },
-  { key: 'r9_valve_solare_normal_funz', label: 'R9 Valvola Solare Normal Funz', impl: true },
-  { key: 'r10_valve_solare_precedenza_acs', label: 'R10 Valvola Solare Precedenza ACS', impl: true },
-  { key: 'r11_pump_mandata_laboratorio', label: 'R11 Pompa Mandata Laboratorio', impl: false },
-  { key: 'r12_pump_mandata_piani', label: 'R12 Pompa Mandata Piani', impl: false },
-  { key: 'r13_pump_pdc_to_acs_puffer', label: 'R13 Pompa PDC -> ACS/Puffer', impl: true },
-  { key: 'r14_pump_puffer_to_acs', label: 'R14 Pompa Puffer -> ACS', impl: true },
-  { key: 'r15_pump_caldaia_legna', label: 'R15 Pompa Caldaia Legna -> Puffer', impl: false },
-  { key: 'r16_cmd_miscelatrice_alza', label: 'R16 CMD Miscelatrice ALZA', impl: false },
-  { key: 'r17_cmd_miscelatrice_abbassa', label: 'R17 CMD Miscelatrice ABBASSA', impl: false },
-  { key: 'r18_valve_ritorno_solare_basso', label: 'R18 Valvola Ritorno Solare Basso', impl: true },
-  { key: 'r19_valve_ritorno_solare_alto', label: 'R19 Valvola Ritorno Solare Alto', impl: true },
-  { key: 'r20_ta_caldaia_legna', label: 'R20 TA Caldaia Legna', impl: false },
-  { key: 'r21_libero', label: 'R21 Libero', impl: false },
-  { key: 'r22_resistenza_1_volano_pdc', label: 'R22 Resistenza 1 Volano PDC', impl: true },
-  { key: 'r23_resistenza_2_volano_pdc', label: 'R23 Resistenza 2 Volano PDC', impl: true },
-  { key: 'r24_resistenza_3_volano_pdc', label: 'R24 Resistenza 3 Volano PDC', impl: true },
-  { key: 'generale_resistenze_volano_pdc', label: 'R0 Generale Resistenze Volano PDC', impl: true },
-  { key: 'r25_comparto_generale_pdc', label: 'R25 Comparto Generale PDC', impl: false },
-  { key: 'r26_comparto_pdc1_avvio', label: 'R26 Comparto PDC 1 Avvio', impl: false },
-  { key: 'r27_comparto_pdc2_avvio', label: 'R27 Comparto PDC 2 Avvio', impl: false },
-  { key: 'r28_scarico_antigelo_mandata_pdc', label: 'R28 Scarico Antigelo Mandata PDC', impl: false },
-  { key: 'r29_scarico_antigelo_ritorno_pdc', label: 'R29 Scarico Antigelo Ritorno PDC', impl: false },
-  { key: 'r30_alimentazione_caldaia_legna', label: 'R30 Alimentazione Caldaia Legna', impl: false },
-  { key: 'gas_boiler_power', label: '220V Caldaia Gas Emergenza Riscaldamento', impl: true },
-  { key: 'gas_boiler_ta', label: 'TA Caldaia Gas Emergenza Riscaldamento', impl: true }
-]
+let pollTimer = null
+const editingCount = ref(0)
+const dirtyEnt = ref({})
 
 const energyEntityDefs = [
   { key: 'pv_power', label: 'PV Power (W)', placeholder: 'sensor.zcs_pv_power' },
@@ -410,22 +235,6 @@ const siteList = computed(() => {
 })
 
 const isFilled = (v) => (typeof v === 'string' ? v.trim().length > 0 : false)
-const filteredActuators = computed(() => {
-  const q = filterAct.value.trim().toLowerCase()
-  if (!q) return actuatorDefs
-  return actuatorDefs.filter(a => (a.label.toLowerCase().includes(q) || a.key.toLowerCase().includes(q)))
-})
-
-const fmtTemp = (v) => (Number.isFinite(v) ? `${v.toFixed(1)}Â°C` : 'n/d')
-const fmtDelta = (a, b) => {
-  const da = Number(a)
-  const db = Number(b)
-  if (!Number.isFinite(da) || !Number.isFinite(db)) return 'n/d'
-  return `${(da - db).toFixed(1)}C`
-}
-const fmtW = (v) => (Number.isFinite(v) ? `${Math.round(v)} W` : 'n/d')
-const fmtNum = (v) => (Number.isFinite(Number(v)) ? Number(v).toFixed(1) : '-')
-const fmtText = (v) => (v === null || v === undefined || v === '' ? '-' : String(v))
 const fmtEntity = (e) => {
   if (!e) return 'n/d'
   const raw = e.state
@@ -439,527 +248,67 @@ const getEnt = (site, key) => {
   if (!ent.value) return null
   return ent.value[`s${site}_${key}`] || null
 }
-function statsLabel(values, unit){
-  if (!values || values.length === 0) return 'n/d'
-  const min = Math.min(...values)
-  const max = Math.max(...values)
-  if (!Number.isFinite(min) || !Number.isFinite(max)) return 'n/d'
-  return `${min.toFixed(1)}â€“${max.toFixed(1)} ${unit}`.trim()
+
+function onFocus(){
+  editingCount.value += 1
+  stopPolling()
 }
-const tempStats = computed(() => {
-  const vals = []
-  vals.push(...(history.value.t_acs_alto || []))
-  vals.push(...(history.value.t_puffer_alto || []))
-  vals.push(...(history.value.t_volano_alto || []))
-  return { label: statsLabel(vals, 'Â°C') }
-})
-const exportStats = computed(() => {
-  const vals = history.value.export_w || []
-  if (!vals.length) return { label: 'n/d' }
-  const min = Math.min(...vals)
-  const max = Math.max(...vals)
-  if (!Number.isFinite(min) || !Number.isFinite(max)) return { label: 'n/d' }
-  return { label: `${Math.round(min)}â€“${Math.round(max)} W` }
-})
-function addZone(key){
-  if (!sp.value?.impianto) return
-  if (!Array.isArray(sp.value.impianto[key])) sp.value.impianto[key] = []
-  sp.value.impianto[key].push('')
-}
-function removeZone(key, idx){
-  if (!sp.value?.impianto) return
-  if (!Array.isArray(sp.value.impianto[key])) return
-  sp.value.impianto[key].splice(idx, 1)
-}
-function addGasZone(){
-  if (!sp.value?.gas_emergenza) return
-  if (!Array.isArray(sp.value.gas_emergenza.zones)) sp.value.gas_emergenza.zones = []
-  sp.value.gas_emergenza.zones.push('')
-}
-function removeGasZone(idx){
-  if (!sp.value?.gas_emergenza) return
-  if (!Array.isArray(sp.value.gas_emergenza.zones)) return
-  sp.value.gas_emergenza.zones.splice(idx, 1)
-}
-const historyEnabled = (key) => !!sp.value?.history?.[key]
-async function openHistory(key, title){
-  if (!historyEnabled(key)) return
-  const entId = ent.value?.[key]?.entity_id
-  let points = []
-  if (entId) {
-    const r = await fetch(`/api/history?entity_id=${encodeURIComponent(entId)}&hours=24`)
-    if (!r.ok) return
-    const data = await r.json()
-    const items = Array.isArray(data?.items) ? data.items.flat() : []
-    for (const st of items){
-      const v = Number(st.state)
-      if (!Number.isFinite(v)) continue
-      const ts = new Date(st.last_changed || st.last_updated || st.last_reported || Date.now()).getTime()
-      points.push([ts, v])
-    }
-    const current = Number(ent.value?.[key]?.state)
-    if (Number.isFinite(current)) {
-      const now = Date.now()
-      const lastTs = points.length ? points[points.length - 1][0] : 0
-      if (now - lastTs > 15000) {
-        points.push([now, current])
-      }
-    }
-  } else {
-    const arr = history.value?.[key] || []
-    if (!arr.length) return
-    const stepMs = Math.max(1000, Number(pollMs.value || 3000))
-    const now = Date.now()
-    points = arr.map((v, i) => [now - (arr.length - 1 - i) * stepMs, v])
-  }
-  if (points.length === 0) return
-  const step = Math.max(1, Math.floor(points.length / 200))
-  const reduced = points.filter((_, i) => i % step === 0)
-  const xs = reduced.map(p => p[0])
-  const ys = reduced.map(p => p[1])
-  const minX = Math.min(...xs)
-  const maxX = Math.max(...xs)
-  const minY = Math.min(...ys)
-  const maxY = Math.max(...ys)
-  const spanX = Math.max(1, maxX - minX)
-  const spanY = Math.max(0.1, maxY - minY)
-  const w = 600
-  const h = 220
-  const padL = 40
-  const padR = 10
-  const padT = 10
-  const padB = 20
-  const innerW = w - padL - padR
-  const innerH = h - padT - padB
-  const pts = reduced.map(([x,y]) => {
-    const px = padL + ((x - minX) / spanX) * innerW
-    const py = h - padB - ((y - minY) / spanY) * innerH
-    return `${px.toFixed(1)},${py.toFixed(1)}`
-  }).join(' ')
-  const fmtTime = (ts) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  const xTicks = [0, 0.25, 0.5, 0.75, 1].map(t => ({
-    x: padL + t * innerW,
-    label: fmtTime(minX + t * spanX)
-  }))
-  const yTicks = [0, 0.5, 1].map(t => ({
-    y: h - padB - t * innerH,
-    label: (minY + t * spanY).toFixed(1)
-  }))
-  const rangeLabel = entId
-    ? `${new Date(minX).toLocaleDateString()} ${fmtTime(minX)} -> ${fmtTime(maxX)}`
-    : `ultimo ~${Math.round((maxX - minX) / 60000)} min`
-  historyModal.value = { open: true, title, points: pts, minY: minY.toFixed(1), maxY: maxY.toFixed(1), rangeLabel, xTicks, yTicks, w, h, padL, padR, padT, padB }
-}
-function closeHistory(){
-  historyModal.value.open = false
-}
-function openZone(z){
-  if (!z?.entity_id) return
-  zoneModal.value = {
-    open: true,
-    entity_id: z.entity_id,
-    title: `${z.group} â€” ${z.entity_id}`,
-    temperature: Number(z.temperature) || 0,
-    setpoint: Number(z.setpoint) || 0,
-    hvac_action: z.hvac_action || z.state || ''
-  }
-}
-function closeZone(){
-  zoneModal.value.open = false
-}
-const thermoStyle = computed(() => {
-  const sp = Number(zoneModal.value.setpoint) || 0
-  const min = 10
-  const max = 30
-  const pct = Math.max(0, Math.min(1, (sp - min) / (max - min)))
-  const deg = Math.round(300 * pct)
-  return { background: `conic-gradient(#ff8a3c ${deg}deg, rgba(255,255,255,0.08) ${deg}deg)` }
-})
-const hvacLabel = (s) => {
-  const v = String(s || '').toLowerCase()
-  if (v.includes('heat')) return 'In riscaldamento'
-  if (v.includes('cool')) return 'In raffrescamento'
-  if (v.includes('off')) return 'Spento'
-  return v ? v : 'â€”'
-}
-const changeZoneSetpoint = async (delta) => {
-  if (!zoneModal.value.entity_id) return
-  const next = Math.round((Number(zoneModal.value.setpoint) + delta) * 10) / 10
-  zoneModal.value.setpoint = next
-  await fetch('/api/climate_setpoint', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ entity_id: zoneModal.value.entity_id, temperature: next })
-  })
-}
-const flowSolarToAcs = computed(() => d.value?.computed?.source_to_acs === 'SOLAR')
-const flowVolanoToAcs = computed(() => d.value?.computed?.source_to_acs === 'VOLANO')
-const flowPufferToAcs = computed(() => d.value?.computed?.source_to_acs === 'PUFFER')
-const flowVolanoToPuffer = computed(() => d.value?.computed?.flags?.volano_to_puffer)
-const flowPufferToVolano = computed(() => false)
-const flowSolarToPuffer = computed(() => false)
-const flowPufferToImpianto = computed(() => false)
-const flowVolanoToImpianto = computed(() => false)
-const flowPufferToLab = computed(() => false)
-const flowMiscelatrice = computed(() => false)
-const flowCaldaiaToPuffer = computed(() => false)
-const moduleReasonsList = computed(() => {
-  const mr = d.value?.computed?.module_reasons || {}
-  const flags = d.value?.computed?.flags || {}
-  const step = Number(d.value?.computed?.resistance_step || 0)
-  const mixActive = String(d.value?.computed?.miscelatrice?.action || 'STOP').toUpperCase() !== 'STOP'
-  const labels = [
-    { key: 'solare', label: 'Solare', active: !!flags.solare_to_acs },
-    { key: 'volano_to_acs', label: 'Volano -> ACS', active: !!flags.volano_to_acs },
-    { key: 'volano_to_puffer', label: 'Volano -> Puffer', active: !!flags.volano_to_puffer },
-    { key: 'puffer_to_acs', label: 'Puffer -> ACS', active: !!flags.puffer_to_acs },
-    { key: 'miscelatrice', label: 'Miscelatrice', active: mixActive },
-    { key: 'curva_climatica', label: 'Curva climatica', active: !!d.value?.computed?.curva_climatica?.setpoint },
-    {
-      key: 'impianto',
-      label: 'Impianto Riscaldamento',
-      active: !!(
-        d.value?.computed?.impianto?.richiesta &&
-        d.value?.computed?.impianto?.source &&
-        d.value?.computed?.impianto?.source !== 'OFF' &&
-        !d.value?.computed?.gas_emergenza?.enabled
-      )
-    },
-    {
-      key: 'caldaia_legna',
-      label: 'Caldaia Legna',
-      active: !!(d.value?.computed?.caldaia_legna?.power || d.value?.computed?.caldaia_legna?.ta)
-    },
-    { key: 'gas_emergenza', label: 'Caldaia Gas Emergenza Riscaldamento', active: !!d.value?.computed?.gas_emergenza?.need },
-    { key: 'resistenze_volano', label: 'Resistenze Volano', active: step > 0 }
-  ]
-  return labels
-    .filter(item => mr[item.key])
-    .map(item => ({
-      ...item,
-      enabled: modules.value?.[item.key] !== false,
-      reason: mr[item.key]
-    }))
-})
-const moduleActiveMap = computed(() => {
-  const flags = d.value?.computed?.flags || {}
-  const step = Number(d.value?.computed?.resistance_step || 0)
-  const mixActive = !!d.value?.computed?.impianto?.miscelatrice
-  const impActive = !!(
-    d.value?.computed?.impianto?.richiesta &&
-    d.value?.computed?.impianto?.source &&
-    d.value?.computed?.impianto?.source !== 'OFF' &&
-    !d.value?.computed?.gas_emergenza?.enabled
-  )
-  return {
-    solare: !!flags.solare_to_acs,
-    volano_to_acs: !!flags.volano_to_acs,
-    volano_to_puffer: !!flags.volano_to_puffer,
-    puffer_to_acs: !!flags.puffer_to_acs,
-    miscelatrice: mixActive,
-    curva_climatica: !!d.value?.computed?.curva_climatica?.setpoint,
-    impianto: impActive,
-    caldaia_legna: !!(d.value?.computed?.caldaia_legna?.power || d.value?.computed?.caldaia_legna?.ta),
-    gas_emergenza: !!d.value?.computed?.gas_emergenza?.need,
-    resistenze_volano: step > 0,
-    pdc: !!d.value?.computed?.pdc?.active
-  }
-})
-const moduleClass = (key) => {
-  const enabled = !!modules.value?.[key]
-  return {
-    on: enabled,
-    off: !enabled,
-    active: enabled && !!moduleActiveMap.value?.[key]
-  }
-}
-const modulePanelClass = (key) => {
-  const enabled = !!modules.value?.[key]
-  return {
-    'mod-on': enabled,
-    'mod-active': enabled && !!moduleActiveMap.value?.[key]
-  }
+function onBlur(){
+  editingCount.value = Math.max(0, editingCount.value - 1)
+  if (editingCount.value === 0) startPolling()
 }
 
-const solarModeClass = computed(() => {
-  const mode = sp.value?.solare?.mode || 'auto'
-  return mode === 'night' ? 'mode-night' : 'mode-day'
-})
-const flowChargeVolano = computed(() => (d.value?.computed?.resistance_step || 0) > 0)
-const flowPdcToVolano = computed(() => false)
-const curvePoints = computed(() => {
-  const xs = (sp.value?.curva_climatica?.x || []).map(Number).filter(v => !Number.isNaN(v))
-  const ys = (sp.value?.curva_climatica?.y || []).map(Number).filter(v => !Number.isNaN(v))
-  if (!xs.length || xs.length !== ys.length) return ''
-  const slope = Number(sp.value?.curva_climatica?.slope || 0)
-  const offset = Number(sp.value?.curva_climatica?.offset || 0)
-  const minC = Number(sp.value?.curva_climatica?.min_c || -999)
-  const maxC = Number(sp.value?.curva_climatica?.max_c || 999)
-  const yAvg = ys.reduce((a, b) => a + b, 0) / ys.length
-  const adj = ys.map((y) => {
-    const mod = yAvg + (1 + slope) * (y - yAvg) + offset
-    return Math.max(minC, Math.min(maxC, mod))
-  })
-  const xMin = Math.min(...xs)
-  const xMax = Math.max(...xs)
-  const yMin = Math.min(...adj)
-  const yMax = Math.max(...adj)
-  const spanX = xMax - xMin || 1
-  const spanY = yMax - yMin || 1
-  return xs.map((x, i) => {
-    const nx = 100 - (((x - xMin) / spanX) * 100)
-    const ny = 100 - ((adj[i] - yMin) / spanY) * 100
-    return `${nx.toFixed(2)},${ny.toFixed(2)}`
-  }).join(' ')
-})
-const curveExtX = computed(() => {
-  const xs = (sp.value?.curva_climatica?.x || []).map(Number).filter(v => !Number.isNaN(v))
-  if (!xs.length) return null
-  const xMin = Math.min(...xs)
-  const xMax = Math.max(...xs)
-  const spanX = xMax - xMin || 1
-  const ext = d.value?.computed?.curva_climatica?.t_ext
-  if (ext === null || ext === undefined) return null
-  return 100 - (((Number(ext) - xMin) / spanX) * 100)
-})
-const curveExtY = computed(() => {
-  const ys = (sp.value?.curva_climatica?.y || []).map(Number).filter(v => !Number.isNaN(v))
-  if (!ys.length) return null
-  const yMin = Math.min(...ys)
-  const yMax = Math.max(...ys)
-  const spanY = yMax - yMin || 1
-  const spv = d.value?.computed?.curva_climatica?.setpoint
-  if (spv === null || spv === undefined) return null
-  return 100 - ((Number(spv) - yMin) / spanY) * 100
-})
-const curveBounds = computed(() => {
-  const xs = (sp.value?.curva_climatica?.x || []).map(Number).filter(v => !Number.isNaN(v))
-  const ys = (sp.value?.curva_climatica?.y || []).map(Number).filter(v => !Number.isNaN(v))
-  if (!xs.length || !ys.length) return { xMin: null, xMax: null, yMin: null, yMax: null }
-  const slope = Number(sp.value?.curva_climatica?.slope || 0)
-  const offset = Number(sp.value?.curva_climatica?.offset || 0)
-  const minC = Number(sp.value?.curva_climatica?.min_c || -999)
-  const maxC = Number(sp.value?.curva_climatica?.max_c || 999)
-  const yAvg = ys.reduce((a, b) => a + b, 0) / ys.length
-  const adj = ys.map((y) => {
-    const mod = yAvg + (1 + slope) * (y - yAvg) + offset
-    return Math.max(minC, Math.min(maxC, mod))
-  })
-  return {
-    xMin: Math.min(...xs),
-    xMax: Math.max(...xs),
-    yMin: Math.min(...adj),
-    yMax: Math.max(...adj)
-  }
-})
-const curveXTicks = computed(() => {
-  const xs = (sp.value?.curva_climatica?.x || []).map(Number).filter(v => !Number.isNaN(v))
-  return xs.slice().sort((a, b) => b - a)
-})
-const curveYTicks = computed(() => {
-  const { yMin, yMax } = curveBounds.value
-  if (yMin === null || yMax === null) return []
-  const span = yMax - yMin || 1
-  const steps = 4
-  return Array.from({ length: steps + 1 }, (_, i) => yMax - (span * i / steps))
-})
-
-  function mergeEntities(next){
-    if (!ent.value) { ent.value = next; return }
-    for (const key of Object.keys(next || {})) {
-      const prev = ent.value[key] || { entity_id: null }
-      const keepId = (dirtyEnt.value?.[key] || editingCount.value > 0) ? prev.entity_id : next[key]?.entity_id
-      ent.value[key] = { ...next[key], entity_id: keepId }
-    }
-  }
-  function mergeActuators(next){
-    if (!act.value) { act.value = next; return }
-    for (const key of Object.keys(next || {})) {
-      const prev = act.value[key] || { entity_id: null }
-      const keepId = (dirtyAct.value?.[key] || editingCount.value > 0) ? prev.entity_id : next[key]?.entity_id
-      act.value[key] = { ...next[key], entity_id: keepId }
-    }
-  }
-async function refresh(){
-  if (tab.value === 'admin' || editingCount.value > 0) return
-  const r = await fetch('/api/decision'); d.value = await r.json()
-  zones.value = d.value?.zones || []
-  updateHistoryFromDecision(d.value)
-  const s = await fetch('/api/status'); status.value = await s.json()
-  const a = await fetch('/api/actions'); actions.value = (await a.json()).items || []
-  await loadActuators()
-  await load()
-  lastUpdate.value = new Date()
-}
-async function loadModules(){
-  const r = await fetch('/api/modules'); modules.value = await r.json()
-}
-async function load(){
-  historyReady = false
-  const r = await fetch('/api/setpoints'); sp.value = await r.json()
-  if (!sp.value?.timers) {
-    sp.value.timers = {
-      volano_to_acs_start_s: 5,
-      volano_to_acs_stop_s: 2,
-      volano_to_puffer_start_s: 5,
-      volano_to_puffer_stop_s: 2
-    }
-  }
-  if (!sp.value?.history) sp.value.history = {}
-  const histDefaults = {
-    t_acs: false, t_acs_alto: false, t_acs_medio: false, t_acs_basso: false, t_puffer: false, t_volano: false,
-    t_volano_alto: false, t_volano_basso: false,
-    t_solare_mandata: false, t_esterna: false,
-    t_puffer_alto: false, t_puffer_medio: false, t_puffer_basso: false,
-    collettore_energy_day_kwh: false, collettore_energy_total_kwh: false, collettore_flow_lmin: false, collettore_pwm_pct: false,
-    collettore_temp_esterna: false, collettore_tsa1: false, collettore_tse: false, collettore_tsv: false, collettore_twu: false,
-    t_mandata_miscelata: false, t_ritorno_miscelato: false, miscelatrice_setpoint: false,
-    delta_puffer_acs: false, delta_volano_acs: false, delta_volano_puffer: false, delta_mandata_ritorno: false, kp_eff: false,
-    curva_setpoint: false
-  }
-  for (const [k, v] of Object.entries(histDefaults)) {
-    if (typeof sp.value.history[k] === 'undefined') sp.value.history[k] = v
-  }
-  if (!sp.value?.solare) {
-    sp.value.solare = { mode: 'auto', delta_on_c: 5, delta_hold_c: 2.5, max_c: 90, pv_entity: '', pv_day_w: 1000, pv_night_w: 300, pv_debounce_s: 300 }
-  }
-  if (!sp.value?.volano) {
-    sp.value.volano = { margin_c: 3, max_c: 60, max_hyst_c: 2, min_to_acs_c: 50, hyst_to_acs_c: 5, delta_to_acs_start_c: 5, delta_to_acs_hold_c: 2.5, delta_to_puffer_start_c: 5, delta_to_puffer_hold_c: 2.5, min_to_puffer_c: 55, hyst_to_puffer_c: 2 }
-  } else {
-    if (typeof sp.value.volano.min_to_puffer_c === 'undefined') sp.value.volano.min_to_puffer_c = 55
-    if (typeof sp.value.volano.hyst_to_puffer_c === 'undefined') sp.value.volano.hyst_to_puffer_c = 2
-  }
-  if (!sp.value?.miscelatrice) {
-    sp.value.miscelatrice = { setpoint_c: 45, hyst_c: 0.5, kp: 2, min_imp_s: 1, max_imp_s: 8, pause_s: 5, dt_ref_c: 10, dt_min_factor: 0.6, dt_max_factor: 1.4, min_temp_c: 20, max_temp_c: 80, force_impulse_s: 3 }
-  }
-  if (!sp.value?.curva_climatica) {
-    sp.value.curva_climatica = { x: [-15,-11.25,-7.5,-3.75,0,3.75,7.5,11.25,15], y: [60,57.6,55,52.6,50,47.6,45,42.6,40], slope: 0, offset: 0, min_c: 40, max_c: 60 }
-  }
-  if (!sp.value?.gas_emergenza) {
-    sp.value.gas_emergenza = { zones: [], volano_min_c: 35, volano_hyst_c: 2, puffer_min_c: 35, puffer_hyst_c: 2 }
-  }
-  if (!sp.value?.impianto) {
-  sp.value.impianto = { source_mode: 'AUTO', pdc_ready: false, volano_ready: false, puffer_ready: true, richiesta_heat: false, volano_min_c: 35, volano_hyst_c: 2, puffer_min_c: 35, puffer_hyst_c: 2, zones_pt: [], zones_p1: [], zones_mans: [], zones_lab: [], zone_scala: '', cooling_blocked: [], pump_start_delay_s: 9, pump_stop_delay_s: 0, season_mode: 'winter' }
-  }
-  curveXText.value = (sp.value.curva_climatica?.x || []).join(', ')
-  curveYText.value = (sp.value.curva_climatica?.y || []).join(', ')
-  // normalize lists (allow CSV from older configs)
-  const normalizeList = (v) => {
-    if (Array.isArray(v)) return v.filter(x => String(x).trim().length > 0)
-    if (typeof v === 'string') return v.split(',').map(s => s.trim()).filter(Boolean)
-    return []
-  }
-  sp.value.impianto.zones_pt = normalizeList(sp.value.impianto.zones_pt)
-  sp.value.impianto.zones_p1 = normalizeList(sp.value.impianto.zones_p1)
-  sp.value.impianto.zones_mans = normalizeList(sp.value.impianto.zones_mans)
-  sp.value.impianto.zones_lab = normalizeList(sp.value.impianto.zones_lab)
-  sp.value.impianto.cooling_blocked = normalizeList(sp.value.impianto.cooling_blocked)
-  sp.value.gas_emergenza.zones = normalizeList(sp.value.gas_emergenza.zones)
+async function loadConfig(){
+  const r = await fetch('/api/config')
+  sp.value = await r.json()
   if (sp.value?.runtime?.ui_poll_ms) {
     pollMs.value = Number(sp.value.runtime.ui_poll_ms) || 3000
   }
-  historyReady = true
 }
-function parseCurveText(text, fallback){
-  if (!text || typeof text !== 'string') return fallback
-  const out = text.split(',').map(s => parseFloat(s.trim())).filter(v => !Number.isNaN(v))
-  return out.length ? out : fallback
-}
-function applyCurveText(){
-  if (!sp.value?.curva_climatica) return
-  const fallbackX = sp.value.curva_climatica.x || []
-  const fallbackY = sp.value.curva_climatica.y || []
-  sp.value.curva_climatica.x = parseCurveText(curveXText.value, fallbackX)
-  sp.value.curva_climatica.y = parseCurveText(curveYText.value, fallbackY)
-}
-function saveCurveDebounced(){
-  if (curveSaveTimer) clearTimeout(curveSaveTimer)
-  curveSaveTimer = setTimeout(() => { save() }, 300)
-}
-function saveHistoryDebounced(){
-  if (!historyReady) return
-  if (historySaveTimer) clearTimeout(historySaveTimer)
-  historySaveTimer = setTimeout(() => { save() }, 300)
-}
-async function loadActuators(){
-  if (editingCount.value > 0) return
-  const r = await fetch('/api/actuators'); act.value = await r.json()
-}
-async function save(){
-  applyCurveText()
-  await fetch('/api/setpoints',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(sp.value)})
-  await refresh()
-  if (sp.value?.runtime?.ui_poll_ms) {
-    pollMs.value = Number(sp.value.runtime.ui_poll_ms) || 3000
-    startPolling()
-  }
-}
-async function resetLegnaForcedOff(){
-  if (!sp.value?.caldaia_legna) return
-  sp.value.caldaia_legna.forced_off = false
-  await save()
-}
-async function saveAll(){
-  await save()
-  await saveEntities()
-  await saveActuators()
-}
-async function toggleModule(key){
-  const pin = sp.value?.security?.user_pin || ''
-  let provided = ''
-  if (pin) {
-    provided = window.prompt('PIN') || ''
-  }
-  const next = { ...modules.value, [key]: !modules.value[key] }
-  const res = await fetch('/api/modules',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ modules: next, pin: provided })
-  })
-  if (!res.ok) return
-  await loadModules()
-}
-async function confirmMode(){
-  if (!sp.value?.runtime?.mode) return
-  if (sp.value.runtime.mode === 'live') {
-    const ok = window.confirm('Passare a LIVE? Questo abilita comandi reali agli attuatori.')
-    if (!ok) sp.value.runtime.mode = 'dry-run'
-  }
-  await save()
+async function saveConfig(){
+  await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(sp.value)})
+  await loadConfig()
 }
 async function loadEntities(){
   if (editingCount.value > 0) return
   const r = await fetch('/api/entities')
   const data = await r.json()
-  const out = {}
-  for (const key of Object.keys(data || {})) {
-    const val = data[key]
-    if (typeof val === 'string' || val === null) {
-      out[key] = { entity_id: val || null, state: null, attributes: {}, icon: null }
-    } else {
-      out[key] = val
-    }
-  }
-  ent.value = out
+  ent.value = data
 }
-  async function saveEntities(){
-    const payload = {}
-    for (const key of Object.keys(ent.value || {})) {
-      payload[key] = ent.value?.[key]?.entity_id || null
-    }
-    await fetch('/api/entities',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entities: payload})})
-    dirtyEnt.value = {}
+async function saveEntities(){
+  const payload = {}
+  for (const key of Object.keys(ent.value || {})) {
+    payload[key] = ent.value?.[key]?.entity_id || null
+  }
+  await fetch('/api/entities',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entities: payload})})
+  dirtyEnt.value = {}
+  await refresh()
+}
+async function refresh(){
+  if (tab.value === 'admin' || editingCount.value > 0) return
+  const s = await fetch('/api/status')
+  status.value = await s.json()
+  const a = await fetch('/api/actions')
+  actions.value = (await a.json()).items || []
+  await loadEntities()
+  lastUpdate.value = new Date()
+}
+async function loadAll(){
+  await loadConfig()
+  await loadEntities()
+  await refresh()
+}
+function startPolling(){
+  if (pollTimer) clearInterval(pollTimer)
+  pollTimer = setInterval(async()=>{
     await refresh()
-  }
-  async function saveActuators(){
-    const payload = {}
-    for (const item of actuatorDefs) {
-      payload[item.key] = act.value?.[item.key]?.entity_id || null
-    }
-    await fetch('/api/actuators',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({actuators: payload})})
-    dirtyAct.value = {}
-    await loadActuators()
-  }
+  }, Math.max(500, pollMs.value))
+}
+function stopPolling(){
+  if (pollTimer) clearInterval(pollTimer)
+  pollTimer = null
+}
+
 async function exportConfig(){
   const r = await fetch('/api/config')
   const data = await r.json()
@@ -980,205 +329,17 @@ async function importConfig(ev){
   await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
   await loadAll()
 }
-async function doAct(entity_id, action, opts = {}){
-  if (!entity_id) return
-  await fetch('/api/actuate',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({entity_id, action, manual: !!opts.manual})
-  })
-  await loadActuators()
+async function saveAll(){
+  await saveConfig()
+  await saveEntities()
 }
 
-function userToggle(entityObj, moduleKey){
-  if (!entityObj?.entity_id) return
-  if (status.value?.runtime_mode !== 'live') return
-  if (moduleKey && !modules.value?.[moduleKey]) return
-  const action = entityObj.state === 'on' ? 'off' : 'on'
-  doAct(entityObj.entity_id, action)
-}
-
-function userToggleManual(entityObj){
-  if (!entityObj?.entity_id) return
-  const action = entityObj.state === 'on' ? 'off' : 'on'
-  const ok = window.confirm(`Manuale solare: ${action.toUpperCase()} ${entityObj.entity_id}. Confermi?`)
-  if (!ok) return
-  doAct(entityObj.entity_id, action, { manual: true })
-}
-function stateLabel(state){
-  if (state === 'on') return 'ON'
-  if (state === 'off') return 'OFF'
-  return state || '-'
-}
-function toggleAct(key){
-  const ent = act.value?.[key]
-  if (!ent?.entity_id) return
-  const action = ent.state === 'on' ? 'off' : 'on'
-  const label = actuatorDefs.find(a => a.key === key)?.label || ent.entity_id
-  const ok = window.confirm(`Comando manuale su ${label} (${action.toUpperCase()}). Confermi?`)
-  if (!ok) return
-  doAct(ent.entity_id, action, { manual: true })
-}
-function mdiClass(icon){
-  if (!icon || typeof icon !== 'string') return ''
-  if (icon.startsWith('mdi:')) {
-    const name = icon.slice(4)
-    return `mdi mdi-${name}`
-  }
-  return ''
-}
-function stateClass(state){
-  if (state === 'on') return 'state-on'
-  if (state === 'off') return 'state-off'
-  return 'state-unknown'
-}
-function connectWS(){
-  if (ws) ws.close()
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws'
-  ws = new WebSocket(`${proto}://${location.host}/ws`)
-  ws.onmessage = (ev) => {
-    let payload = null
-    try { payload = JSON.parse(ev.data) } catch { return }
-    if (!payload) return
-    d.value = payload.decision || d.value
-    if (payload.decision) updateHistoryFromDecision(payload.decision)
-    status.value = payload.status || status.value
-    actions.value = payload.actions || actions.value
-    modules.value = payload.modules || modules.value
-    mergeEntities(payload.entities || {})
-    mergeActuators(payload.actuators || {})
-    lastUpdate.value = new Date()
-  }
-  ws.onclose = () => {
-    setTimeout(connectWS, 2000)
-  }
-}
-
-function pushHistory(arr, value){
-  const v = Number(value)
-  if (!Number.isFinite(v)) return
-  arr.push(v)
-  if (arr.length > maxPoints) arr.splice(0, arr.length - maxPoints)
-}
-function updateHistoryFromDecision(decision){
-  if (!decision?.inputs) return
-  pushHistory(history.value.t_acs, decision.inputs.t_acs)
-  pushHistory(history.value.t_acs_alto, decision.inputs.t_acs_alto)
-  pushHistory(history.value.t_acs_medio, decision.inputs.t_acs_medio)
-  pushHistory(history.value.t_acs_basso, decision.inputs.t_acs_basso)
-  pushHistory(history.value.t_puffer, decision.inputs.t_puffer)
-  pushHistory(history.value.t_volano, decision.inputs.t_volano)
-  pushHistory(history.value.t_volano_alto, decision.inputs.t_volano_alto)
-  pushHistory(history.value.t_volano_basso, decision.inputs.t_volano_basso)
-  pushHistory(history.value.t_esterna, decision.inputs.t_esterna)
-  pushHistory(history.value.collettore_energy_day_kwh, decision.inputs.collettore_energy_day_kwh)
-  pushHistory(history.value.collettore_energy_total_kwh, decision.inputs.collettore_energy_total_kwh)
-  pushHistory(history.value.collettore_flow_lmin, decision.inputs.collettore_flow_lmin)
-  pushHistory(history.value.collettore_pwm_pct, decision.inputs.collettore_pwm_pct)
-  pushHistory(history.value.collettore_temp_esterna, decision.inputs.collettore_temp_esterna)
-  pushHistory(history.value.collettore_tsa1, decision.inputs.collettore_tsa1)
-  pushHistory(history.value.collettore_tse, decision.inputs.collettore_tse)
-  pushHistory(history.value.collettore_tsv, decision.inputs.collettore_tsv)
-  pushHistory(history.value.collettore_twu, decision.inputs.collettore_twu)
-  pushHistory(history.value.t_puffer_alto, decision.inputs.t_puffer_alto)
-  pushHistory(history.value.t_puffer_medio, decision.inputs.t_puffer_medio)
-  pushHistory(history.value.t_puffer_basso, decision.inputs.t_puffer_basso)
-  pushHistory(history.value.t_mandata_miscelata, decision.inputs.t_mandata_miscelata)
-  pushHistory(history.value.t_ritorno_miscelato, decision.inputs.t_ritorno_miscelato)
-  pushHistory(history.value.curva_setpoint, decision.computed?.curva_climatica?.setpoint)
-  pushHistory(history.value.miscelatrice_setpoint, decision.computed?.miscelatrice?.setpoint)
-  pushHistory(history.value.delta_puffer_acs, (decision.inputs.t_puffer - decision.inputs.t_acs))
-  pushHistory(history.value.delta_volano_acs, (decision.inputs.t_volano - decision.inputs.t_acs))
-  pushHistory(history.value.delta_volano_puffer, (decision.inputs.t_volano - decision.inputs.t_puffer))
-  pushHistory(history.value.delta_mandata_ritorno, (decision.inputs.t_mandata_miscelata - decision.inputs.t_ritorno_miscelato))
-  pushHistory(history.value.kp_eff, decision.computed?.miscelatrice?.kp_eff)
-  pushHistory(history.value.export_w, decision.inputs.grid_export_w)
-}
-function sparkPoints(values){
-  const w = 300
-  const h = 90
-  const pad = 6
-  if (!values || values.length < 2) return ''
-  const min = Math.min(...values)
-  const max = Math.max(...values)
-  const span = max - min || 1
-  return values.map((v, i) => {
-    const x = pad + (i / (values.length - 1)) * (w - pad * 2)
-    const y = h - pad - ((v - min) / span) * (h - pad * 2)
-    return `${x.toFixed(1)},${y.toFixed(1)}`
-  }).join(' ')
-}
-async function loadAll(){
-  await load()
-  await loadEntities()
-  await loadActuators()
-  await loadModules()
-  await refresh()
-}
-function startPolling(){
-  if (pollTimer) clearInterval(pollTimer)
-  pollTimer = setInterval(async()=>{
-    await refresh()
-  }, Math.max(500, pollMs.value))
-}
-function stopPolling(){
-  if (pollTimer) clearInterval(pollTimer)
-  pollTimer = null
-}
-function onFocus(){
-  editingCount.value += 1
-  stopPolling()
-}
-function onBlur(){
-  editingCount.value = Math.max(0, editingCount.value - 1)
-  if (editingCount.value === 0) startPolling()
-}
-onMounted(async()=>{ 
-  await loadAll(); 
-  startPolling();
-  connectWS();
-  solareModeInit.value = true
-  focusInHandler = (e) => {
-    const tag = e.target?.tagName
-    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') onFocus()
-  }
-  focusOutHandler = (e) => {
-    const tag = e.target?.tagName
-    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') onBlur()
-  }
-  window.addEventListener('focusin', focusInHandler)
-  window.addEventListener('focusout', focusOutHandler)
+onMounted(async()=>{
+  await loadAll()
+  startPolling()
 })
-onBeforeUnmount(()=>{ 
-  stopPolling();
-  if (ws) ws.close()
-  if (focusInHandler) window.removeEventListener('focusin', focusInHandler)
-  if (focusOutHandler) window.removeEventListener('focusout', focusOutHandler)
-})
-watch(tab, (val) => {
-  if (val === 'admin') {
-    stopPolling()
-  } else {
-    startPolling()
-  }
-})
-
-watch(
-  () => sp.value?.history,
-  () => { saveHistoryDebounced() },
-  { deep: true }
-)
-
-watch(
-  () => sp.value?.solare?.mode,
-  async (val, old) => {
-    if (!solareModeInit.value) return
-    if (val === undefined || val === old) return
-    await save()
-  }
-)
+onBeforeUnmount(()=>{ stopPolling() })
 </script>
-
 <style>
 :root{--bg:#070a0f;--card:#0b101a;--muted:#9fb0c7;--text:#e8f1ff;--accent:#57e3d6;--accent-2:#7aa7ff;--border:rgba(255,255,255,.08)}
 *{box-sizing:border-box} body{margin:0;font-family:"Space Grotesk","IBM Plex Sans","Trebuchet MS",sans-serif;background:radial-gradient(1200px 500px at 20% -10%, rgba(122,167,255,.08), transparent),radial-gradient(900px 500px at 80% 0%, rgba(87,227,214,.06), transparent),var(--bg);color:var(--text)}
@@ -1406,7 +567,3 @@ details.form summary{cursor:pointer;list-style:none}
 .badge-mini.idle{background:rgba(148,163,184,.08)}
 @keyframes flow{0%{stroke-dashoffset:0}100%{stroke-dashoffset:-36}}
 </style>
-
-
-
-

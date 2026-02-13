@@ -33,6 +33,7 @@
 - Ripulita UI User/Admin: rimosse tutte le sezioni termiche.
 - UI energia: layout con KPI per utenza e mapping sensori read-only.
 - Admin: selettore numero utenze (1-3) e runtime base.
+- Backend semplificato: rimosse logiche termiche, solo mapping sensori e status.
 - Pallino verde/rosso per gestito/non gestito.
 - Fix salvataggio attuatori (salva solo entity_id).
 - Indicatore popolato/non popolato per entita e attuatori in Admin.

@@ -39,6 +39,7 @@ Tutto il contenuto Admin è dentro una `card` principale.
 3. **Mapping Entità Energia**
    - elenco campi per ogni utenza
    - indicatori “input-ok”
+   - nessuna logica termica o attuatori
 
 ## Componenti ricorrenti
 - `card`, `card inner`, `module-panel`

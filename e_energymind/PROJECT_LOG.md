@@ -15,6 +15,7 @@ Data export: 2026-02-08 (Europe/Rome)
 ## 2026-02-13
 - UI energia: pulizia totale dei riferimenti termici in User/Admin.
 - Admin: selezione numero utenze (1-3) e mapping sensori energia.
+- Backend: rimosse logiche termiche, API minimal per status/config/entities.
 
 ## Architettura concordata
 - Motore modulare a “state machine”:
