@@ -12,6 +12,10 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Nome Add-on
 - **e-EnergyMind**
 
+## 2026-02-13
+- UI energia: pulizia totale dei riferimenti termici in User/Admin.
+- Admin: selezione numero utenze (1-3) e mapping sensori energia.
+
 ## Architettura concordata
 - Motore modulare a “state machine”:
   1) ACS Orchestrator

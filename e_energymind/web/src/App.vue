@@ -18,862 +18,81 @@
 
     <main class="main">
       <section v-if="tab==='user'" class="card">
-        <h2>Stato (v0.2)</h2>
+        <h2>Stato (energia)</h2>
         <div class="statusline">
           <span class="muted">v{{ status?.version || '-' }}</span>
-          <span v-if="status?.runtime_mode === 'live'" class="muted">modo: live operativo</span>
-          <span v-else class="muted">mode: {{ status?.runtime_mode || '-' }}</span>
+          <span class="muted">mode: {{ status?.runtime_mode || '-' }}</span>
           <span class="badge" :class="status?.ha_connected ? 'ok' : 'off'">
             {{ status?.ha_connected ? 'Online' : 'Offline' }}
           </span>
           <span class="muted">HA</span>
           <span class="muted">Ultimo aggiornamento: {{ lastUpdate ? lastUpdate.toLocaleTimeString() : '-' }}</span>
         </div>
-        <p v-if="status?.runtime_mode !== 'live'" class="muted">Dry-run: nessun comando agli attuatori. Serve per validare la logica.</p>
+        <p v-if="status?.runtime_mode !== 'live'" class="muted">Dry-run: nessun comando agli attuatori. Analisi solo lettura.</p>
 
-        <div v-if="d" class="grid">
-          <div class="kpi" :class="historyEnabled('t_acs_alto') ? 'clickable' : ''" @click="openHistory('t_acs_alto','T_ACS')">
-            <div class="k"><i v-if="mdiClass(ent?.t_acs?.attributes?.icon)" :class="mdiClass(ent?.t_acs?.attributes?.icon)"></i> T_ACS</div>
-            <div class="v">{{ fmtTemp(d.inputs.t_acs) }}</div>
-          </div>
-          <div class="kpi" :class="historyEnabled('t_puffer_alto') ? 'clickable' : ''" @click="openHistory('t_puffer_alto','T_Puffer')">
-            <div class="k"><i v-if="mdiClass(ent?.t_puffer?.attributes?.icon)" :class="mdiClass(ent?.t_puffer?.attributes?.icon)"></i> T_Puffer</div>
-            <div class="v">{{ fmtTemp(d.inputs.t_puffer) }}</div>
-          </div>
-          <div class="kpi" :class="historyEnabled('t_volano_alto') ? 'clickable' : ''" @click="openHistory('t_volano_alto','T_Volano')">
-            <div class="k"><i v-if="mdiClass(ent?.t_volano?.attributes?.icon)" :class="mdiClass(ent?.t_volano?.attributes?.icon)"></i> T_Volano</div>
-            <div class="v">{{ fmtTemp(d.inputs.t_volano) }}</div>
-          </div>
-          <div class="kpi" :class="historyEnabled('t_solare_mandata') ? 'clickable' : ''" @click="openHistory('t_solare_mandata','T_Solare mandata')">
-            <div class="k"><i v-if="mdiClass(ent?.t_solare_mandata?.attributes?.icon)" :class="mdiClass(ent?.t_solare_mandata?.attributes?.icon)"></i> T_Solare mandata</div>
-            <div class="v">{{ fmtTemp(d.inputs.t_solare_mandata) }}</div>
-          </div>
-          <div class="kpi" :class="historyEnabled('t_esterna') ? 'clickable' : ''" @click="openHistory('t_esterna','T esterna')">
-            <div class="k"><i v-if="mdiClass(ent?.t_esterna?.attributes?.icon)" :class="mdiClass(ent?.t_esterna?.attributes?.icon)"></i> T esterna</div>
-            <div class="v">{{ fmtTemp(d.inputs.t_esterna) }}</div>
-          </div>
-          <div class="kpi" :class="historyEnabled('t_mandata_miscelata') ? 'clickable' : ''" @click="openHistory('t_mandata_miscelata','T mandata miscelata')">
-            <div class="k"><i v-if="mdiClass(ent?.t_mandata_miscelata?.attributes?.icon)" :class="mdiClass(ent?.t_mandata_miscelata?.attributes?.icon)"></i> T mandata</div>
-            <div class="v">{{ fmtTemp(d.inputs.t_mandata_miscelata) }}</div>
-          </div>
-          <div class="kpi" :class="historyEnabled('t_ritorno_miscelato') ? 'clickable' : ''" @click="openHistory('t_ritorno_miscelato','T ritorno miscelato')">
-            <div class="k"><i v-if="mdiClass(ent?.t_ritorno_miscelato?.attributes?.icon)" :class="mdiClass(ent?.t_ritorno_miscelato?.attributes?.icon)"></i> T ritorno</div>
-            <div class="v">{{ fmtTemp(d.inputs.t_ritorno_miscelato) }}</div>
-          </div>
-          <div class="kpi">
-            <div class="k"><i v-if="mdiClass(ent?.grid_export_w?.attributes?.icon)" :class="mdiClass(ent?.grid_export_w?.attributes?.icon)"></i> Export rete</div>
-            <div class="v">{{ fmtW(d.inputs.grid_export_w) }}</div>
-          </div>
-        </div>
-        <div v-if="d" class="row3">
-          <div class="kpi kpi-center" :class="historyEnabled('t_acs_alto') ? 'clickable' : ''" @click="openHistory('t_acs_alto','ACS Alto')">
-            <div class="k">ACS Alto</div>
-            <div class="v">{{ fmtTemp(d.inputs.t_acs_alto) }}</div>
-          </div>
-          <div class="kpi kpi-center" :class="historyEnabled('t_acs_medio') ? 'clickable' : ''" @click="openHistory('t_acs_medio','ACS Medio')">
-            <div class="k">ACS Medio</div>
-            <div class="v">{{ fmtTemp(d.inputs.t_acs_medio) }}</div>
-          </div>
-          <div class="kpi kpi-center" :class="historyEnabled('t_acs_basso') ? 'clickable' : ''" @click="openHistory('t_acs_basso','ACS Basso')">
-            <div class="k">ACS Basso</div>
-            <div class="v">{{ fmtTemp(d.inputs.t_acs_basso) }}</div>
-          </div>
-        </div>
-
-        <div v-if="d" class="card inner module-panel" :class="modulePanelClass('gas_emergenza')">
-          <div class="row"><strong>Grafico rapido (ultimi ~2-3 min)</strong></div>
-          <div class="chart-grid">
-            <div class="chart">
-              <div class="chart-title">Temperature</div>
-              <svg viewBox="0 0 300 90" role="img" aria-label="Grafico temperature">
-                <polyline :points="sparkPoints(history.t_acs_alto)" class="spark acs"/>
-                <polyline :points="sparkPoints(history.t_puffer_alto)" class="spark puffer"/>
-                <polyline :points="sparkPoints(history.t_volano_alto)" class="spark volano"/>
-              </svg>
-              <div class="axis-note">Y: {{ tempStats.label }}</div>
-              <div class="axis-note">X: ultimi ~2â€“3 min</div>
-              <div class="legend small">
-                <span class="legend-item"><span class="legend-dot acs"></span> ACS</span>
-                <span class="legend-item"><span class="legend-dot puffer"></span> Puffer</span>
-                <span class="legend-item"><span class="legend-dot volano"></span> Volano</span>
-              </div>
+        <div v-if="ent" v-for="site in siteList" :key="`user-site-${site}`" class="card inner">
+          <div class="row"><strong>Utenza {{ site }}</strong></div>
+          <div class="grid">
+            <div class="kpi">
+              <div class="k">PV Power</div>
+              <div class="v">{{ fmtEntity(getEnt(site, 'pv_power')) }}</div>
             </div>
-            <div class="chart">
-              <div class="chart-title">Export (W)</div>
-              <svg viewBox="0 0 300 90" role="img" aria-label="Grafico export rete">
-                <polyline :points="sparkPoints(history.export_w)" class="spark export"/>
-              </svg>
-              <div class="axis-note">Y: {{ exportStats.label }}</div>
-              <div class="axis-note">X: ultimi ~2â€“3 min</div>
-              <div class="legend small">
-                <span class="legend-item"><span class="legend-dot export"></span> Export rete</span>
-              </div>
+            <div class="kpi">
+              <div class="k">Carico casa</div>
+              <div class="v">{{ fmtEntity(getEnt(site, 'load_power')) }}</div>
+            </div>
+            <div class="kpi">
+              <div class="k">Rete (PCC)</div>
+              <div class="v">{{ fmtEntity(getEnt(site, 'grid_power')) }}</div>
+            </div>
+            <div class="kpi">
+              <div class="k">Import rete</div>
+              <div class="v">{{ fmtEntity(getEnt(site, 'grid_import_power')) }}</div>
+            </div>
+            <div class="kpi">
+              <div class="k">Export rete</div>
+              <div class="v">{{ fmtEntity(getEnt(site, 'grid_export_power')) }}</div>
+            </div>
+            <div class="kpi">
+              <div class="k">Batteria Power</div>
+              <div class="v">{{ fmtEntity(getEnt(site, 'battery_power')) }}</div>
+            </div>
+            <div class="kpi">
+              <div class="k">Batteria SOC</div>
+              <div class="v">{{ fmtEntity(getEnt(site, 'battery_soc')) }}</div>
+            </div>
+            <div class="kpi">
+              <div class="k">Batteria Temp</div>
+              <div class="v">{{ fmtEntity(getEnt(site, 'battery_temp')) }}</div>
             </div>
           </div>
-        </div>
-
-        <div class="card inner">
-          <div class="row"><strong>Moduli (User)</strong></div>
-          <div class="row3">
-            <button class="ghost toggle" :class="moduleClass('resistenze_volano')" @click="toggleModule('resistenze_volano')">
-              Resistenze Volano: {{ modules.resistenze_volano ? 'ON' : 'OFF' }}
-            </button>
-            <button class="ghost toggle" :class="moduleClass('volano_to_acs')" @click="toggleModule('volano_to_acs')">
-              Volano â†’ ACS: {{ modules.volano_to_acs ? 'ON' : 'OFF' }}
-            </button>
-            <button class="ghost toggle" :class="moduleClass('volano_to_puffer')" @click="toggleModule('volano_to_puffer')">
-              Volano â†’ Puffer: {{ modules.volano_to_puffer ? 'ON' : 'OFF' }}
-            </button>
-            <button class="ghost toggle" :class="moduleClass('puffer_to_acs')" @click="toggleModule('puffer_to_acs')">
-              Puffer â†’ ACS: {{ modules.puffer_to_acs ? 'ON' : 'OFF' }}
-            </button>
-            <button class="ghost toggle" :class="moduleClass('impianto')" @click="toggleModule('impianto')">
-              Impianto Riscaldamento: {{ modules.impianto ? 'ON' : 'OFF' }}
-            </button>
-            <button class="ghost toggle" :class="moduleClass('gas_emergenza')" @click="toggleModule('gas_emergenza')">
-              Caldaia Gas Emergenza Riscaldamento: {{ modules.gas_emergenza ? 'ON' : 'OFF' }}
-            </button>
-            <button class="ghost toggle" :class="moduleClass('caldaia_legna')" @click="toggleModule('caldaia_legna')">
-              Caldaia Legna: {{ modules.caldaia_legna ? 'ON' : 'OFF' }}
-            </button>
-            <button class="ghost toggle" :class="moduleClass('solare')" @click="toggleModule('solare')">
-              Solare: {{ modules.solare ? 'ON' : 'OFF' }}
-            </button>
-            <button class="ghost toggle" :class="moduleClass('miscelatrice')" @click="toggleModule('miscelatrice')">
-              Miscelatrice: {{ modules.miscelatrice ? 'ON' : 'OFF' }}
-            </button>
-            <button class="ghost toggle" :class="moduleClass('curva_climatica')" @click="toggleModule('curva_climatica')">
-              Curva climatica: {{ modules.curva_climatica ? 'ON' : 'OFF' }}
-            </button>
-            <button class="ghost toggle" :class="moduleClass('pdc')" @click="toggleModule('pdc')">
-              PDC: {{ modules.pdc ? 'ON' : 'OFF' }}
-            </button>
-          </div>
-        </div>
-
-
-        <div v-if="d" class="card inner module-panel" :class="modulePanelClass('miscelatrice')">
-          <div class="row"><strong>Destinazione surplus:</strong> {{ d.computed.dest }}</div>
-          <div class="muted">{{ d.computed.dest_reason }}</div>
-          <hr />
-          <div class="row"><strong>Source -> ACS:</strong> {{ d.computed.source_to_acs }}</div>
-          <div class="muted">{{ d.computed.source_reason }}</div>
-          <hr />
-          <div class="row"><strong>Carica riserva:</strong> {{ d.computed.charge_buffer }} (step {{ d.computed.resistance_step }}/3)</div>
-          <div class="muted">{{ d.computed.charge_reason }}</div>
-          <div v-if="moduleReasonsList.length">
-            <hr />
-            <div class="row"><strong>Moduli</strong></div>
-            <div class="module-reasons">
-              <div v-for="item in moduleReasonsList" :key="item.key" class="module-row" :class="{'mod-on': item.enabled, 'mod-active': item.enabled && item.active}">
-                <div class="module-head">
-                  <div class="module-label">{{ item.label }}</div>
-                  <div class="module-badges">
-                    <span class="badge-mini" :class="item.enabled ? 'on' : 'off'">
-                      {{ item.enabled ? 'MOD ON' : 'MOD OFF' }}
-                    </span>
-                    <span class="badge-mini" :class="item.active ? 'active' : 'idle'">
-                      {{ item.active ? 'ATTIVO' : 'INATTIVO' }}
-                    </span>
-                  </div>
-                </div>
-                <div class="muted">{{ item.reason }}</div>
-                <div v-if="item.key === 'impianto'" class="module-extra">
-                  <div class="muted">
-                    Selettore: {{ d?.computed?.impianto?.selector || '-' }} | Sorgente: {{ d?.computed?.impianto?.source || '-' }} | Richiesta: {{ d?.computed?.impianto?.richiesta ? 'ON' : 'OFF' }} | Miscelatrice: {{ d?.computed?.impianto?.miscelatrice ? 'ON' : 'OFF' }}
-                  </div>
-                  <div class="muted">
-                    PDC/Volano ready: {{ d?.computed?.impianto?.pdc_ready ? 'SI' : 'NO' }} | Puffer ready: {{ d?.computed?.impianto?.puffer_ready ? 'SI' : 'NO' }}
-                  </div>
-                  <div class="muted">
-                    Volano OK: {{ d?.computed?.impianto?.volano_temp_ok ? 'SI' : 'NO' }} (T={{ fmtTemp(d?.inputs?.t_volano) }} / min {{ fmtNum(sp?.impianto?.volano_min_c) }}Â°C)
-                    | Puffer OK: {{ d?.computed?.impianto?.puffer_temp_ok ? 'SI' : 'NO' }} (T={{ fmtTemp(d?.inputs?.t_puffer) }} / min {{ fmtNum(sp?.impianto?.puffer_min_c) }}Â°C)
-                  </div>
-                  <div v-if="d?.computed?.impianto?.blocked_cold" class="muted">
-                    Blocco freddo attivo: sorgenti sotto soglia minima.
-                  </div>
-                  <div v-else class="muted">
-                    Blocco freddo: OFF.
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="act" class="card inner module-panel" :class="modulePanelClass('resistenze_volano')">
-          <div class="row"><strong>Resistenze volano</strong></div>
-          <div class="row3">
-            <div class="kpi kpi-center clickable" :class="stateClass(act?.r22_resistenza_1_volano_pdc?.state)" @click="userToggle(act?.r22_resistenza_1_volano_pdc, 'resistenze_volano')">
-              <div class="k">
-                <i v-if="mdiClass(act?.r22_resistenza_1_volano_pdc?.attributes?.icon)" :class="[mdiClass(act?.r22_resistenza_1_volano_pdc?.attributes?.icon), stateClass(act?.r22_resistenza_1_volano_pdc?.state)]"></i>
-                R22 Resistenza 1 Volano PDC
-              </div>
-            </div>
-            <div class="kpi kpi-center clickable" :class="stateClass(act?.r23_resistenza_2_volano_pdc?.state)" @click="userToggle(act?.r23_resistenza_2_volano_pdc, 'resistenze_volano')">
-              <div class="k">
-                <i v-if="mdiClass(act?.r23_resistenza_2_volano_pdc?.attributes?.icon)" :class="[mdiClass(act?.r23_resistenza_2_volano_pdc?.attributes?.icon), stateClass(act?.r23_resistenza_2_volano_pdc?.state)]"></i>
-                R23 Resistenza 2 Volano PDC
-              </div>
-            </div>
-            <div class="kpi kpi-center clickable" :class="stateClass(act?.r24_resistenza_3_volano_pdc?.state)" @click="userToggle(act?.r24_resistenza_3_volano_pdc, 'resistenze_volano')">
-              <div class="k">
-                <i v-if="mdiClass(act?.r24_resistenza_3_volano_pdc?.attributes?.icon)" :class="[mdiClass(act?.r24_resistenza_3_volano_pdc?.attributes?.icon), stateClass(act?.r24_resistenza_3_volano_pdc?.state)]"></i>
-                R24 Resistenza 3 Volano PDC
-              </div>
-            </div>
-            <div class="kpi kpi-center clickable" :class="stateClass(act?.generale_resistenze_volano_pdc?.state)" @click="userToggle(act?.generale_resistenze_volano_pdc, 'resistenze_volano')">
-              <div class="k">
-                <i :class="[mdiClass(act?.generale_resistenze_volano_pdc?.attributes?.icon) || 'mdi mdi-power', stateClass(act?.generale_resistenze_volano_pdc?.state)]"></i>
-                R0 Generale Resistenze Volano PDC
-              </div>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">
-                <i v-if="mdiClass(ent?.resistenze_volano_power?.attributes?.icon)" :class="mdiClass(ent?.resistenze_volano_power?.attributes?.icon)"></i>
-                Potenza Resistenze
-              </div>
-              <div class="v">{{ fmtEntity(ent?.resistenze_volano_power) }}</div>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">
-                <i v-if="mdiClass(ent?.resistenze_volano_energy?.attributes?.icon)" :class="mdiClass(ent?.resistenze_volano_energy?.attributes?.icon)"></i>
-                Energia Resistenze
-              </div>
-              <div class="v">{{ fmtEntity(ent?.resistenze_volano_energy) }}</div>
-            </div>
-          </div>
-          <div class="row2">
-            <div class="kpi kpi-center" :class="historyEnabled('t_volano_alto') ? 'clickable' : ''" @click="openHistory('t_volano_alto','T Volano Alto')">
-              <div class="k">T Volano Alto</div>
-              <div class="v">{{ fmtTemp(d?.inputs?.t_volano_alto) }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('t_volano_basso') ? 'clickable' : ''" @click="openHistory('t_volano_basso','T Volano Basso')">
-              <div class="k">T Volano Basso</div>
-              <div class="v">{{ fmtTemp(d?.inputs?.t_volano_basso) }}</div>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="act" class="card inner module-panel" :class="modulePanelClass('volano_to_acs')">
-          <div class="row"><strong>Volano â†’ ACS</strong></div>
-          <div class="row3">
-            <div class="kpi kpi-center" :class="historyEnabled('t_volano') ? 'clickable' : ''" @click="openHistory('t_volano','T_Volano')">
-              <div class="k">
-                <i v-if="mdiClass(ent?.t_volano?.attributes?.icon)" :class="mdiClass(ent?.t_volano?.attributes?.icon)"></i>
-                T_Volano
-              </div>
-              <div class="v">{{ fmtTemp(d?.inputs?.t_volano) }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('t_acs') ? 'clickable' : ''" @click="openHistory('t_acs','T_ACS')">
-              <div class="k">
-                <i v-if="mdiClass(ent?.t_acs?.attributes?.icon)" :class="mdiClass(ent?.t_acs?.attributes?.icon)"></i>
-                T_ACS
-              </div>
-              <div class="v">{{ fmtTemp(d?.inputs?.t_acs) }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('delta_volano_acs') ? 'clickable' : ''" @click="openHistory('delta_volano_acs','Delta Volano-ACS')">
-              <div class="k">Delta (Volano - ACS)</div>
-              <div class="v">{{ fmtDelta(d?.inputs?.t_volano, d?.inputs?.t_acs) }}</div>
-            </div>
-          </div>
-          <div class="row3">
-            <div class="kpi kpi-center clickable" :class="stateClass(act?.r6_valve_pdc_to_integrazione_acs?.state)" @click="userToggle(act?.r6_valve_pdc_to_integrazione_acs, 'volano_to_acs')">
-              <div class="k">
-                <i v-if="mdiClass(act?.r6_valve_pdc_to_integrazione_acs?.attributes?.icon)" :class="[mdiClass(act?.r6_valve_pdc_to_integrazione_acs?.attributes?.icon), stateClass(act?.r6_valve_pdc_to_integrazione_acs?.state)]"></i>
-                Valvola PDC â†’ ACS
-              </div>
-            </div>
-            <div class="kpi kpi-center clickable" :class="stateClass(act?.r13_pump_pdc_to_acs_puffer?.state)" @click="userToggle(act?.r13_pump_pdc_to_acs_puffer, 'volano_to_acs')">
-              <div class="k">
-                <i v-if="mdiClass(act?.r13_pump_pdc_to_acs_puffer?.attributes?.icon)" :class="[mdiClass(act?.r13_pump_pdc_to_acs_puffer?.attributes?.icon), stateClass(act?.r13_pump_pdc_to_acs_puffer?.state)]"></i>
-                R13 Pompa PDC â†’ ACS/Puffer
-              </div>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">Stato logica</div>
-              <div class="v">{{ d?.computed?.flags?.volano_to_acs ? 'ATTIVO' : 'STOP' }}</div>
-            </div>
-          </div>
-          <div class="row2">
-            <div class="kpi kpi-center" :class="historyEnabled('t_volano_alto') ? 'clickable' : ''" @click="openHistory('t_volano_alto','T Volano Alto')">
-              <div class="k">T Volano Alto</div>
-              <div class="v">{{ fmtTemp(d?.inputs?.t_volano_alto) }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('t_volano_basso') ? 'clickable' : ''" @click="openHistory('t_volano_basso','T Volano Basso')">
-              <div class="k">T Volano Basso</div>
-              <div class="v">{{ fmtTemp(d?.inputs?.t_volano_basso) }}</div>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="act" class="card inner module-panel" :class="modulePanelClass('volano_to_puffer')">
-          <div class="row"><strong>Volano â†’ Puffer</strong></div>
-          <div class="row3">
-            <div class="kpi kpi-center" :class="historyEnabled('t_volano') ? 'clickable' : ''" @click="openHistory('t_volano','T_Volano')">
-              <div class="k">
-                <i v-if="mdiClass(ent?.t_volano?.attributes?.icon)" :class="mdiClass(ent?.t_volano?.attributes?.icon)"></i>
-                T_Volano
-              </div>
-              <div class="v">{{ fmtTemp(d?.inputs?.t_volano) }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('t_puffer') ? 'clickable' : ''" @click="openHistory('t_puffer','T_Puffer')">
-              <div class="k">
-                <i v-if="mdiClass(ent?.t_puffer?.attributes?.icon)" :class="mdiClass(ent?.t_puffer?.attributes?.icon)"></i>
-                T_Puffer
-              </div>
-              <div class="v">{{ fmtTemp(d?.inputs?.t_puffer) }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('delta_volano_puffer') ? 'clickable' : ''" @click="openHistory('delta_volano_puffer','Delta Volano-Puffer')">
-              <div class="k">Delta (Volano - Puffer)</div>
-              <div class="v">{{ fmtDelta(d?.inputs?.t_volano, d?.inputs?.t_puffer) }}</div>
-            </div>
-          </div>
-          <div class="row3">
-            <div class="kpi kpi-center clickable" :class="stateClass(act?.r7_valve_pdc_to_integrazione_puffer?.state)" @click="userToggle(act?.r7_valve_pdc_to_integrazione_puffer, 'volano_to_puffer')">
-              <div class="k">
-                <i v-if="mdiClass(act?.r7_valve_pdc_to_integrazione_puffer?.attributes?.icon)" :class="[mdiClass(act?.r7_valve_pdc_to_integrazione_puffer?.attributes?.icon), stateClass(act?.r7_valve_pdc_to_integrazione_puffer?.state)]"></i>
-                R7 Valvola PDC â†’ Puffer
-              </div>
-            </div>
-            <div class="kpi kpi-center clickable" :class="stateClass(act?.r13_pump_pdc_to_acs_puffer?.state)" @click="userToggle(act?.r13_pump_pdc_to_acs_puffer, 'volano_to_puffer')">
-              <div class="k">
-                <i v-if="mdiClass(act?.r13_pump_pdc_to_acs_puffer?.attributes?.icon)" :class="[mdiClass(act?.r13_pump_pdc_to_acs_puffer?.attributes?.icon), stateClass(act?.r13_pump_pdc_to_acs_puffer?.state)]"></i>
-                R13 Pompa PDC â†’ ACS/Puffer
-              </div>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">Stato logica</div>
-              <div class="v">{{ d?.computed?.flags?.volano_to_puffer ? 'ATTIVO' : 'STOP' }}</div>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="act" class="card inner module-panel" :class="modulePanelClass('solare')">
-          <div class="row"><strong>Solare</strong></div>
-          <div class="row3">
-            <div class="kpi kpi-center" :class="historyEnabled('t_solare_mandata') ? 'clickable' : ''" @click="openHistory('t_solare_mandata','T_Solare mandata')">
-              <div class="k">
-                <i v-if="mdiClass(ent?.t_solare_mandata?.attributes?.icon)" :class="mdiClass(ent?.t_solare_mandata?.attributes?.icon)"></i>
-                T_Solare mandata
-              </div>
-              <div class="v">{{ fmtTemp(d?.inputs?.t_solare_mandata) }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="solarModeClass">
-              <div class="k">ModalitÃ </div>
-              <div class="v">{{ sp?.solare?.mode || 'auto' }}</div>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">Cutback</div>
-              <div class="v">{{ d?.computed?.safety?.acs_max_hit ? 'ACS_MAX' : (d?.inputs?.t_solare_mandata >= (sp?.solare?.max_c || 90) ? 'SOL_MAX' : 'OK') }}</div>
-            </div>
-          </div>
-          <div class="row3">
-            <div class="kpi kpi-center" :class="stateClass(act?.r8_valve_solare_notte_low_temp?.state)">
-              <div class="k">
-                <i v-if="mdiClass(act?.r8_valve_solare_notte_low_temp?.attributes?.icon)" :class="[mdiClass(act?.r8_valve_solare_notte_low_temp?.attributes?.icon), stateClass(act?.r8_valve_solare_notte_low_temp?.state)]"></i>
-                R8 Solare Notte/Low
-              </div>
-            </div>
-            <div class="kpi kpi-center" :class="stateClass(act?.r9_valve_solare_normal_funz?.state)">
-              <div class="k">
-                <i v-if="mdiClass(act?.r9_valve_solare_normal_funz?.attributes?.icon)" :class="[mdiClass(act?.r9_valve_solare_normal_funz?.attributes?.icon), stateClass(act?.r9_valve_solare_normal_funz?.state)]"></i>
-                R9 Solare Normal
-              </div>
-            </div>
-            <div class="kpi kpi-center" :class="stateClass(act?.r10_valve_solare_precedenza_acs?.state)">
-              <div class="k">
-                <i v-if="mdiClass(act?.r10_valve_solare_precedenza_acs?.attributes?.icon)" :class="[mdiClass(act?.r10_valve_solare_precedenza_acs?.attributes?.icon), stateClass(act?.r10_valve_solare_precedenza_acs?.state)]"></i>
-                R10 Precedenza ACS
-              </div>
-            </div>
-          </div>
-          <div class="row3">
-            <div class="kpi kpi-center clickable" :class="stateClass(act?.r18_valve_ritorno_solare_basso?.state)" @click="userToggleManual(act?.r18_valve_ritorno_solare_basso)">
-              <div class="k">
-                <i v-if="mdiClass(act?.r18_valve_ritorno_solare_basso?.attributes?.icon)" :class="[mdiClass(act?.r18_valve_ritorno_solare_basso?.attributes?.icon), stateClass(act?.r18_valve_ritorno_solare_basso?.state)]"></i>
-                R18 Ritorno Solare Basso
-              </div>
-            </div>
-            <div class="kpi kpi-center clickable" :class="stateClass(act?.r19_valve_ritorno_solare_alto?.state)" @click="userToggleManual(act?.r19_valve_ritorno_solare_alto)">
-              <div class="k">
-                <i v-if="mdiClass(act?.r19_valve_ritorno_solare_alto?.attributes?.icon)" :class="[mdiClass(act?.r19_valve_ritorno_solare_alto?.attributes?.icon), stateClass(act?.r19_valve_ritorno_solare_alto?.state)]"></i>
-                R19 Ritorno Solare Alto
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="d" class="card inner module-panel" :class="modulePanelClass('miscelatrice')">
-          <div class="row"><strong>Collettore solare</strong></div>
           <div class="row3">
             <div class="kpi kpi-center">
-              <div class="k">Codice di stato</div>
-              <div class="v">{{ fmtText(d?.inputs?.collettore_status_code) }}</div>
+              <div class="k">Produzione oggi</div>
+              <div class="v">{{ fmtEntity(getEnt(site, 'today_production_kwh')) }}</div>
             </div>
             <div class="kpi kpi-center">
-              <div class="k">Stato</div>
-              <div class="v">{{ fmtText(d?.inputs?.collettore_status) }}</div>
+              <div class="k">Consumo oggi</div>
+              <div class="v">{{ fmtEntity(getEnt(site, 'today_load_kwh')) }}</div>
             </div>
             <div class="kpi kpi-center">
-              <div class="k">Data e ora</div>
-              <div class="v">{{ fmtText(d?.inputs?.collettore_datetime) }}</div>
-            </div>
-          </div>
-          <div class="row3">
-            <div class="kpi kpi-center" :class="historyEnabled('collettore_energy_day_kwh') ? 'clickable' : ''" @click="openHistory('collettore_energy_day_kwh','Energia solare (giorno)')">
-              <div class="k">Energia solare (giorno)</div>
-              <div class="v">{{ fmtNum(d?.inputs?.collettore_energy_day_kwh) }} kWh</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('collettore_energy_total_kwh') ? 'clickable' : ''" @click="openHistory('collettore_energy_total_kwh','Energia solare (totale)')">
-              <div class="k">Energia solare (totale)</div>
-              <div class="v">{{ fmtNum(d?.inputs?.collettore_energy_total_kwh) }} kWh</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('collettore_flow_lmin') ? 'clickable' : ''" @click="openHistory('collettore_flow_lmin','Portata solare')">
-              <div class="k">Portata (L/min)</div>
-              <div class="v">{{ fmtNum(d?.inputs?.collettore_flow_lmin) }} L/min</div>
-            </div>
-          </div>
-          <div class="row3">
-            <div class="kpi kpi-center" :class="historyEnabled('collettore_pwm_pct') ? 'clickable' : ''" @click="openHistory('collettore_pwm_pct','PWM Pompa solare')">
-              <div class="k">PWM Pompa</div>
-              <div class="v">{{ fmtNum(d?.inputs?.collettore_pwm_pct) }}%</div>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">Stato 2</div>
-              <div class="v">{{ fmtText(d?.inputs?.collettore_status2) }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('collettore_temp_esterna') ? 'clickable' : ''" @click="openHistory('collettore_temp_esterna','Temperatura esterna solare')">
-              <div class="k">Temperatura esterna</div>
-              <div class="v">{{ fmtTemp(d?.inputs?.collettore_temp_esterna) }}</div>
-            </div>
-          </div>
-          <div class="row3">
-            <div class="kpi kpi-center" :class="historyEnabled('collettore_tsa1') ? 'clickable' : ''" @click="openHistory('collettore_tsa1','Collettore TSA1')">
-              <div class="k">Collettore (TSA1)</div>
-              <div class="v">{{ fmtTemp(d?.inputs?.collettore_tsa1) }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('collettore_tse') ? 'clickable' : ''" @click="openHistory('collettore_tse','Ritorno solare TSE')">
-              <div class="k">Ritorno solare (TSE)</div>
-              <div class="v">{{ fmtTemp(d?.inputs?.collettore_tse) }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('collettore_tsv') ? 'clickable' : ''" @click="openHistory('collettore_tsv','Mandata solare TSV')">
-              <div class="k">Mandata solare (TSV)</div>
-              <div class="v">{{ fmtTemp(d?.inputs?.collettore_tsv) }}</div>
-            </div>
-          </div>
-          <div class="row2">
-            <div class="kpi kpi-center" :class="historyEnabled('collettore_twu') ? 'clickable' : ''" @click="openHistory('collettore_twu','Serbatoio superiore TWU')">
-              <div class="k">Serbatoio superiore metÃ  (TWU)</div>
-              <div class="v">{{ fmtTemp(d?.inputs?.collettore_twu) }}</div>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="act" class="card inner module-panel" :class="modulePanelClass('puffer_to_acs')">
-          <div class="row"><strong>Puffer â†’ ACS</strong></div>
-
-          <div class="row3">
-            <div class="kpi kpi-center" :class="historyEnabled('t_puffer') ? 'clickable' : ''" @click="openHistory('t_puffer','T_Puffer')">
-              <div class="k">
-                <i v-if="mdiClass(ent?.t_puffer?.attributes?.icon)" :class="mdiClass(ent?.t_puffer?.attributes?.icon)"></i>
-                T_Puffer
-              </div>
-              <div class="v">{{ fmtTemp(d?.inputs?.t_puffer) }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('t_acs') ? 'clickable' : ''" @click="openHistory('t_acs','T_ACS')">
-              <div class="k">
-                <i v-if="mdiClass(ent?.t_acs?.attributes?.icon)" :class="mdiClass(ent?.t_acs?.attributes?.icon)"></i>
-                T_ACS
-              </div>
-              <div class="v">{{ fmtTemp(d?.inputs?.t_acs) }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('delta_puffer_acs') ? 'clickable' : ''" @click="openHistory('delta_puffer_acs','Delta Puffer-ACS')">
-              <div class="k">Delta (Puffer - ACS)</div>
-              <div class="v">{{ fmtDelta(d?.inputs?.t_puffer, d?.inputs?.t_acs) }}</div>
-            </div>
-          </div>
-          <div class="row3">
-            <div class="kpi kpi-center clickable" :class="stateClass(act?.r14_pump_puffer_to_acs?.state)" @click="userToggle(act?.r14_pump_puffer_to_acs, 'puffer_to_acs')">
-              <div class="k">
-                <i v-if="mdiClass(act?.r14_pump_puffer_to_acs?.attributes?.icon)" :class="[mdiClass(act?.r14_pump_puffer_to_acs?.attributes?.icon), stateClass(act?.r14_pump_puffer_to_acs?.state)]"></i>
-                R14 Pompa Puffer â†’ ACS
-              </div>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">Stato logica</div>
-              <div class="v">{{ d?.computed?.flags?.puffer_to_acs ? 'ATTIVO' : 'STOP' }}</div>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="act" class="card inner module-panel" :class="modulePanelClass('impianto')">
-          <div class="row"><strong>Impianto riscaldamento (interno)</strong></div>
-          <div class="row3">
-            <div class="kpi kpi-center">
-              <div class="k">Sorgente</div>
-              <select v-model="sp.impianto.source_mode">
-                <option value="AUTO">AUTO</option>
-                <option value="PDC">PDC/Volano</option>
-                <option value="PUFFER">PUFFER</option>
-              </select>
-            </div>
-            <label class="kpi kpi-center checkbox">
-              <input type="checkbox" v-model="sp.impianto.pdc_ready"/>
-              <span>PDC/Volano ready</span>
-            </label>
-            <label class="kpi kpi-center checkbox">
-              <input type="checkbox" v-model="sp.impianto.puffer_ready"/>
-              <span>Puffer ready</span>
-            </label>
-            <div class="kpi kpi-center">
-              <div class="k">Stagione</div>
-              <select v-model="sp.impianto.season_mode">
-                <option value="winter">Inverno</option>
-                <option value="summer">Estate</option>
-              </select>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">Richiesta calore</div>
-              <div class="v">{{ d?.computed?.impianto?.richiesta ? 'ON' : 'OFF' }}</div>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">Consenso miscelatrice</div>
-              <div class="v">{{ d?.computed?.impianto?.miscelatrice ? 'ON' : 'OFF' }}</div>
-            </div>
-          </div>
-          <div class="help">I checkbox sono manuali nel solo add-on. Richiesta calore e consenso miscelatrice sono in sola lettura.</div>
-          <div v-if="d?.computed?.module_reasons?.impianto" class="muted">
-            Motivo: {{ d.computed.module_reasons.impianto }}
-          </div>
-          <div v-if="d?.computed?.impianto?.blocked_cold" class="warn">
-            Sorgenti troppo fredde: impianto bloccato.
-          </div>
-          <div class="row3">
-            <div class="kpi kpi-center" :class="stateClass(act?.r12_pump_mandata_piani?.state)">
-              <div class="k">
-                <i v-if="mdiClass(act?.r12_pump_mandata_piani?.attributes?.icon)" :class="[mdiClass(act?.r12_pump_mandata_piani?.attributes?.icon), stateClass(act?.r12_pump_mandata_piani?.state)]"></i>
-                R12 Pompa mandata piani
-              </div>
-            </div>
-            <div class="kpi kpi-center" :class="stateClass(act?.r11_pump_mandata_laboratorio?.state)">
-              <div class="k">
-                <i v-if="mdiClass(act?.r11_pump_mandata_laboratorio?.attributes?.icon)" :class="[mdiClass(act?.r11_pump_mandata_laboratorio?.attributes?.icon), stateClass(act?.r11_pump_mandata_laboratorio?.state)]"></i>
-                R11 Pompa mandata laboratorio
-              </div>
-            </div>
-            <div class="kpi kpi-center" :class="stateClass(act?.r4_valve_impianto_da_puffer?.state)">
-              <div class="k">
-                <i v-if="mdiClass(act?.r4_valve_impianto_da_puffer?.attributes?.icon)" :class="[mdiClass(act?.r4_valve_impianto_da_puffer?.attributes?.icon), stateClass(act?.r4_valve_impianto_da_puffer?.state)]"></i>
-                R4 Valvola impianto da Puffer
-              </div>
-            </div>
-          </div>
-          <div class="row3">
-            <div class="kpi kpi-center" :class="stateClass(act?.r5_valve_impianto_da_pdc?.state)">
-              <div class="k">
-                <i v-if="mdiClass(act?.r5_valve_impianto_da_pdc?.attributes?.icon)" :class="[mdiClass(act?.r5_valve_impianto_da_pdc?.attributes?.icon), stateClass(act?.r5_valve_impianto_da_pdc?.state)]"></i>
-                R5 Valvola impianto da PDC/Volano
-              </div>
-            </div>
-            <div class="kpi kpi-center" :class="stateClass(act?.r2_valve_comparto_mandata_imp_pt?.state)">
-              <div class="k">
-                <i v-if="mdiClass(act?.r2_valve_comparto_mandata_imp_pt?.attributes?.icon)" :class="[mdiClass(act?.r2_valve_comparto_mandata_imp_pt?.attributes?.icon), stateClass(act?.r2_valve_comparto_mandata_imp_pt?.state)]"></i>
-                R2 Valvola comparto PT
-              </div>
-            </div>
-            <div class="kpi kpi-center" :class="stateClass(act?.r3_valve_comparto_mandata_imp_m1p?.state)">
-              <div class="k">
-                <i v-if="mdiClass(act?.r3_valve_comparto_mandata_imp_m1p?.attributes?.icon)" :class="[mdiClass(act?.r3_valve_comparto_mandata_imp_m1p?.attributes?.icon), stateClass(act?.r3_valve_comparto_mandata_imp_m1p?.state)]"></i>
-                R3 Valvola comparto M+1P
-              </div>
-            </div>
-          </div>
-          <div class="row3">
-            <div class="kpi kpi-center" :class="stateClass(act?.r1_valve_comparto_laboratorio?.state)">
-              <div class="k">
-                <i v-if="mdiClass(act?.r1_valve_comparto_laboratorio?.attributes?.icon)" :class="[mdiClass(act?.r1_valve_comparto_laboratorio?.attributes?.icon), stateClass(act?.r1_valve_comparto_laboratorio?.state)]"></i>
-                R1 Valvola laboratorio
-              </div>
-            </div>
-          </div>
-          <div class="row3">
-            <div class="kpi kpi-center" :class="historyEnabled('t_puffer_alto') ? 'clickable' : ''" @click="openHistory('t_puffer_alto','T Puffer Alto')">
-              <div class="k">T Puffer Alto</div>
-              <div class="v">{{ fmtTemp(d?.inputs?.t_puffer_alto) }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('t_puffer_medio') ? 'clickable' : ''" @click="openHistory('t_puffer_medio','T Puffer Medio')">
-              <div class="k">T Puffer Medio</div>
-              <div class="v">{{ fmtTemp(d?.inputs?.t_puffer_medio) }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('t_puffer_basso') ? 'clickable' : ''" @click="openHistory('t_puffer_basso','T Puffer Basso')">
-              <div class="k">T Puffer Basso</div>
-              <div class="v">{{ fmtTemp(d?.inputs?.t_puffer_basso) }}</div>
-            </div>
-          </div>
-          <div class="row2">
-            <div class="kpi kpi-center" :class="historyEnabled('t_volano_alto') ? 'clickable' : ''" @click="openHistory('t_volano_alto','T Volano Alto')">
-              <div class="k">T Volano Alto</div>
-              <div class="v">{{ fmtTemp(d?.inputs?.t_volano_alto) }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('t_volano_basso') ? 'clickable' : ''" @click="openHistory('t_volano_basso','T Volano Basso')">
-              <div class="k">T Volano Basso</div>
-              <div class="v">{{ fmtTemp(d?.inputs?.t_volano_basso) }}</div>
-            </div>
-          </div>
-          <div class="zones-card">
-            <div class="row"><strong>Zone attive</strong></div>
-            <div class="zones-grid">
-              <div v-for="z in zones" :key="z.entity_id" class="zone-chip" :class="z.active ? 'zone-on' : 'zone-off'" @click="openZone(z)">
-                <div class="zone-title">{{ z.group }} | {{ z.entity_id }}</div>
-                <div class="zone-sub">{{ z.state || '-' }} | {{ z.hvac_action || '-' }}</div>
-                <div class="zone-sub">T: {{ fmtNum(z.temperature) }}Â°C | SP: {{ fmtNum(z.setpoint) }}Â°C</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="d" class="card inner">
-          <div class="row"><strong>Caldaia Gas Emergenza Riscaldamento</strong></div>
-          <div class="row3">
-            <div class="kpi kpi-center">
-              <div class="k">Modulo</div>
-              <div class="v">{{ modules.gas_emergenza ? 'ON' : 'OFF' }}</div>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">Necessaria</div>
-              <div class="v">{{ d?.computed?.gas_emergenza?.need ? 'SI' : 'NO' }}</div>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">Domanda</div>
-              <div class="v">{{ d?.computed?.gas_emergenza?.demand ? 'ON' : 'OFF' }}</div>
+              <div class="k">Import oggi</div>
+              <div class="v">{{ fmtEntity(getEnt(site, 'today_import_kwh')) }}</div>
             </div>
           </div>
           <div class="row3">
             <div class="kpi kpi-center">
-              <div class="k">Volano OK</div>
-              <div class="v">{{ d?.computed?.gas_emergenza?.vol_ok ? 'SI' : 'NO' }}</div>
+              <div class="k">Export oggi</div>
+              <div class="v">{{ fmtEntity(getEnt(site, 'today_export_kwh')) }}</div>
             </div>
             <div class="kpi kpi-center">
-              <div class="k">Puffer OK</div>
-              <div class="v">{{ d?.computed?.gas_emergenza?.puf_ok ? 'SI' : 'NO' }}</div>
+              <div class="k">Forecast oggi</div>
+              <div class="v">{{ fmtEntity(getEnt(site, 'forecast_today_kwh')) }}</div>
             </div>
             <div class="kpi kpi-center">
-              <div class="k">Motivo</div>
-              <div class="v">{{ d?.computed?.module_reasons?.gas_emergenza || '-' }}</div>
+              <div class="k">Forecast domani</div>
+              <div class="v">{{ fmtEntity(getEnt(site, 'forecast_tomorrow_kwh')) }}</div>
             </div>
-          </div>
-          <div class="row3">
-            <div class="kpi kpi-center" :class="stateClass(act?.gas_boiler_power?.state)">
-              <div class="k">
-                <i v-if="mdiClass(act?.gas_boiler_power?.attributes?.icon)" :class="[mdiClass(act?.gas_boiler_power?.attributes?.icon), stateClass(act?.gas_boiler_power?.state)]"></i>
-                220V Caldaia Gas
-              </div>
-            </div>
-            <div class="kpi kpi-center" :class="stateClass(act?.gas_boiler_ta?.state)">
-              <div class="k">
-                <i v-if="mdiClass(act?.gas_boiler_ta?.attributes?.icon)" :class="[mdiClass(act?.gas_boiler_ta?.attributes?.icon), stateClass(act?.gas_boiler_ta?.state)]"></i>
-                TA Caldaia Gas Emergenza Riscaldamento
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="d" class="card inner module-panel" :class="modulePanelClass('caldaia_legna')">
-          <div class="row"><strong>Caldaia Legna</strong></div>
-          <div class="row3">
-            <div class="kpi kpi-center">
-              <div class="k">Modulo</div>
-              <div class="v">{{ modules.caldaia_legna ? 'ON' : 'OFF' }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('t_mandata_caldaia_legna') ? 'clickable' : ''" @click="openHistory('t_mandata_caldaia_legna','T mandata legna')">
-              <div class="k">T mandata</div>
-              <div class="v">{{ fmtTemp(d?.inputs?.t_mandata_caldaia_legna) }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('t_puffer_alto') ? 'clickable' : ''" @click="openHistory('t_puffer_alto','T Puffer Alto')">
-              <div class="k">T Puffer Alto</div>
-              <div class="v">{{ fmtTemp(d?.inputs?.t_puffer_alto) }}</div>
-            </div>
-          </div>
-          <div class="row3">
-            <div class="kpi kpi-center" :class="historyEnabled('t_ritorno_caldaia_legna') ? 'clickable' : ''" @click="openHistory('t_ritorno_caldaia_legna','T ritorno legna')">
-              <div class="k">T ritorno</div>
-              <div class="v">{{ fmtTemp(d?.inputs?.t_ritorno_caldaia_legna) }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('t_caldaia_legna') ? 'clickable' : ''" @click="openHistory('t_caldaia_legna','T caldaia legna')">
-              <div class="k">T caldaia</div>
-              <div class="v">{{ fmtTemp(d?.inputs?.t_caldaia_legna) }}</div>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">Motivo</div>
-              <div class="v">{{ d?.computed?.caldaia_legna?.reason || d?.computed?.module_reasons?.caldaia_legna || '-' }}</div>
-            </div>
-          </div>
-          <div class="row3">
-            <div class="kpi kpi-center">
-              <div class="k">Min alim</div>
-              <div class="v">{{ fmtNum(d?.computed?.caldaia_legna?.min_alim) }}&deg;C</div>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">Isteresi alim</div>
-              <div class="v">{{ fmtNum(d?.computed?.caldaia_legna?.min_alim_hyst) }}&deg;C</div>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">SP Puffer Alto</div>
-              <div class="v">{{ fmtNum(d?.computed?.caldaia_legna?.sp_puffer_alto) }}&deg;C</div>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">Isteresi TA</div>
-              <div class="v">{{ fmtNum(d?.computed?.caldaia_legna?.puffer_hyst) }}&deg;C</div>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">Forced-off</div>
-              <div class="v">
-                {{ sp?.caldaia_legna?.forced_off ? 'SI' : 'NO' }}
-                <button class="ghost" @click="resetLegnaForcedOff">Reset</button>
-              </div>
-            </div>
-          </div>
-          <div class="row3">
-            <div class="kpi kpi-center" :class="stateClass(act?.r30_alimentazione_caldaia_legna?.state)">
-              <div class="k">
-                <i v-if="mdiClass(act?.r30_alimentazione_caldaia_legna?.attributes?.icon)" :class="[mdiClass(act?.r30_alimentazione_caldaia_legna?.attributes?.icon), stateClass(act?.r30_alimentazione_caldaia_legna?.state)]"></i>
-                R30 Alimentazione Caldaia Legna
-              </div>
-              <div class="v">{{ act?.r30_alimentazione_caldaia_legna?.state || '-' }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="stateClass(act?.r20_ta_caldaia_legna?.state)">
-              <div class="k">
-                <i v-if="mdiClass(act?.r20_ta_caldaia_legna?.attributes?.icon)" :class="[mdiClass(act?.r20_ta_caldaia_legna?.attributes?.icon), stateClass(act?.r20_ta_caldaia_legna?.state)]"></i>
-                R20 TA Caldaia Legna
-              </div>
-              <div class="v">{{ act?.r20_ta_caldaia_legna?.state || '-' }}</div>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="d" class="card inner">
-          <div class="row"><strong>Miscelatrice</strong></div>
-          <div class="row3">
-            <div class="kpi kpi-center" :class="historyEnabled('t_mandata_miscelata') ? 'clickable' : ''" @click="openHistory('t_mandata_miscelata','T mandata miscelata')">
-              <div class="k">T mandata</div>
-              <div class="v">{{ fmtNum(d?.inputs?.t_mandata_miscelata) }}&deg;C</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('t_ritorno_miscelato') ? 'clickable' : ''" @click="openHistory('t_ritorno_miscelato','T ritorno miscelato')">
-              <div class="k">T ritorno</div>
-              <div class="v">{{ fmtNum(d?.inputs?.t_ritorno_miscelato) }}&deg;C</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('miscelatrice_setpoint') ? 'clickable' : ''" @click="openHistory('miscelatrice_setpoint','SP miscelatrice')">
-              <div class="k">SP mandata</div>
-              <div class="v">{{ fmtNum(d?.computed?.miscelatrice?.setpoint) }}&deg;C</div>
-            </div>
-          </div>
-          <div class="row3">
-            <div class="kpi kpi-center">
-              <div class="k">Delta</div>
-              <div class="v">{{ fmtDelta(d?.computed?.miscelatrice?.setpoint, d?.inputs?.t_mandata_miscelata) }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('delta_mandata_ritorno') ? 'clickable' : ''" @click="openHistory('delta_mandata_ritorno','Delta Mandata/Ritorno')">
-              <div class="k">Î” Mandata/Ritorno</div>
-              <div class="v">{{ fmtDelta(d?.inputs?.t_mandata_miscelata, d?.inputs?.t_ritorno_miscelato) }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('kp_eff') ? 'clickable' : ''" @click="openHistory('kp_eff','Kp eff')">
-              <div class="k">Kp eff</div>
-              <div class="v">{{ (d?.computed?.miscelatrice?.kp_eff ?? 0).toFixed(2) }}</div>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">Stato</div>
-              <div class="v">{{ d?.computed?.miscelatrice?.action || 'STOP' }}</div>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">Motivo</div>
-              <div class="v">{{ d?.computed?.miscelatrice?.reason || '-' }}</div>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="d && sp?.curva_climatica" class="card inner module-panel" :class="modulePanelClass('curva_climatica')">
-          <div class="row"><strong>Curva climatica mandata</strong></div>
-          <div class="row3">
-            <div class="kpi kpi-center" :class="historyEnabled('t_esterna') ? 'clickable' : ''" @click="openHistory('t_esterna','T esterna')">
-              <div class="k">T esterna</div>
-              <div class="v">{{ fmtTemp(d?.computed?.curva_climatica?.t_ext) }}</div>
-            </div>
-            <div class="kpi kpi-center" :class="historyEnabled('curva_setpoint') ? 'clickable' : ''" @click="openHistory('curva_setpoint','Setpoint curva')">
-              <div class="k">Setpoint curva</div>
-              <div class="v">{{ fmtNum(d?.computed?.curva_climatica?.setpoint) }}&deg;C</div>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">Offset</div>
-              <div class="v">{{ fmtNum(sp?.curva_climatica?.offset) }}&deg;C</div>
-            </div>
-          </div>
-          <div class="curve-chart">
-            <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Curva climatica">
-              <polyline :points="curvePoints" class="curve-line"/>
-              <line v-if="curveExtX !== null" :x1="curveExtX" y1="0" :x2="curveExtX" y2="100" class="curve-marker"/>
-              <circle v-if="curveExtX !== null && curveExtY !== null" :cx="curveExtX" :cy="curveExtY" r="2.6" class="curve-dot"/>
-              <text v-for="(y, i) in curveYTicks" :key="`y-${i}`" x="2" :y="4 + (i * 24)" class="curve-axis">
-                {{ y.toFixed(1) }}Â°C
-              </text>
-            </svg>
-            <div class="curve-x-axis">
-              <div v-for="(x, i) in curveXTicks" :key="`x-${i}`" class="curve-x-label">{{ x.toFixed(1) }}Â°C</div>
-            </div>
-          </div>
-          <div class="row2">
-            <div class="mini-field">
-              <div class="mini-head">
-                <span class="mini-label">Inclinazione</span>
-                <span class="mini-value">{{ fmtNum(sp?.curva_climatica?.slope) }}</span>
-              </div>
-              <input type="range" min="-1" max="1" step="0.05" v-model.number="sp.curva_climatica.slope" @input="saveCurveDebounced"/>
-            </div>
-            <div class="mini-field">
-              <div class="mini-head">
-                <span class="mini-label">Offset (C)</span>
-                <span class="mini-value">{{ fmtNum(sp?.curva_climatica?.offset) }}</span>
-              </div>
-              <input type="range" min="-10" max="10" step="0.5" v-model.number="sp.curva_climatica.offset" @input="saveCurveDebounced"/>
-            </div>
-          </div>
-          <div class="actions">
-            <button class="ghost" @click="save">Salva curva</button>
-          </div>
-        </div>
-
-        <div v-if="d" class="card inner">
-          <div class="row"><strong>Schema impianto (live)</strong></div>
-          <div class="muted">Flussi evidenziati in tempo reale.</div>
-          <div class="diagram diagram-photo" :style="{ backgroundImage: `url(${schemaImg})` }">
-            <svg class="diagram-overlay" viewBox="0 0 1347 864" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Schema impianto e-EnergyMind">
-              <defs>
-                <radialGradient id="dotGlow" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stop-color="#7ff6e6" stop-opacity="1"/>
-                  <stop offset="100%" stop-color="#7ff6e6" stop-opacity="0"/>
-                </radialGradient>
-              </defs>
-
-              <!-- Dots animati sui punti chiave (senza nuove linee sopra i componenti) -->
-              <circle cx="1045" cy="205" r="10" class="pulse" :class="flowSolarToPuffer ? 'pulse-on' : ''"/>
-              <circle cx="1180" cy="260" r="10" class="pulse" :class="flowSolarToAcs ? 'pulse-on' : ''"/>
-              <circle cx="955" cy="360" r="10" class="pulse" :class="flowPufferToAcs ? 'pulse-on' : ''"/>
-              <circle cx="835" cy="360" r="10" class="pulse" :class="flowPufferToImpianto ? 'pulse-on' : ''"/>
-              <circle cx="380" cy="250" r="10" class="pulse" :class="flowPufferToLab ? 'pulse-on' : ''"/>
-              <circle cx="850" cy="520" r="10" class="pulse" :class="flowVolanoToPuffer ? 'pulse-on' : ''"/>
-              <circle cx="980" cy="520" r="10" class="pulse" :class="flowCaldaiaToPuffer ? 'pulse-on' : ''"/>
-              <circle cx="900" cy="600" r="10" class="pulse" :class="flowVolanoToAcs ? 'pulse-on' : ''"/>
-              <circle cx="300" cy="620" r="10" class="pulse" :class="flowPdcToVolano ? 'pulse-on' : ''"/>
-              <circle cx="260" cy="470" r="10" class="pulse" :class="flowPdcToVolano ? 'pulse-on' : ''"/>
-              <circle cx="250" cy="140" r="10" class="pulse" :class="flowVolanoToImpianto ? 'pulse-on' : ''"/>
-
-              <!-- Linea animata: Volano -> ACS -->
-              <path d="M420 650 H820 V520 H1140" class="tube" :class="flowVolanoToAcs ? 'tube-on' : ''"/>
-            </svg>
-          </div>
-          <div class="legend">
-            <span class="legend-item"><span class="legend-dot on"></span> Flusso attivo</span>
-            <span class="legend-item"><span class="legend-dot"></span> Flusso inattivo</span>
           </div>
         </div>
 
@@ -891,8 +110,8 @@
       </section>
 
       <section v-else class="card">
-        <h2>Admin (v0.2)</h2>
-        <p class="muted">Setpoint interni e mapping e-manager.</p>
+        <h2>Admin (energia)</h2>
+        <p class="muted">Configurazione e mapping sensori energia (read-only).</p>
         <div class="statusline">
           <span class="muted">v{{ status?.version || '-' }}</span>
           <span class="muted">mode: {{ status?.runtime_mode || '-' }}</span>
@@ -917,9 +136,9 @@
         </div>
 
         <div v-if="sp" class="form setpoint-grid">
-          <h3 class="section">Setpoint</h3>
+          <h3 class="section">Runtime</h3>
           <div class="set-section">
-            <div class="section-title">Runtime</div>
+            <div class="section-title">Modalità</div>
             <div class="field">
               <label>Runtime mode</label>
               <select v-model="sp.runtime.mode" @change="confirmMode">
@@ -931,291 +150,8 @@
             <div class="field">
               <label>Polling UI (ms)</label>
               <input type="number" min="500" step="500" v-model.number="sp.runtime.ui_poll_ms"/>
-              <div class="help">Intervallo aggiornamento UI. Non influisce sulla logica interna.</div>
+              <div class="help">Intervallo aggiornamento UI.</div>
             </div>
-          </div>
-
-          <div class="set-section">
-            <div class="section-title">ACS</div>
-            <div class="field"><label>ACS setpoint (C)</label><input type="number" step="0.5" v-model.number="sp.acs.setpoint_c"/><div class="help">Target acqua sanitaria. Sotto questo valore il sistema cerca una sorgente.</div></div>
-            <div class="field"><label>ACS MAX (C)</label><input type="number" step="0.5" v-model.number="sp.acs.max_c"/><div class="help">Sicurezza: sopra questo valore blocca il riscaldamento ACS.</div></div>
-          </div>
-
-          <div class="set-section">
-            <div class="section-title">Volano</div>
-            <div class="field"><label>Volano margine (C)</label><input type="number" step="0.5" v-model.number="sp.volano.margin_c"/><div class="help">Margine usato per decisioni volano (buffer).</div></div>
-            <div class="field"><label>Volano MAX (C)</label><input type="number" step="0.5" v-model.number="sp.volano.max_c"/><div class="help">Sicurezza: sopra questo valore non carica volano.</div></div>
-            <div class="field"><label>Volano min â†’ ACS (Â°C)</label><input type="number" step="0.5" v-model.number="sp.volano.min_to_acs_c"/><div class="help">Minimo volano per poter scaldare ACS.</div></div>
-            <div class="field"><label>Volano isteresi â†’ ACS (Â°C)</label><input type="number" step="0.5" v-model.number="sp.volano.hyst_to_acs_c"/><div class="help">Isteresi per evitare ON/OFF continui su ACS.</div></div>
-            <div class="field"><label>Î” Start Volano â†’ ACS (C)</label><input type="number" step="0.5" v-model.number="sp.volano.delta_to_acs_start_c"/><div class="help">Differenza T_VOL - T_ACS per avviare.</div></div>
-            <div class="field"><label>Î” Hold Volano â†’ ACS (C)</label><input type="number" step="0.5" v-model.number="sp.volano.delta_to_acs_hold_c"/><div class="help">Differenza per mantenere attivo il flusso.</div></div>
-            <div class="field"><label>Î” Start Volano â†’ Puffer (C)</label><input type="number" step="0.5" v-model.number="sp.volano.delta_to_puffer_start_c"/><div class="help">Differenza T_VOL - T_PUF per avviare.</div></div>
-            <div class="field"><label>Î” Hold Volano â†’ Puffer (C)</label><input type="number" step="0.5" v-model.number="sp.volano.delta_to_puffer_hold_c"/><div class="help">Differenza per mantenere attivo il flusso.</div></div>
-            <div class="field"><label>Volano min â†’ Puffer (Â°C)</label><input type="number" step="0.5" v-model.number="sp.volano.min_to_puffer_c"/><div class="help">Minimo volano per poter caricare puffer.</div></div>
-            <div class="field"><label>Volano isteresi â†’ Puffer (Â°C)</label><input type="number" step="0.5" v-model.number="sp.volano.hyst_to_puffer_c"/><div class="help">Isteresi minimo volano per evitare ON/OFF.</div></div>
-            <div class="field">
-              <label>Sequenza Volano â†’ ACS (valvola + pompa)</label>
-              <div class="row2">
-                <div class="mini-field">
-                  <span class="mini-label">Start (s)</span>
-                  <input type="number" step="1" v-model.number="sp.timers.volano_to_acs_start_s"/>
-                </div>
-                <div class="mini-field">
-                  <span class="mini-label">Stop (s)</span>
-                  <input type="number" step="1" v-model.number="sp.timers.volano_to_acs_stop_s"/>
-                </div>
-              </div>
-              <div class="help">Prima apre la valvola, poi parte la pompa. In stop: valvola OFF, pompa OFF con ritardo.</div>
-            </div>
-            <div class="field">
-              <label>Sequenza Volano â†’ Puffer (valvola + pompa)</label>
-              <div class="row2">
-                <div class="mini-field">
-                  <span class="mini-label">Start (s)</span>
-                  <input type="number" step="1" v-model.number="sp.timers.volano_to_puffer_start_s"/>
-                </div>
-                <div class="mini-field">
-                  <span class="mini-label">Stop (s)</span>
-                  <input type="number" step="1" v-model.number="sp.timers.volano_to_puffer_stop_s"/>
-                </div>
-              </div>
-              <div class="help">Valvola ON â†’ ritardo â†’ pompa ON. In stop: valvola OFF â†’ ritardo â†’ pompa OFF.</div>
-            </div>
-          </div>
-
-          <div class="set-section">
-            <div class="section-title">Puffer</div>
-            <div class="field"><label>Puffer setpoint (C)</label><input type="number" step="0.5" v-model.number="sp.puffer.setpoint_c"/><div class="help">Target puffer quando ACS e ok.</div></div>
-            <div class="field"><label>Puffer min â†’ ACS (Â°C)</label><input type="number" step="0.5" v-model.number="sp.puffer.min_to_acs_c"/><div class="help">Minimo puffer per poter scaldare ACS.</div></div>
-            <div class="field"><label>Puffer isteresi â†’ ACS (Â°C)</label><input type="number" step="0.5" v-model.number="sp.puffer.hyst_to_acs_c"/><div class="help">Isteresi per evitare ON/OFF continui su ACS.</div></div>
-            <div class="field"><label>Î” Start Puffer â†’ ACS (C)</label><input type="number" step="0.5" v-model.number="sp.puffer.delta_to_acs_start_c"/><div class="help">Differenza T_PUF - T_ACS per avviare.</div></div>
-            <div class="field"><label>Î” Hold Puffer â†’ ACS (C)</label><input type="number" step="0.5" v-model.number="sp.puffer.delta_to_acs_hold_c"/><div class="help">Differenza per mantenere attivo il flusso.</div></div>
-          </div>
-
-          <div class="set-section">
-            <div class="section-title">Miscelatrice</div>
-            <div class="field"><label>SP mandata (C)</label><input type="number" step="0.5" v-model.number="sp.miscelatrice.setpoint_c"/><div class="help">Setpoint mandata per la miscelatrice.</div></div>
-            <div class="field"><label>Isteresi (C)</label><input type="number" step="0.1" v-model.number="sp.miscelatrice.hyst_c"/><div class="help">Banda di tolleranza intorno al setpoint.</div></div>
-            <div class="field"><label>Kp base (sec/Â°C)</label><input type="number" step="0.1" v-model.number="sp.miscelatrice.kp"/><div class="help">Quanto dura l'impulso per ogni grado di errore.</div></div>
-            <div class="field"><label>Impulso min (s)</label><input type="number" step="0.1" v-model.number="sp.miscelatrice.min_imp_s"/><div class="help">Durata minima impulso alza/abbassa.</div></div>
-            <div class="field"><label>Impulso max (s)</label><input type="number" step="0.1" v-model.number="sp.miscelatrice.max_imp_s"/><div class="help">Durata massima impulso alza/abbassa.</div></div>
-            <div class="field"><label>Pausa dopo impulso (s)</label><input type="number" step="0.1" v-model.number="sp.miscelatrice.pause_s"/><div class="help">Attesa tra un impulso e il successivo.</div></div>
-            <div class="field"><label>Î”T ref (Â°C)</label><input type="number" step="0.5" v-model.number="sp.miscelatrice.dt_ref_c"/><div class="help">Delta mandata/ritorno di riferimento per Kp eff.</div></div>
-            <div class="field"><label>Î”T fattore min</label><input type="number" step="0.1" v-model.number="sp.miscelatrice.dt_min_factor"/><div class="help">Limite minimo del fattore Kp eff.</div></div>
-            <div class="field"><label>Î”T fattore max</label><input type="number" step="0.1" v-model.number="sp.miscelatrice.dt_max_factor"/><div class="help">Limite massimo del fattore Kp eff.</div></div>
-            <div class="field"><label>Forza impulso (s)</label><input type="number" step="0.1" v-model.number="sp.miscelatrice.force_impulse_s"/><div class="help">Impulso extra per evitare stallo.</div></div>
-          </div>
-
-          <div class="set-section">
-            <div class="section-title">Curva climatica</div>
-            <div class="field"><label>Punti X (T esterna)</label><input type="text" v-model="curveXText" @blur="applyCurveText" @focus="onFocus"/><div class="help">Lista temperature esterne, separate da virgola.</div></div>
-            <div class="field"><label>Punti Y (Mandata)</label><input type="text" v-model="curveYText" @blur="applyCurveText" @focus="onFocus"/><div class="help">Lista mandata corrispondente, stessa lunghezza di X.</div></div>
-            <div class="field"><label>Inclinazione</label><input type="number" step="0.05" v-model.number="sp.curva_climatica.slope"/><div class="help">Regola la pendenza della curva (0 = base).</div></div>
-            <div class="field"><label>Offset (C)</label><input type="number" step="0.5" v-model.number="sp.curva_climatica.offset"/><div class="help">Sposta tutta la curva su/giu.</div></div>
-            <div class="field"><label>Min mandata (C)</label><input type="number" step="0.5" v-model.number="sp.curva_climatica.min_c"/><div class="help">Limite minimo mandata.</div></div>
-            <div class="field"><label>Max mandata (C)</label><input type="number" step="0.5" v-model.number="sp.curva_climatica.max_c"/><div class="help">Limite massimo mandata.</div></div>
-          </div>
-
-          <div class="set-section">
-            <div class="section-title">Resistenze</div>
-            <div class="field"><label>Soglia OFF resistenze (W)</label><input type="number" step="1" v-model.number="sp.resistance.off_threshold_w"/><div class="help">Sotto o uguale a questa soglia, le resistenze scendono a 0.</div></div>
-            <div class="field"><label>Off-delay resistenze (s)</label><input type="number" step="1" v-model.number="sp.resistance.off_delay_s"/><div class="help">Ritardo prima di spegnere le resistenze.</div></div>
-            <div class="field"><label>Delay salita step (s)</label><input type="number" step="1" v-model.number="sp.resistance.step_up_delay_s"/><div class="help">Ritardo tra step 1â†’2 e 2â†’3.</div></div>
-            <div class="field">
-              <label>Soglie export (W) [1/2/3]</label>
-              <div class="row3">
-                <input type="number" v-model.number="sp.resistance.thresholds_w[0]"/>
-                <input type="number" v-model.number="sp.resistance.thresholds_w[1]"/>
-                <input type="number" v-model.number="sp.resistance.thresholds_w[2]"/>
-              </div>
-              <div class="help">Soglie potenza FV per step 1/2/3 resistenze.</div>
-            </div>
-          </div>
-
-          <div class="set-section">
-            <div class="section-title">Impianto (Zone)</div>
-            <div class="field">
-              <label>Zone PT</label>
-              <div class="list">
-                <div v-for="(z, i) in sp.impianto.zones_pt" :key="`pt-${i}`" class="list-row">
-                  <input type="text" v-model="sp.impianto.zones_pt[i]" placeholder="climate.pt_1"/>
-                  <button class="ghost" @click="removeZone('zones_pt', i)">Rimuovi</button>
-                </div>
-            <div class="help">Elenco termostati PT (climate.*).</div>
-                <button class="ghost" @click="addZone('zones_pt')">+ Aggiungi</button>
-              </div>
-            </div>
-            <div class="field">
-              <label>Zone 1P</label>
-              <div class="list">
-                <div v-for="(z, i) in sp.impianto.zones_p1" :key="`p1-${i}`" class="list-row">
-                  <input type="text" v-model="sp.impianto.zones_p1[i]" placeholder="climate.p1_1"/>
-                  <button class="ghost" @click="removeZone('zones_p1', i)">Rimuovi</button>
-                </div>
-            <div class="help">Elenco termostati 1P.</div>
-                <button class="ghost" @click="addZone('zones_p1')">+ Aggiungi</button>
-              </div>
-            </div>
-            <div class="field">
-              <label>Zone Mansarda</label>
-              <div class="list">
-                <div v-for="(z, i) in sp.impianto.zones_mans" :key="`mans-${i}`" class="list-row">
-                  <input type="text" v-model="sp.impianto.zones_mans[i]" placeholder="climate.jolly"/>
-                  <button class="ghost" @click="removeZone('zones_mans', i)">Rimuovi</button>
-                </div>
-            <div class="help">Elenco termostati mansarda (usano valvola R3).</div>
-                <button class="ghost" @click="addZone('zones_mans')">+ Aggiungi</button>
-              </div>
-            </div>
-            <div class="field">
-              <label>Zone Lab</label>
-              <div class="list">
-                <div v-for="(z, i) in sp.impianto.zones_lab" :key="`lab-${i}`" class="list-row">
-                  <input type="text" v-model="sp.impianto.zones_lab[i]" placeholder="climate.lab"/>
-                  <button class="ghost" @click="removeZone('zones_lab', i)">Rimuovi</button>
-                </div>
-            <div class="help">Elenco termostati laboratorio.</div>
-                <button class="ghost" @click="addZone('zones_lab')">+ Aggiungi</button>
-              </div>
-            </div>
-            <div class="field"><label>Zona Scala (singolo)</label><input type="text" v-model="sp.impianto.zone_scala" placeholder="climate.scala"/></div>
-            <div class="help">Termostato scala, se presente.</div>
-            <div class="field">
-              <label>Cooling bloccato</label>
-              <div class="list">
-                <div v-for="(z, i) in sp.impianto.cooling_blocked" :key="`cool-${i}`" class="list-row">
-                  <input type="text" v-model="sp.impianto.cooling_blocked[i]" placeholder="climate.radiatori_1"/>
-                  <button class="ghost" @click="removeZone('cooling_blocked', i)">Rimuovi</button>
-                </div>
-            <div class="help">Termostati che non devono attivare raffrescamento.</div>
-                <button class="ghost" @click="addZone('cooling_blocked')">+ Aggiungi</button>
-              </div>
-            </div>
-            <div class="field"><label>Volano min (Â°C)</label><input type="number" step="0.5" v-model.number="sp.impianto.volano_min_c"/><div class="help">Minimo volano per abilitare impianto riscaldamento.</div></div>
-            <div class="field"><label>Volano isteresi (Â°C)</label><input type="number" step="0.5" v-model.number="sp.impianto.volano_hyst_c"/><div class="help">Isteresi volano per impianto.</div></div>
-            <div class="field"><label>Puffer min (Â°C)</label><input type="number" step="0.5" v-model.number="sp.impianto.puffer_min_c"/><div class="help">Minimo puffer per abilitare impianto riscaldamento.</div></div>
-            <div class="field"><label>Puffer isteresi (Â°C)</label><input type="number" step="0.5" v-model.number="sp.impianto.puffer_hyst_c"/><div class="help">Isteresi puffer per impianto.</div></div>
-            <div class="field"><label>Ritardo avvio pompa (s)</label><input type="number" step="1" v-model.number="sp.impianto.pump_start_delay_s"/><div class="help">Ritardo avvio pompa impianto.</div></div>
-            <div class="field"><label>Ritardo stop pompa (s)</label><input type="number" step="1" v-model.number="sp.impianto.pump_stop_delay_s"/><div class="help">Ritardo stop pompa impianto.</div></div>
-            <div class="field"><label>Stagione</label>
-              <select v-model="sp.impianto.season_mode">
-                <option value="winter">Inverno</option>
-                <option value="summer">Estate</option>
-              </select>
-              <div class="help">In estate blocca riscaldamento.</div>
-            </div>
-            <div class="help">Mansarda e 1P condividono la stessa valvola (R3).</div>
-          </div>
-
-          <div class="set-section">
-            <div class="section-title">Caldaia Gas Emergenza Riscaldamento</div>
-            <div class="field">
-              <label>Zone gas emergenza</label>
-              <div class="list">
-                <div v-for="(z, i) in sp.gas_emergenza.zones" :key="`gas-${i}`" class="list-row">
-                  <input type="text" v-model="sp.gas_emergenza.zones[i]" placeholder="climate.pt_1"/>
-                  <button class="ghost" @click="removeGasZone(i)">Rimuovi</button>
-                </div>
-                <div class="help">Termostati da attivare in emergenza gas.</div>
-                <button class="ghost" @click="addGasZone">+ Aggiungi</button>
-              </div>
-            </div>
-            <div class="field"><label>Volano min gas (Â°C)</label><input type="number" step="0.5" v-model.number="sp.gas_emergenza.volano_min_c"/><div class="help">Soglia dedicata: sopra questo valore il gas si spegne.</div></div>
-            <div class="field"><label>Volano isteresi gas (Â°C)</label><input type="number" step="0.5" v-model.number="sp.gas_emergenza.volano_hyst_c"/><div class="help">Isteresi volano per evitare ON/OFF gas.</div></div>
-            <div class="field"><label>Puffer min gas (Â°C)</label><input type="number" step="0.5" v-model.number="sp.gas_emergenza.puffer_min_c"/><div class="help">Soglia dedicata: sopra questo valore il gas si spegne.</div></div>
-            <div class="field"><label>Puffer isteresi gas (Â°C)</label><input type="number" step="0.5" v-model.number="sp.gas_emergenza.puffer_hyst_c"/><div class="help">Isteresi puffer per evitare ON/OFF gas.</div></div>
-          </div>
-
-          <div class="set-section">
-            <div class="section-title">Caldaia Legna</div>
-            <div class="field">
-              <label>Temp min alimentazione (Ã‚Â°C)</label>
-              <input type="number" step="0.5" v-model.number="sp.caldaia_legna.temp_min_alim_c"/>
-              <div class="help">Sotto questa soglia, dopo il timer, l'alimentazione si disattiva.</div>
-            </div>
-            <div class="field">
-              <label>Isteresi alimentazione (Ã‚Â°C)</label>
-              <input type="number" step="0.5" v-model.number="sp.caldaia_legna.temp_min_alim_hyst_c"/>
-              <div class="help">Evita ON/OFF rapido vicino alla soglia.</div>
-            </div>
-            <div class="field">
-              <label>Timer controllo (min)</label>
-              <input type="number" step="1" v-model.number="caldaiaLegnaStartupMin"/>
-              <div class="help">Tempo di avvio prima del controllo temperatura.</div>
-            </div>
-            <div class="field">
-              <label>SP Puffer alto (Ã‚Â°C)</label>
-              <input type="number" step="0.5" v-model.number="sp.caldaia_legna.puffer_alto_sp_c"/>
-              <div class="help">Sopra questa temperatura, TA caldaia legna OFF.</div>
-            </div>
-            <div class="field">
-              <label>Isteresi TA Puffer (Ã‚Â°C)</label>
-              <input type="number" step="0.5" v-model.number="sp.caldaia_legna.puffer_alto_hyst_c"/>
-              <div class="help">Isteresi per evitare ON/OFF TA vicino al setpoint.</div>
-            </div>
-          </div>
-
-          <div class="set-section">
-            <div class="section-title">Solare</div>
-            <div class="field">
-              <label>ModalitÃ </label>
-              <select v-model="sp.solare.mode">
-                <option value="auto">auto (sun.sun)</option>
-                <option value="night">notte fissa</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>FV entity (W) per giorno/notte</label>
-              <input type="text" v-model="sp.solare.pv_entity" placeholder="sensor.zcs_easas_1_activepower_pv_ext"/>
-              <div class="help">Sensore FV usato per decidere giorno/notte.</div>
-            </div>
-            <div class="field"><label>Soglia giorno FV (W)</label><input type="number" step="10" v-model.number="sp.solare.pv_day_w"/><div class="help">Se FV > soglia allora giorno.</div></div>
-            <div class="field"><label>Soglia notte FV (W)</label><input type="number" step="10" v-model.number="sp.solare.pv_night_w"/><div class="help">Se FV &lt; soglia allora notte.</div></div>
-            <div class="field"><label>Debounce FV (s)</label><input type="number" step="10" v-model.number="sp.solare.pv_debounce_s"/><div class="help">Tempo minimo per cambiare stato giorno/notte.</div></div>
-            <div class="field"><label>Î” Start Solare â†’ ACS (C)</label><input type="number" step="0.5" v-model.number="sp.solare.delta_on_c"/></div>
-            <div class="field"><label>Î” Hold Solare â†’ ACS (C)</label><input type="number" step="0.5" v-model.number="sp.solare.delta_hold_c"/></div>
-            <div class="field"><label>Solare MAX (C)</label><input type="number" step="0.5" v-model.number="sp.solare.max_c"/><div class="help">Sicurezza: sopra questo valore stop solare.</div></div>
-            <div class="help">In NOTTE: R8 ON e R9 OFF. R18/R19 restano manuali con interblocco.</div>
-          </div>
-
-        </div>
-
-        <div class="form">
-          <h3 class="section">Moduli (Admin)</h3>
-          <div class="row3">
-            <button class="ghost toggle" :class="moduleClass('resistenze_volano')" @click="toggleModule('resistenze_volano')">
-              Resistenze Volano: {{ modules.resistenze_volano ? 'ON' : 'OFF' }}
-            </button>
-            <button class="ghost toggle" :class="moduleClass('volano_to_acs')" @click="toggleModule('volano_to_acs')">
-              Volano â†’ ACS: {{ modules.volano_to_acs ? 'ON' : 'OFF' }}
-            </button>
-            <button class="ghost toggle" :class="moduleClass('volano_to_puffer')" @click="toggleModule('volano_to_puffer')">
-              Volano â†’ Puffer: {{ modules.volano_to_puffer ? 'ON' : 'OFF' }}
-            </button>
-            <button class="ghost toggle" :class="moduleClass('puffer_to_acs')" @click="toggleModule('puffer_to_acs')">
-              Puffer â†’ ACS: {{ modules.puffer_to_acs ? 'ON' : 'OFF' }}
-            </button>
-            <button class="ghost toggle" :class="moduleClass('impianto')" @click="toggleModule('impianto')">
-              Impianto Riscaldamento: {{ modules.impianto ? 'ON' : 'OFF' }}
-            </button>
-            <button class="ghost toggle" :class="moduleClass('gas_emergenza')" @click="toggleModule('gas_emergenza')">
-              Caldaia Gas Emergenza Riscaldamento: {{ modules.gas_emergenza ? 'ON' : 'OFF' }}
-            </button>
-            <button class="ghost toggle" :class="moduleClass('caldaia_legna')" @click="toggleModule('caldaia_legna')">
-              Caldaia Legna: {{ modules.caldaia_legna ? 'ON' : 'OFF' }}
-            </button>
-            <button class="ghost toggle" :class="moduleClass('solare')" @click="toggleModule('solare')">
-              Solare: {{ modules.solare ? 'ON' : 'OFF' }}
-            </button>
-            <button class="ghost toggle" :class="moduleClass('miscelatrice')" @click="toggleModule('miscelatrice')">
-              Miscelatrice: {{ modules.miscelatrice ? 'ON' : 'OFF' }}
-            </button>
-            <button class="ghost toggle" :class="moduleClass('curva_climatica')" @click="toggleModule('curva_climatica')">
-              Curva climatica: {{ modules.curva_climatica ? 'ON' : 'OFF' }}
-            </button>
-            <button class="ghost toggle" :class="moduleClass('pdc')" @click="toggleModule('pdc')">
-              PDC: {{ modules.pdc ? 'ON' : 'OFF' }}
-            </button>
           </div>
         </div>
 
@@ -1239,31 +175,6 @@
           </div>
           <div class="actions">
             <button class="ghost" @click="saveEntities">Salva sensori</button>
-          </div>
-        </details>
-
-        <details class="form" open>
-          <summary class="section">Attuatori da e-manager</summary>
-          <div class="field">
-            <label>Filtro</label>
-            <input type="text" v-model="filterAct" placeholder="Cerca R22, PDC, solare..." @focus="onFocus" @blur="onBlur"/>
-          </div>
-          <div v-for="item in filteredActuators" :key="item.key" class="field">
-            <label>
-              {{ item.label }}
-            </label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(act?.[item.key]?.entity_id) ? 'logic-ok' : 'logic-no'">â—</span>
-              <input type="text"
-                     :class="[isFilled(act?.[item.key]?.entity_id) ? 'input-ok' : '', act?.[item.key]?.state === 'on' ? 'input-on' : '']"
-                     v-model="act[item.key].entity_id"
-                     :placeholder="`switch.${item.key}`"
-                     @input="dirtyAct[item.key] = true"
-                     @focus="onFocus" @blur="onBlur"/>
-            </div>
-          </div>
-          <div class="actions">
-            <button class="ghost" @click="saveActuators">Salva attuatori</button>
           </div>
         </details>
 
@@ -1326,7 +237,6 @@
 </template>
 
 <script setup>
-import schemaImg from './assets/centrale-termica.png'
 import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 const tab = ref('user')
 const d = ref(null)
@@ -1524,6 +434,10 @@ const fmtEntity = (e) => {
   const num = Number(raw)
   if (Number.isFinite(num)) return `${num} ${unit}`.trim()
   return `${raw} ${unit}`.trim()
+}
+const getEnt = (site, key) => {
+  if (!ent.value) return null
+  return ent.value[`s${site}_${key}`] || null
 }
 function statsLabel(values, unit){
   if (!values || values.length === 0) return 'n/d'
@@ -2492,5 +1406,7 @@ details.form summary{cursor:pointer;list-style:none}
 .badge-mini.idle{background:rgba(148,163,184,.08)}
 @keyframes flow{0%{stroke-dashoffset:0}100%{stroke-dashoffset:-36}}
 </style>
+
+
 
 

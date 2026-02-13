@@ -28,6 +28,11 @@
 - Etichetta pompa ACS specificata come PDC -> ACS.
 - UI attuatori completa con canali R1-R30 (mapping manuale in Admin).
 - Simbolo fisso per attuatori implementati (UI).
+
+## 2026-02-13
+- Ripulita UI User/Admin: rimosse tutte le sezioni termiche.
+- UI energia: layout con KPI per utenza e mapping sensori read-only.
+- Admin: selettore numero utenze (1-3) e runtime base.
 - Pallino verde/rosso per gestito/non gestito.
 - Fix salvataggio attuatori (salva solo entity_id).
 - Indicatore popolato/non popolato per entita e attuatori in Admin.
