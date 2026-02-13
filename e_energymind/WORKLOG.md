@@ -36,6 +36,7 @@
 - Backend semplificato: rimosse logiche termiche, solo mapping sensori e status.
 - Logger: campionamento 10s su SQLite `/data/energymind.db`, retention 90 giorni.
 - UI statiche: servite da `/app/static` con route `/`.
+- Fix routing: API non più oscurate da statici; assets serviti su `/assets`.
 - Pallino verde/rosso per gestito/non gestito.
 - Fix salvataggio attuatori (salva solo entity_id).
 - Indicatore popolato/non popolato per entita e attuatori in Admin.

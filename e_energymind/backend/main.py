@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .ha_client import HAClient
@@ -27,13 +27,13 @@ APP_VERSION = _load_version()
 
 app = FastAPI(title="e-EnergyMind", version=APP_VERSION)
 
+# Serve UI static files
+app.mount("/assets", StaticFiles(directory="/app/static/assets"), name="assets")
+
 ha = HAClient()
 ha_task: asyncio.Task | None = None
 log_task: asyncio.Task | None = None
 action_log: list[str] = []
-
-# Serve UI static files
-app.mount("/", StaticFiles(directory="/app/static", html=True), name="static")
 
 DB_PATH = Path("/data/energymind.db")
 LOG_INTERVAL_S = 10
@@ -164,6 +164,16 @@ async def _logging_loop():
         await asyncio.sleep(LOG_INTERVAL_S)
 
 
+@app.get("/")
+async def index():
+    return FileResponse("/app/static/index.html")
+
+
+@app.get("/index.html")
+async def index_html():
+    return FileResponse("/app/static/index.html")
+
+
 @app.on_event("startup")
 async def startup_event():
     global ha_task, log_task
@@ -231,4 +241,3 @@ async def set_entities(payload: Dict[str, Any]):
 @app.get("/api/actions")
 async def get_actions():
     return JSONResponse({"items": action_log})
-
