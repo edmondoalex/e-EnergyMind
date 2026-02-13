@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="wrap">
     <header class="top">
       <div class="brand">e-EnergyMind</div>
@@ -91,7 +91,7 @@
                 <polyline :points="sparkPoints(history.t_volano_alto)" class="spark volano"/>
               </svg>
               <div class="axis-note">Y: {{ tempStats.label }}</div>
-              <div class="axis-note">X: ultimi ~2–3 min</div>
+              <div class="axis-note">X: ultimi ~2â€“3 min</div>
               <div class="legend small">
                 <span class="legend-item"><span class="legend-dot acs"></span> ACS</span>
                 <span class="legend-item"><span class="legend-dot puffer"></span> Puffer</span>
@@ -104,7 +104,7 @@
                 <polyline :points="sparkPoints(history.export_w)" class="spark export"/>
               </svg>
               <div class="axis-note">Y: {{ exportStats.label }}</div>
-              <div class="axis-note">X: ultimi ~2–3 min</div>
+              <div class="axis-note">X: ultimi ~2â€“3 min</div>
               <div class="legend small">
                 <span class="legend-item"><span class="legend-dot export"></span> Export rete</span>
               </div>
@@ -119,13 +119,13 @@
               Resistenze Volano: {{ modules.resistenze_volano ? 'ON' : 'OFF' }}
             </button>
             <button class="ghost toggle" :class="moduleClass('volano_to_acs')" @click="toggleModule('volano_to_acs')">
-              Volano → ACS: {{ modules.volano_to_acs ? 'ON' : 'OFF' }}
+              Volano â†’ ACS: {{ modules.volano_to_acs ? 'ON' : 'OFF' }}
             </button>
             <button class="ghost toggle" :class="moduleClass('volano_to_puffer')" @click="toggleModule('volano_to_puffer')">
-              Volano → Puffer: {{ modules.volano_to_puffer ? 'ON' : 'OFF' }}
+              Volano â†’ Puffer: {{ modules.volano_to_puffer ? 'ON' : 'OFF' }}
             </button>
             <button class="ghost toggle" :class="moduleClass('puffer_to_acs')" @click="toggleModule('puffer_to_acs')">
-              Puffer → ACS: {{ modules.puffer_to_acs ? 'ON' : 'OFF' }}
+              Puffer â†’ ACS: {{ modules.puffer_to_acs ? 'ON' : 'OFF' }}
             </button>
             <button class="ghost toggle" :class="moduleClass('impianto')" @click="toggleModule('impianto')">
               Impianto Riscaldamento: {{ modules.impianto ? 'ON' : 'OFF' }}
@@ -186,8 +186,8 @@
                     PDC/Volano ready: {{ d?.computed?.impianto?.pdc_ready ? 'SI' : 'NO' }} | Puffer ready: {{ d?.computed?.impianto?.puffer_ready ? 'SI' : 'NO' }}
                   </div>
                   <div class="muted">
-                    Volano OK: {{ d?.computed?.impianto?.volano_temp_ok ? 'SI' : 'NO' }} (T={{ fmtTemp(d?.inputs?.t_volano) }} / min {{ fmtNum(sp?.impianto?.volano_min_c) }}°C)
-                    | Puffer OK: {{ d?.computed?.impianto?.puffer_temp_ok ? 'SI' : 'NO' }} (T={{ fmtTemp(d?.inputs?.t_puffer) }} / min {{ fmtNum(sp?.impianto?.puffer_min_c) }}°C)
+                    Volano OK: {{ d?.computed?.impianto?.volano_temp_ok ? 'SI' : 'NO' }} (T={{ fmtTemp(d?.inputs?.t_volano) }} / min {{ fmtNum(sp?.impianto?.volano_min_c) }}Â°C)
+                    | Puffer OK: {{ d?.computed?.impianto?.puffer_temp_ok ? 'SI' : 'NO' }} (T={{ fmtTemp(d?.inputs?.t_puffer) }} / min {{ fmtNum(sp?.impianto?.puffer_min_c) }}Â°C)
                   </div>
                   <div v-if="d?.computed?.impianto?.blocked_cold" class="muted">
                     Blocco freddo attivo: sorgenti sotto soglia minima.
@@ -256,7 +256,7 @@
         </div>
 
         <div v-if="act" class="card inner module-panel" :class="modulePanelClass('volano_to_acs')">
-          <div class="row"><strong>Volano → ACS</strong></div>
+          <div class="row"><strong>Volano â†’ ACS</strong></div>
           <div class="row3">
             <div class="kpi kpi-center" :class="historyEnabled('t_volano') ? 'clickable' : ''" @click="openHistory('t_volano','T_Volano')">
               <div class="k">
@@ -281,13 +281,13 @@
             <div class="kpi kpi-center clickable" :class="stateClass(act?.r6_valve_pdc_to_integrazione_acs?.state)" @click="userToggle(act?.r6_valve_pdc_to_integrazione_acs, 'volano_to_acs')">
               <div class="k">
                 <i v-if="mdiClass(act?.r6_valve_pdc_to_integrazione_acs?.attributes?.icon)" :class="[mdiClass(act?.r6_valve_pdc_to_integrazione_acs?.attributes?.icon), stateClass(act?.r6_valve_pdc_to_integrazione_acs?.state)]"></i>
-                Valvola PDC → ACS
+                Valvola PDC â†’ ACS
               </div>
             </div>
             <div class="kpi kpi-center clickable" :class="stateClass(act?.r13_pump_pdc_to_acs_puffer?.state)" @click="userToggle(act?.r13_pump_pdc_to_acs_puffer, 'volano_to_acs')">
               <div class="k">
                 <i v-if="mdiClass(act?.r13_pump_pdc_to_acs_puffer?.attributes?.icon)" :class="[mdiClass(act?.r13_pump_pdc_to_acs_puffer?.attributes?.icon), stateClass(act?.r13_pump_pdc_to_acs_puffer?.state)]"></i>
-                R13 Pompa PDC → ACS/Puffer
+                R13 Pompa PDC â†’ ACS/Puffer
               </div>
             </div>
             <div class="kpi kpi-center">
@@ -308,7 +308,7 @@
         </div>
 
         <div v-if="act" class="card inner module-panel" :class="modulePanelClass('volano_to_puffer')">
-          <div class="row"><strong>Volano → Puffer</strong></div>
+          <div class="row"><strong>Volano â†’ Puffer</strong></div>
           <div class="row3">
             <div class="kpi kpi-center" :class="historyEnabled('t_volano') ? 'clickable' : ''" @click="openHistory('t_volano','T_Volano')">
               <div class="k">
@@ -333,13 +333,13 @@
             <div class="kpi kpi-center clickable" :class="stateClass(act?.r7_valve_pdc_to_integrazione_puffer?.state)" @click="userToggle(act?.r7_valve_pdc_to_integrazione_puffer, 'volano_to_puffer')">
               <div class="k">
                 <i v-if="mdiClass(act?.r7_valve_pdc_to_integrazione_puffer?.attributes?.icon)" :class="[mdiClass(act?.r7_valve_pdc_to_integrazione_puffer?.attributes?.icon), stateClass(act?.r7_valve_pdc_to_integrazione_puffer?.state)]"></i>
-                R7 Valvola PDC → Puffer
+                R7 Valvola PDC â†’ Puffer
               </div>
             </div>
             <div class="kpi kpi-center clickable" :class="stateClass(act?.r13_pump_pdc_to_acs_puffer?.state)" @click="userToggle(act?.r13_pump_pdc_to_acs_puffer, 'volano_to_puffer')">
               <div class="k">
                 <i v-if="mdiClass(act?.r13_pump_pdc_to_acs_puffer?.attributes?.icon)" :class="[mdiClass(act?.r13_pump_pdc_to_acs_puffer?.attributes?.icon), stateClass(act?.r13_pump_pdc_to_acs_puffer?.state)]"></i>
-                R13 Pompa PDC → ACS/Puffer
+                R13 Pompa PDC â†’ ACS/Puffer
               </div>
             </div>
             <div class="kpi kpi-center">
@@ -360,7 +360,7 @@
               <div class="v">{{ fmtTemp(d?.inputs?.t_solare_mandata) }}</div>
             </div>
             <div class="kpi kpi-center" :class="solarModeClass">
-              <div class="k">Modalità</div>
+              <div class="k">ModalitÃ </div>
               <div class="v">{{ sp?.solare?.mode || 'auto' }}</div>
             </div>
             <div class="kpi kpi-center">
@@ -464,14 +464,14 @@
           </div>
           <div class="row2">
             <div class="kpi kpi-center" :class="historyEnabled('collettore_twu') ? 'clickable' : ''" @click="openHistory('collettore_twu','Serbatoio superiore TWU')">
-              <div class="k">Serbatoio superiore metà (TWU)</div>
+              <div class="k">Serbatoio superiore metÃ  (TWU)</div>
               <div class="v">{{ fmtTemp(d?.inputs?.collettore_twu) }}</div>
             </div>
           </div>
         </div>
 
         <div v-if="act" class="card inner module-panel" :class="modulePanelClass('puffer_to_acs')">
-          <div class="row"><strong>Puffer → ACS</strong></div>
+          <div class="row"><strong>Puffer â†’ ACS</strong></div>
 
           <div class="row3">
             <div class="kpi kpi-center" :class="historyEnabled('t_puffer') ? 'clickable' : ''" @click="openHistory('t_puffer','T_Puffer')">
@@ -497,7 +497,7 @@
             <div class="kpi kpi-center clickable" :class="stateClass(act?.r14_pump_puffer_to_acs?.state)" @click="userToggle(act?.r14_pump_puffer_to_acs, 'puffer_to_acs')">
               <div class="k">
                 <i v-if="mdiClass(act?.r14_pump_puffer_to_acs?.attributes?.icon)" :class="[mdiClass(act?.r14_pump_puffer_to_acs?.attributes?.icon), stateClass(act?.r14_pump_puffer_to_acs?.state)]"></i>
-                R14 Pompa Puffer → ACS
+                R14 Pompa Puffer â†’ ACS
               </div>
             </div>
             <div class="kpi kpi-center">
@@ -627,7 +627,7 @@
               <div v-for="z in zones" :key="z.entity_id" class="zone-chip" :class="z.active ? 'zone-on' : 'zone-off'" @click="openZone(z)">
                 <div class="zone-title">{{ z.group }} | {{ z.entity_id }}</div>
                 <div class="zone-sub">{{ z.state || '-' }} | {{ z.hvac_action || '-' }}</div>
-                <div class="zone-sub">T: {{ fmtNum(z.temperature) }}°C | SP: {{ fmtNum(z.setpoint) }}°C</div>
+                <div class="zone-sub">T: {{ fmtNum(z.temperature) }}Â°C | SP: {{ fmtNum(z.setpoint) }}Â°C</div>
               </div>
             </div>
           </div>
@@ -774,7 +774,7 @@
               <div class="v">{{ fmtDelta(d?.computed?.miscelatrice?.setpoint, d?.inputs?.t_mandata_miscelata) }}</div>
             </div>
             <div class="kpi kpi-center" :class="historyEnabled('delta_mandata_ritorno') ? 'clickable' : ''" @click="openHistory('delta_mandata_ritorno','Delta Mandata/Ritorno')">
-              <div class="k">Δ Mandata/Ritorno</div>
+              <div class="k">Î” Mandata/Ritorno</div>
               <div class="v">{{ fmtDelta(d?.inputs?.t_mandata_miscelata, d?.inputs?.t_ritorno_miscelato) }}</div>
             </div>
             <div class="kpi kpi-center" :class="historyEnabled('kp_eff') ? 'clickable' : ''" @click="openHistory('kp_eff','Kp eff')">
@@ -814,11 +814,11 @@
               <line v-if="curveExtX !== null" :x1="curveExtX" y1="0" :x2="curveExtX" y2="100" class="curve-marker"/>
               <circle v-if="curveExtX !== null && curveExtY !== null" :cx="curveExtX" :cy="curveExtY" r="2.6" class="curve-dot"/>
               <text v-for="(y, i) in curveYTicks" :key="`y-${i}`" x="2" :y="4 + (i * 24)" class="curve-axis">
-                {{ y.toFixed(1) }}°C
+                {{ y.toFixed(1) }}Â°C
               </text>
             </svg>
             <div class="curve-x-axis">
-              <div v-for="(x, i) in curveXTicks" :key="`x-${i}`" class="curve-x-label">{{ x.toFixed(1) }}°C</div>
+              <div v-for="(x, i) in curveXTicks" :key="`x-${i}`" class="curve-x-label">{{ x.toFixed(1) }}Â°C</div>
             </div>
           </div>
           <div class="row2">
@@ -905,6 +905,15 @@
 
         <div class="form">
           <h3 class="section">Configurazione</h3>
+          <div v-if="sp" class="field">
+            <label>Numero utenze</label>
+            <select v-model.number="sp.runtime.sites_count" @change="save">
+              <option :value="1">1 utenza</option>
+              <option :value="2">2 utenze</option>
+              <option :value="3">3 utenze</option>
+            </select>
+            <div class="help">Imposta quante utenze elettriche gestire (1-3).</div>
+          </div>
         </div>
 
         <div v-if="sp" class="form setpoint-grid">
@@ -936,16 +945,16 @@
             <div class="section-title">Volano</div>
             <div class="field"><label>Volano margine (C)</label><input type="number" step="0.5" v-model.number="sp.volano.margin_c"/><div class="help">Margine usato per decisioni volano (buffer).</div></div>
             <div class="field"><label>Volano MAX (C)</label><input type="number" step="0.5" v-model.number="sp.volano.max_c"/><div class="help">Sicurezza: sopra questo valore non carica volano.</div></div>
-            <div class="field"><label>Volano min → ACS (°C)</label><input type="number" step="0.5" v-model.number="sp.volano.min_to_acs_c"/><div class="help">Minimo volano per poter scaldare ACS.</div></div>
-            <div class="field"><label>Volano isteresi → ACS (°C)</label><input type="number" step="0.5" v-model.number="sp.volano.hyst_to_acs_c"/><div class="help">Isteresi per evitare ON/OFF continui su ACS.</div></div>
-            <div class="field"><label>Δ Start Volano → ACS (C)</label><input type="number" step="0.5" v-model.number="sp.volano.delta_to_acs_start_c"/><div class="help">Differenza T_VOL - T_ACS per avviare.</div></div>
-            <div class="field"><label>Δ Hold Volano → ACS (C)</label><input type="number" step="0.5" v-model.number="sp.volano.delta_to_acs_hold_c"/><div class="help">Differenza per mantenere attivo il flusso.</div></div>
-            <div class="field"><label>Δ Start Volano → Puffer (C)</label><input type="number" step="0.5" v-model.number="sp.volano.delta_to_puffer_start_c"/><div class="help">Differenza T_VOL - T_PUF per avviare.</div></div>
-            <div class="field"><label>Δ Hold Volano → Puffer (C)</label><input type="number" step="0.5" v-model.number="sp.volano.delta_to_puffer_hold_c"/><div class="help">Differenza per mantenere attivo il flusso.</div></div>
-            <div class="field"><label>Volano min → Puffer (°C)</label><input type="number" step="0.5" v-model.number="sp.volano.min_to_puffer_c"/><div class="help">Minimo volano per poter caricare puffer.</div></div>
-            <div class="field"><label>Volano isteresi → Puffer (°C)</label><input type="number" step="0.5" v-model.number="sp.volano.hyst_to_puffer_c"/><div class="help">Isteresi minimo volano per evitare ON/OFF.</div></div>
+            <div class="field"><label>Volano min â†’ ACS (Â°C)</label><input type="number" step="0.5" v-model.number="sp.volano.min_to_acs_c"/><div class="help">Minimo volano per poter scaldare ACS.</div></div>
+            <div class="field"><label>Volano isteresi â†’ ACS (Â°C)</label><input type="number" step="0.5" v-model.number="sp.volano.hyst_to_acs_c"/><div class="help">Isteresi per evitare ON/OFF continui su ACS.</div></div>
+            <div class="field"><label>Î” Start Volano â†’ ACS (C)</label><input type="number" step="0.5" v-model.number="sp.volano.delta_to_acs_start_c"/><div class="help">Differenza T_VOL - T_ACS per avviare.</div></div>
+            <div class="field"><label>Î” Hold Volano â†’ ACS (C)</label><input type="number" step="0.5" v-model.number="sp.volano.delta_to_acs_hold_c"/><div class="help">Differenza per mantenere attivo il flusso.</div></div>
+            <div class="field"><label>Î” Start Volano â†’ Puffer (C)</label><input type="number" step="0.5" v-model.number="sp.volano.delta_to_puffer_start_c"/><div class="help">Differenza T_VOL - T_PUF per avviare.</div></div>
+            <div class="field"><label>Î” Hold Volano â†’ Puffer (C)</label><input type="number" step="0.5" v-model.number="sp.volano.delta_to_puffer_hold_c"/><div class="help">Differenza per mantenere attivo il flusso.</div></div>
+            <div class="field"><label>Volano min â†’ Puffer (Â°C)</label><input type="number" step="0.5" v-model.number="sp.volano.min_to_puffer_c"/><div class="help">Minimo volano per poter caricare puffer.</div></div>
+            <div class="field"><label>Volano isteresi â†’ Puffer (Â°C)</label><input type="number" step="0.5" v-model.number="sp.volano.hyst_to_puffer_c"/><div class="help">Isteresi minimo volano per evitare ON/OFF.</div></div>
             <div class="field">
-              <label>Sequenza Volano → ACS (valvola + pompa)</label>
+              <label>Sequenza Volano â†’ ACS (valvola + pompa)</label>
               <div class="row2">
                 <div class="mini-field">
                   <span class="mini-label">Start (s)</span>
@@ -959,7 +968,7 @@
               <div class="help">Prima apre la valvola, poi parte la pompa. In stop: valvola OFF, pompa OFF con ritardo.</div>
             </div>
             <div class="field">
-              <label>Sequenza Volano → Puffer (valvola + pompa)</label>
+              <label>Sequenza Volano â†’ Puffer (valvola + pompa)</label>
               <div class="row2">
                 <div class="mini-field">
                   <span class="mini-label">Start (s)</span>
@@ -970,30 +979,30 @@
                   <input type="number" step="1" v-model.number="sp.timers.volano_to_puffer_stop_s"/>
                 </div>
               </div>
-              <div class="help">Valvola ON → ritardo → pompa ON. In stop: valvola OFF → ritardo → pompa OFF.</div>
+              <div class="help">Valvola ON â†’ ritardo â†’ pompa ON. In stop: valvola OFF â†’ ritardo â†’ pompa OFF.</div>
             </div>
           </div>
 
           <div class="set-section">
             <div class="section-title">Puffer</div>
             <div class="field"><label>Puffer setpoint (C)</label><input type="number" step="0.5" v-model.number="sp.puffer.setpoint_c"/><div class="help">Target puffer quando ACS e ok.</div></div>
-            <div class="field"><label>Puffer min → ACS (°C)</label><input type="number" step="0.5" v-model.number="sp.puffer.min_to_acs_c"/><div class="help">Minimo puffer per poter scaldare ACS.</div></div>
-            <div class="field"><label>Puffer isteresi → ACS (°C)</label><input type="number" step="0.5" v-model.number="sp.puffer.hyst_to_acs_c"/><div class="help">Isteresi per evitare ON/OFF continui su ACS.</div></div>
-            <div class="field"><label>Δ Start Puffer → ACS (C)</label><input type="number" step="0.5" v-model.number="sp.puffer.delta_to_acs_start_c"/><div class="help">Differenza T_PUF - T_ACS per avviare.</div></div>
-            <div class="field"><label>Δ Hold Puffer → ACS (C)</label><input type="number" step="0.5" v-model.number="sp.puffer.delta_to_acs_hold_c"/><div class="help">Differenza per mantenere attivo il flusso.</div></div>
+            <div class="field"><label>Puffer min â†’ ACS (Â°C)</label><input type="number" step="0.5" v-model.number="sp.puffer.min_to_acs_c"/><div class="help">Minimo puffer per poter scaldare ACS.</div></div>
+            <div class="field"><label>Puffer isteresi â†’ ACS (Â°C)</label><input type="number" step="0.5" v-model.number="sp.puffer.hyst_to_acs_c"/><div class="help">Isteresi per evitare ON/OFF continui su ACS.</div></div>
+            <div class="field"><label>Î” Start Puffer â†’ ACS (C)</label><input type="number" step="0.5" v-model.number="sp.puffer.delta_to_acs_start_c"/><div class="help">Differenza T_PUF - T_ACS per avviare.</div></div>
+            <div class="field"><label>Î” Hold Puffer â†’ ACS (C)</label><input type="number" step="0.5" v-model.number="sp.puffer.delta_to_acs_hold_c"/><div class="help">Differenza per mantenere attivo il flusso.</div></div>
           </div>
 
           <div class="set-section">
             <div class="section-title">Miscelatrice</div>
             <div class="field"><label>SP mandata (C)</label><input type="number" step="0.5" v-model.number="sp.miscelatrice.setpoint_c"/><div class="help">Setpoint mandata per la miscelatrice.</div></div>
             <div class="field"><label>Isteresi (C)</label><input type="number" step="0.1" v-model.number="sp.miscelatrice.hyst_c"/><div class="help">Banda di tolleranza intorno al setpoint.</div></div>
-            <div class="field"><label>Kp base (sec/°C)</label><input type="number" step="0.1" v-model.number="sp.miscelatrice.kp"/><div class="help">Quanto dura l'impulso per ogni grado di errore.</div></div>
+            <div class="field"><label>Kp base (sec/Â°C)</label><input type="number" step="0.1" v-model.number="sp.miscelatrice.kp"/><div class="help">Quanto dura l'impulso per ogni grado di errore.</div></div>
             <div class="field"><label>Impulso min (s)</label><input type="number" step="0.1" v-model.number="sp.miscelatrice.min_imp_s"/><div class="help">Durata minima impulso alza/abbassa.</div></div>
             <div class="field"><label>Impulso max (s)</label><input type="number" step="0.1" v-model.number="sp.miscelatrice.max_imp_s"/><div class="help">Durata massima impulso alza/abbassa.</div></div>
             <div class="field"><label>Pausa dopo impulso (s)</label><input type="number" step="0.1" v-model.number="sp.miscelatrice.pause_s"/><div class="help">Attesa tra un impulso e il successivo.</div></div>
-            <div class="field"><label>ΔT ref (°C)</label><input type="number" step="0.5" v-model.number="sp.miscelatrice.dt_ref_c"/><div class="help">Delta mandata/ritorno di riferimento per Kp eff.</div></div>
-            <div class="field"><label>ΔT fattore min</label><input type="number" step="0.1" v-model.number="sp.miscelatrice.dt_min_factor"/><div class="help">Limite minimo del fattore Kp eff.</div></div>
-            <div class="field"><label>ΔT fattore max</label><input type="number" step="0.1" v-model.number="sp.miscelatrice.dt_max_factor"/><div class="help">Limite massimo del fattore Kp eff.</div></div>
+            <div class="field"><label>Î”T ref (Â°C)</label><input type="number" step="0.5" v-model.number="sp.miscelatrice.dt_ref_c"/><div class="help">Delta mandata/ritorno di riferimento per Kp eff.</div></div>
+            <div class="field"><label>Î”T fattore min</label><input type="number" step="0.1" v-model.number="sp.miscelatrice.dt_min_factor"/><div class="help">Limite minimo del fattore Kp eff.</div></div>
+            <div class="field"><label>Î”T fattore max</label><input type="number" step="0.1" v-model.number="sp.miscelatrice.dt_max_factor"/><div class="help">Limite massimo del fattore Kp eff.</div></div>
             <div class="field"><label>Forza impulso (s)</label><input type="number" step="0.1" v-model.number="sp.miscelatrice.force_impulse_s"/><div class="help">Impulso extra per evitare stallo.</div></div>
           </div>
 
@@ -1011,7 +1020,7 @@
             <div class="section-title">Resistenze</div>
             <div class="field"><label>Soglia OFF resistenze (W)</label><input type="number" step="1" v-model.number="sp.resistance.off_threshold_w"/><div class="help">Sotto o uguale a questa soglia, le resistenze scendono a 0.</div></div>
             <div class="field"><label>Off-delay resistenze (s)</label><input type="number" step="1" v-model.number="sp.resistance.off_delay_s"/><div class="help">Ritardo prima di spegnere le resistenze.</div></div>
-            <div class="field"><label>Delay salita step (s)</label><input type="number" step="1" v-model.number="sp.resistance.step_up_delay_s"/><div class="help">Ritardo tra step 1→2 e 2→3.</div></div>
+            <div class="field"><label>Delay salita step (s)</label><input type="number" step="1" v-model.number="sp.resistance.step_up_delay_s"/><div class="help">Ritardo tra step 1â†’2 e 2â†’3.</div></div>
             <div class="field">
               <label>Soglie export (W) [1/2/3]</label>
               <div class="row3">
@@ -1082,10 +1091,10 @@
                 <button class="ghost" @click="addZone('cooling_blocked')">+ Aggiungi</button>
               </div>
             </div>
-            <div class="field"><label>Volano min (°C)</label><input type="number" step="0.5" v-model.number="sp.impianto.volano_min_c"/><div class="help">Minimo volano per abilitare impianto riscaldamento.</div></div>
-            <div class="field"><label>Volano isteresi (°C)</label><input type="number" step="0.5" v-model.number="sp.impianto.volano_hyst_c"/><div class="help">Isteresi volano per impianto.</div></div>
-            <div class="field"><label>Puffer min (°C)</label><input type="number" step="0.5" v-model.number="sp.impianto.puffer_min_c"/><div class="help">Minimo puffer per abilitare impianto riscaldamento.</div></div>
-            <div class="field"><label>Puffer isteresi (°C)</label><input type="number" step="0.5" v-model.number="sp.impianto.puffer_hyst_c"/><div class="help">Isteresi puffer per impianto.</div></div>
+            <div class="field"><label>Volano min (Â°C)</label><input type="number" step="0.5" v-model.number="sp.impianto.volano_min_c"/><div class="help">Minimo volano per abilitare impianto riscaldamento.</div></div>
+            <div class="field"><label>Volano isteresi (Â°C)</label><input type="number" step="0.5" v-model.number="sp.impianto.volano_hyst_c"/><div class="help">Isteresi volano per impianto.</div></div>
+            <div class="field"><label>Puffer min (Â°C)</label><input type="number" step="0.5" v-model.number="sp.impianto.puffer_min_c"/><div class="help">Minimo puffer per abilitare impianto riscaldamento.</div></div>
+            <div class="field"><label>Puffer isteresi (Â°C)</label><input type="number" step="0.5" v-model.number="sp.impianto.puffer_hyst_c"/><div class="help">Isteresi puffer per impianto.</div></div>
             <div class="field"><label>Ritardo avvio pompa (s)</label><input type="number" step="1" v-model.number="sp.impianto.pump_start_delay_s"/><div class="help">Ritardo avvio pompa impianto.</div></div>
             <div class="field"><label>Ritardo stop pompa (s)</label><input type="number" step="1" v-model.number="sp.impianto.pump_stop_delay_s"/><div class="help">Ritardo stop pompa impianto.</div></div>
             <div class="field"><label>Stagione</label>
@@ -1111,21 +1120,21 @@
                 <button class="ghost" @click="addGasZone">+ Aggiungi</button>
               </div>
             </div>
-            <div class="field"><label>Volano min gas (°C)</label><input type="number" step="0.5" v-model.number="sp.gas_emergenza.volano_min_c"/><div class="help">Soglia dedicata: sopra questo valore il gas si spegne.</div></div>
-            <div class="field"><label>Volano isteresi gas (°C)</label><input type="number" step="0.5" v-model.number="sp.gas_emergenza.volano_hyst_c"/><div class="help">Isteresi volano per evitare ON/OFF gas.</div></div>
-            <div class="field"><label>Puffer min gas (°C)</label><input type="number" step="0.5" v-model.number="sp.gas_emergenza.puffer_min_c"/><div class="help">Soglia dedicata: sopra questo valore il gas si spegne.</div></div>
-            <div class="field"><label>Puffer isteresi gas (°C)</label><input type="number" step="0.5" v-model.number="sp.gas_emergenza.puffer_hyst_c"/><div class="help">Isteresi puffer per evitare ON/OFF gas.</div></div>
+            <div class="field"><label>Volano min gas (Â°C)</label><input type="number" step="0.5" v-model.number="sp.gas_emergenza.volano_min_c"/><div class="help">Soglia dedicata: sopra questo valore il gas si spegne.</div></div>
+            <div class="field"><label>Volano isteresi gas (Â°C)</label><input type="number" step="0.5" v-model.number="sp.gas_emergenza.volano_hyst_c"/><div class="help">Isteresi volano per evitare ON/OFF gas.</div></div>
+            <div class="field"><label>Puffer min gas (Â°C)</label><input type="number" step="0.5" v-model.number="sp.gas_emergenza.puffer_min_c"/><div class="help">Soglia dedicata: sopra questo valore il gas si spegne.</div></div>
+            <div class="field"><label>Puffer isteresi gas (Â°C)</label><input type="number" step="0.5" v-model.number="sp.gas_emergenza.puffer_hyst_c"/><div class="help">Isteresi puffer per evitare ON/OFF gas.</div></div>
           </div>
 
           <div class="set-section">
             <div class="section-title">Caldaia Legna</div>
             <div class="field">
-              <label>Temp min alimentazione (Â°C)</label>
+              <label>Temp min alimentazione (Ã‚Â°C)</label>
               <input type="number" step="0.5" v-model.number="sp.caldaia_legna.temp_min_alim_c"/>
               <div class="help">Sotto questa soglia, dopo il timer, l'alimentazione si disattiva.</div>
             </div>
             <div class="field">
-              <label>Isteresi alimentazione (Â°C)</label>
+              <label>Isteresi alimentazione (Ã‚Â°C)</label>
               <input type="number" step="0.5" v-model.number="sp.caldaia_legna.temp_min_alim_hyst_c"/>
               <div class="help">Evita ON/OFF rapido vicino alla soglia.</div>
             </div>
@@ -1135,12 +1144,12 @@
               <div class="help">Tempo di avvio prima del controllo temperatura.</div>
             </div>
             <div class="field">
-              <label>SP Puffer alto (Â°C)</label>
+              <label>SP Puffer alto (Ã‚Â°C)</label>
               <input type="number" step="0.5" v-model.number="sp.caldaia_legna.puffer_alto_sp_c"/>
               <div class="help">Sopra questa temperatura, TA caldaia legna OFF.</div>
             </div>
             <div class="field">
-              <label>Isteresi TA Puffer (Â°C)</label>
+              <label>Isteresi TA Puffer (Ã‚Â°C)</label>
               <input type="number" step="0.5" v-model.number="sp.caldaia_legna.puffer_alto_hyst_c"/>
               <div class="help">Isteresi per evitare ON/OFF TA vicino al setpoint.</div>
             </div>
@@ -1149,7 +1158,7 @@
           <div class="set-section">
             <div class="section-title">Solare</div>
             <div class="field">
-              <label>Modalità</label>
+              <label>ModalitÃ </label>
               <select v-model="sp.solare.mode">
                 <option value="auto">auto (sun.sun)</option>
                 <option value="night">notte fissa</option>
@@ -1163,8 +1172,8 @@
             <div class="field"><label>Soglia giorno FV (W)</label><input type="number" step="10" v-model.number="sp.solare.pv_day_w"/><div class="help">Se FV > soglia allora giorno.</div></div>
             <div class="field"><label>Soglia notte FV (W)</label><input type="number" step="10" v-model.number="sp.solare.pv_night_w"/><div class="help">Se FV &lt; soglia allora notte.</div></div>
             <div class="field"><label>Debounce FV (s)</label><input type="number" step="10" v-model.number="sp.solare.pv_debounce_s"/><div class="help">Tempo minimo per cambiare stato giorno/notte.</div></div>
-            <div class="field"><label>Δ Start Solare → ACS (C)</label><input type="number" step="0.5" v-model.number="sp.solare.delta_on_c"/></div>
-            <div class="field"><label>Δ Hold Solare → ACS (C)</label><input type="number" step="0.5" v-model.number="sp.solare.delta_hold_c"/></div>
+            <div class="field"><label>Î” Start Solare â†’ ACS (C)</label><input type="number" step="0.5" v-model.number="sp.solare.delta_on_c"/></div>
+            <div class="field"><label>Î” Hold Solare â†’ ACS (C)</label><input type="number" step="0.5" v-model.number="sp.solare.delta_hold_c"/></div>
             <div class="field"><label>Solare MAX (C)</label><input type="number" step="0.5" v-model.number="sp.solare.max_c"/><div class="help">Sicurezza: sopra questo valore stop solare.</div></div>
             <div class="help">In NOTTE: R8 ON e R9 OFF. R18/R19 restano manuali con interblocco.</div>
           </div>
@@ -1178,13 +1187,13 @@
               Resistenze Volano: {{ modules.resistenze_volano ? 'ON' : 'OFF' }}
             </button>
             <button class="ghost toggle" :class="moduleClass('volano_to_acs')" @click="toggleModule('volano_to_acs')">
-              Volano → ACS: {{ modules.volano_to_acs ? 'ON' : 'OFF' }}
+              Volano â†’ ACS: {{ modules.volano_to_acs ? 'ON' : 'OFF' }}
             </button>
             <button class="ghost toggle" :class="moduleClass('volano_to_puffer')" @click="toggleModule('volano_to_puffer')">
-              Volano → Puffer: {{ modules.volano_to_puffer ? 'ON' : 'OFF' }}
+              Volano â†’ Puffer: {{ modules.volano_to_puffer ? 'ON' : 'OFF' }}
             </button>
             <button class="ghost toggle" :class="moduleClass('puffer_to_acs')" @click="toggleModule('puffer_to_acs')">
-              Puffer → ACS: {{ modules.puffer_to_acs ? 'ON' : 'OFF' }}
+              Puffer â†’ ACS: {{ modules.puffer_to_acs ? 'ON' : 'OFF' }}
             </button>
             <button class="ghost toggle" :class="moduleClass('impianto')" @click="toggleModule('impianto')">
               Impianto Riscaldamento: {{ modules.impianto ? 'ON' : 'OFF' }}
@@ -1210,512 +1219,24 @@
           </div>
         </div>
 
-        <details class="form" open>
-          <summary class="section">Sensori da e-manager</summary>
-          <div class="field">
-            <label>
-              <i v-if="mdiClass(ent?.t_acs_alto?.attributes?.icon)" :class="mdiClass(ent?.t_acs_alto?.attributes?.icon)"></i>
-              T_ACS Alto (ACS)
-            </label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.t_acs_alto?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.t_acs_alto?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.t_acs_alto.entity_id"
-                       placeholder="sensor.acs_alto"
-                       @input="dirtyEnt.t_acs_alto = true"
-                       @focus="onFocus" @blur="onBlur"/>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.t_acs_alto"/> Storico</label></div>
-            </div>
-          </div>
-          <div class="field">
-            <label>
-              <i v-if="mdiClass(ent?.t_acs_medio?.attributes?.icon)" :class="mdiClass(ent?.t_acs_medio?.attributes?.icon)"></i>
-              T_ACS Medio (ACS)
-            </label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.t_acs_medio?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.t_acs_medio?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.t_acs_medio.entity_id"
-                       placeholder="sensor.acs_medio"
-                       @input="dirtyEnt.t_acs_medio = true"
-                       @focus="onFocus" @blur="onBlur"/>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.t_acs_medio"/> Storico</label></div>
-            </div>
-          </div>
-          <div class="field">
-            <label>
-              <i v-if="mdiClass(ent?.t_acs_basso?.attributes?.icon)" :class="mdiClass(ent?.t_acs_basso?.attributes?.icon)"></i>
-              T_ACS Basso (ACS)
-            </label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.t_acs_basso?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.t_acs_basso?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.t_acs_basso.entity_id"
-                       placeholder="sensor.acs_basso"
-                       @input="dirtyEnt.t_acs_basso = true"
-                       @focus="onFocus" @blur="onBlur"/>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.t_acs_basso"/> Storico</label></div>
-            </div>
-          </div>
-          <div class="field">
-            <label>
-              <i v-if="mdiClass(ent?.t_puffer_alto?.attributes?.icon)" :class="mdiClass(ent?.t_puffer_alto?.attributes?.icon)"></i>
-              T_Puffer Alto
-            </label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.t_puffer_alto?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.t_puffer_alto?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.t_puffer_alto.entity_id"
-                       placeholder="sensor.puffer_alto"
-                       @input="dirtyEnt.t_puffer_alto = true"
-                       @focus="onFocus" @blur="onBlur"/>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.t_puffer_alto"/> Storico</label></div>
-            </div>
-          </div>
-          <div class="field">
-            <label>
-              <i v-if="mdiClass(ent?.t_puffer_medio?.attributes?.icon)" :class="mdiClass(ent?.t_puffer_medio?.attributes?.icon)"></i>
-              T_Puffer Medio
-            </label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.t_puffer_medio?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.t_puffer_medio?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.t_puffer_medio.entity_id"
-                       placeholder="sensor.puffer_medio"
-                       @input="dirtyEnt.t_puffer_medio = true"
-                       @focus="onFocus" @blur="onBlur"/>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.t_puffer_medio"/> Storico</label></div>
-            </div>
-          </div>
-          <div class="field">
-            <label>
-              <i v-if="mdiClass(ent?.t_puffer_basso?.attributes?.icon)" :class="mdiClass(ent?.t_puffer_basso?.attributes?.icon)"></i>
-              T_Puffer Basso
-            </label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.t_puffer_basso?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.t_puffer_basso?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.t_puffer_basso.entity_id"
-                       placeholder="sensor.puffer_basso"
-                       @input="dirtyEnt.t_puffer_basso = true"
-                       @focus="onFocus" @blur="onBlur"/>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.t_puffer_basso"/> Storico</label></div>
-            </div>
-          </div>
-          <div class="field">
-            <label>
-              <i v-if="mdiClass(ent?.t_volano_alto?.attributes?.icon)" :class="mdiClass(ent?.t_volano_alto?.attributes?.icon)"></i>
-              T_Volano Alto
-            </label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.t_volano_alto?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.t_volano_alto?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.t_volano_alto.entity_id"
-                       placeholder="sensor.volano_alto"
-                       @input="dirtyEnt.t_volano_alto = true"
-                       @focus="onFocus" @blur="onBlur"/>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.t_volano_alto"/> Storico</label></div>
-            </div>
-          </div>
-          <div class="field">
-            <label>
-              <i v-if="mdiClass(ent?.t_volano_basso?.attributes?.icon)" :class="mdiClass(ent?.t_volano_basso?.attributes?.icon)"></i>
-              T_Volano Basso
-            </label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.t_volano_basso?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.t_volano_basso?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.t_volano_basso.entity_id"
-                       placeholder="sensor.volano_basso"
-                       @input="dirtyEnt.t_volano_basso = true"
-                       @focus="onFocus" @blur="onBlur"/>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.t_volano_basso"/> Storico</label></div>
-            </div>
-          </div>
-          <div class="field">
-            <label>
-              <i v-if="mdiClass(ent?.t_mandata_caldaia_legna?.attributes?.icon)" :class="mdiClass(ent?.t_mandata_caldaia_legna?.attributes?.icon)"></i>
-              T Mandata Caldaia Legna
-            </label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.t_mandata_caldaia_legna?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.t_mandata_caldaia_legna?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.t_mandata_caldaia_legna.entity_id"
-                       placeholder="sensor.esp32_s3_ct_temp_mandata_caldaia_legna"
-                       @input="dirtyEnt.t_mandata_caldaia_legna = true"
-                       @focus="onFocus" @blur="onBlur"/>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.t_mandata_caldaia_legna"/> Storico</label></div>
-            </div>
-          </div>
-          <div class="field">
-            <label>
-              <i v-if="mdiClass(ent?.t_ritorno_caldaia_legna?.attributes?.icon)" :class="mdiClass(ent?.t_ritorno_caldaia_legna?.attributes?.icon)"></i>
-              T Ritorno Caldaia Legna
-            </label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.t_ritorno_caldaia_legna?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.t_ritorno_caldaia_legna?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.t_ritorno_caldaia_legna.entity_id"
-                       placeholder="sensor.esp32_s3_ct_temp_ritorno_caldaia_legna"
-                       @input="dirtyEnt.t_ritorno_caldaia_legna = true"
-                       @focus="onFocus" @blur="onBlur"/>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.t_ritorno_caldaia_legna"/> Storico</label></div>
-            </div>
-          </div>
-          <div class="field">
-            <label>
-              <i v-if="mdiClass(ent?.t_caldaia_legna?.attributes?.icon)" :class="mdiClass(ent?.t_caldaia_legna?.attributes?.icon)"></i>
-              T Caldaia Legna
-            </label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.t_caldaia_legna?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.t_caldaia_legna?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.t_caldaia_legna.entity_id"
-                       placeholder="sensor.esp32_s3_ct_temp_caldaia_legna"
-                       @input="dirtyEnt.t_caldaia_legna = true"
-                       @focus="onFocus" @blur="onBlur"/>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.t_caldaia_legna"/> Storico</label></div>
-            </div>
-          </div>
-          <div class="field">
-            <label>
-              <i v-if="mdiClass(ent?.t_solare_mandata?.attributes?.icon)" :class="mdiClass(ent?.t_solare_mandata?.attributes?.icon)"></i>
-              T_Solare mandata
-            </label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.t_solare_mandata?.entity_id) ? 'logic-ok' : 'logic-no'">●</span>
-                <input type="text"
-                       :class="isFilled(ent?.t_solare_mandata?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.t_solare_mandata.entity_id"
-                       placeholder="sensor.solar_mandata"
-                       @input="dirtyEnt.t_solare_mandata = true"
-                       @focus="onFocus" @blur="onBlur"/>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.t_solare_mandata"/> Storico</label></div>
-            </div>
-          <div class="field">
-            <label>
-              <i v-if="mdiClass(ent?.t_esterna?.attributes?.icon)" :class="mdiClass(ent?.t_esterna?.attributes?.icon)"></i>
-              T esterna
-            </label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.t_esterna?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.t_esterna?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.t_esterna.entity_id"
-                       placeholder="sensor.temp_esterna"
-                       @input="dirtyEnt.t_esterna = true"
-                       @focus="onFocus" @blur="onBlur"/>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.t_esterna"/> Storico</label></div>
-            </div>
-          </div>
-          </div>
-          <div class="subsection">Collettore solare</div>
-          <div class="field">
-            <label>Codice di stato</label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.collettore_status_code?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.collettore_status_code?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.collettore_status_code.entity_id"
-                       placeholder="sensor.solar_status_code"
-                       @input="dirtyEnt.collettore_status_code = true"
-                       @focus="onFocus" @blur="onBlur"/>
-            </div>
-          </div>
-          <div class="field">
-            <label>Stato</label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.collettore_status?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.collettore_status?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.collettore_status.entity_id"
-                       placeholder="sensor.solar_status"
-                       @input="dirtyEnt.collettore_status = true"
-                       @focus="onFocus" @blur="onBlur"/>
-            </div>
-          </div>
-          <div class="field">
-            <label>Data e Ora</label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.collettore_datetime?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.collettore_datetime?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.collettore_datetime.entity_id"
-                       placeholder="sensor.solar_datetime"
-                       @input="dirtyEnt.collettore_datetime = true"
-                       @focus="onFocus" @blur="onBlur"/>
-            </div>
-          </div>
-          <div class="field">
-            <label>Energia solare (giorno)</label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.collettore_energy_day_kwh?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.collettore_energy_day_kwh?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.collettore_energy_day_kwh.entity_id"
-                       placeholder="sensor.solar_energy_day"
-                       @input="dirtyEnt.collettore_energy_day_kwh = true"
-                       @focus="onFocus" @blur="onBlur"/>
-            </div>
-            <div class="history-inline"><label><input type="checkbox" v-model="sp.history.collettore_energy_day_kwh"/> Storico</label></div>
-          </div>
-          <div class="field">
-            <label>Energia solare (totale)</label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.collettore_energy_total_kwh?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.collettore_energy_total_kwh?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.collettore_energy_total_kwh.entity_id"
-                       placeholder="sensor.solar_energy_total"
-                       @input="dirtyEnt.collettore_energy_total_kwh = true"
-                       @focus="onFocus" @blur="onBlur"/>
-            </div>
-            <div class="history-inline"><label><input type="checkbox" v-model="sp.history.collettore_energy_total_kwh"/> Storico</label></div>
-          </div>
-          <div class="field">
-            <label>Portata (L/min)</label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.collettore_flow_lmin?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.collettore_flow_lmin?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.collettore_flow_lmin.entity_id"
-                       placeholder="sensor.solar_flow_lmin"
-                       @input="dirtyEnt.collettore_flow_lmin = true"
-                       @focus="onFocus" @blur="onBlur"/>
-            </div>
-            <div class="history-inline"><label><input type="checkbox" v-model="sp.history.collettore_flow_lmin"/> Storico</label></div>
-          </div>
-          <div class="field">
-            <label>PWM Pompa</label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.collettore_pwm_pct?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.collettore_pwm_pct?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.collettore_pwm_pct.entity_id"
-                       placeholder="sensor.solar_pwm"
-                       @input="dirtyEnt.collettore_pwm_pct = true"
-                       @focus="onFocus" @blur="onBlur"/>
-            </div>
-            <div class="history-inline"><label><input type="checkbox" v-model="sp.history.collettore_pwm_pct"/> Storico</label></div>
-          </div>
-          <div class="field">
-            <label>Stato 2</label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.collettore_status2?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.collettore_status2?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.collettore_status2.entity_id"
-                       placeholder="sensor.solar_status_2"
-                       @input="dirtyEnt.collettore_status2 = true"
-                       @focus="onFocus" @blur="onBlur"/>
-            </div>
-          </div>
-          <div class="field">
-            <label>Temperatura esterna (solare)</label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.collettore_temp_esterna?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.collettore_temp_esterna?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.collettore_temp_esterna.entity_id"
-                       placeholder="sensor.solar_temp_esterna"
-                       @input="dirtyEnt.collettore_temp_esterna = true"
-                       @focus="onFocus" @blur="onBlur"/>
-            </div>
-            <div class="history-inline"><label><input type="checkbox" v-model="sp.history.collettore_temp_esterna"/> Storico</label></div>
-          </div>
-          <div class="field">
-            <label>Collettore (TSA1)</label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.collettore_tsa1?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.collettore_tsa1?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.collettore_tsa1.entity_id"
-                       placeholder="sensor.solar_tsa1"
-                       @input="dirtyEnt.collettore_tsa1 = true"
-                       @focus="onFocus" @blur="onBlur"/>
-            </div>
-            <div class="history-inline"><label><input type="checkbox" v-model="sp.history.collettore_tsa1"/> Storico</label></div>
-          </div>
-          <div class="field">
-            <label>Ritorno solare (TSE)</label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.collettore_tse?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.collettore_tse?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.collettore_tse.entity_id"
-                       placeholder="sensor.solar_tse"
-                       @input="dirtyEnt.collettore_tse = true"
-                       @focus="onFocus" @blur="onBlur"/>
-            </div>
-            <div class="history-inline"><label><input type="checkbox" v-model="sp.history.collettore_tse"/> Storico</label></div>
-          </div>
-          <div class="field">
-            <label>Mandata solare (TSV)</label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.collettore_tsv?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.collettore_tsv?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.collettore_tsv.entity_id"
-                       placeholder="sensor.solar_tsv"
-                       @input="dirtyEnt.collettore_tsv = true"
-                       @focus="onFocus" @blur="onBlur"/>
-            </div>
-            <div class="history-inline"><label><input type="checkbox" v-model="sp.history.collettore_tsv"/> Storico</label></div>
-          </div>
-          <div class="field">
-            <label>Serbatoio superiore metà (TWU)</label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.collettore_twu?.entity_id) ? 'logic-ok' : 'logic-no'">?</span>
-                <input type="text"
-                       :class="isFilled(ent?.collettore_twu?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.collettore_twu.entity_id"
-                       placeholder="sensor.solar_twu"
-                       @input="dirtyEnt.collettore_twu = true"
-                       @focus="onFocus" @blur="onBlur"/>
-            </div>
-            <div class="history-inline"><label><input type="checkbox" v-model="sp.history.collettore_twu"/> Storico</label></div>
-          </div>
-          <div class="field">
-            <label>
-              <i v-if="mdiClass(ent?.grid_export_w?.attributes?.icon)" :class="mdiClass(ent?.grid_export_w?.attributes?.icon)"></i>
-              Export rete (W)
-            </label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.grid_export_w?.entity_id) ? 'logic-ok' : 'logic-no'">●</span>
-                <input type="text"
-                       :class="isFilled(ent?.grid_export_w?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.grid_export_w.entity_id"
-                       placeholder="sensor.grid_export_w"
-                       @input="dirtyEnt.grid_export_w = true"
-                       @focus="onFocus" @blur="onBlur"/>
-            </div>
-          </div>
-
-          <div class="subsection">Miscelatrice</div>
-          <div class="field">
-            <label>T mandata miscelata</label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.t_mandata_miscelata?.entity_id) ? 'logic-ok' : 'logic-no'">●</span>
-                <input type="text"
-                       :class="isFilled(ent?.t_mandata_miscelata?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.t_mandata_miscelata.entity_id"
-                       placeholder="sensor.mandata_miscelata"
-                       @input="dirtyEnt.t_mandata_miscelata = true"
-                       @focus="onFocus" @blur="onBlur"/>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.t_mandata_miscelata"/> Storico</label></div>
-            </div>
-          </div>
-          <div class="field">
-            <label>T ritorno miscelato</label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.t_ritorno_miscelato?.entity_id) ? 'logic-ok' : 'logic-no'">●</span>
-                <input type="text"
-                       :class="isFilled(ent?.t_ritorno_miscelato?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.t_ritorno_miscelato.entity_id"
-                       placeholder="sensor.ritorno_miscelato"
-                       @input="dirtyEnt.t_ritorno_miscelato = true"
-                       @focus="onFocus" @blur="onBlur"/>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.t_ritorno_miscelato"/> Storico</label></div>
-            </div>
-          </div>
-          <div class="field">
-            <label>Setpoint miscelatrice</label>
-            <div class="input-row">
-              <span class="logic-dot" :class="isFilled(ent?.miscelatrice_setpoint?.entity_id) ? 'logic-ok' : 'logic-no'">●</span>
-                <input type="text"
-                       :class="isFilled(ent?.miscelatrice_setpoint?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.miscelatrice_setpoint.entity_id"
-                       placeholder="input_number.set_point_valvola_miscelatrice"
-                       @input="dirtyEnt.miscelatrice_setpoint = true"
-                       @focus="onFocus" @blur="onBlur"/>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.miscelatrice_setpoint"/> Storico</label></div>
-            </div>
-          </div>
-          <div class="subsection">Storici calcolati</div>
-          <div class="field">
-            <label>Delta Puffer - ACS</label>
-            <div class="input-row">
-              <span class="logic-dot">?</span>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.delta_puffer_acs" @change="saveHistoryDebounced"/> Storico</label></div>
-            </div>
-          </div>
-          <div class="field">
-            <label>Delta Volano - ACS</label>
-            <div class="input-row">
-              <span class="logic-dot">?</span>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.delta_volano_acs" @change="saveHistoryDebounced"/> Storico</label></div>
-            </div>
-          </div>
-          <div class="field">
-            <label>Delta Volano - Puffer</label>
-            <div class="input-row">
-              <span class="logic-dot">?</span>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.delta_volano_puffer" @change="saveHistoryDebounced"/> Storico</label></div>
-            </div>
-          </div>
-          <div class="field">
-            <label>Delta Mandata/Ritorno</label>
-            <div class="input-row">
-              <span class="logic-dot">?</span>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.delta_mandata_ritorno" @change="saveHistoryDebounced"/> Storico</label></div>
-            </div>
-          </div>
-          <div class="field">
-            <label>Kp eff</label>
-            <div class="input-row">
-              <span class="logic-dot">?</span>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.kp_eff" @change="saveHistoryDebounced"/> Storico</label></div>
-            </div>
-          </div>
-          <div class="field">
-            <label>Setpoint curva climatica</label>
-            <div class="input-row">
-              <span class="logic-dot">?</span>
-              <div class="history-inline"><label><input type="checkbox" v-model="sp.history.curva_setpoint" @change="saveHistoryDebounced"/> Storico</label></div>
-            </div>
-          </div>
-
-            <div class="field">
-              <label>
-                <i v-if="mdiClass(ent?.resistenze_volano_power?.attributes?.icon)" :class="mdiClass(ent?.resistenze_volano_power?.attributes?.icon)"></i>
-                Potenza Resistenze Volano (W)
-              </label>
+        <details class="form" open v-if="ent">
+          <summary class="section">Sensori energia (read-only)</summary>
+          <div v-for="site in siteList" :key="`site-${site}`" class="set-section">
+            <div class="section-title">Utenza {{ site }}</div>
+            <div v-for="item in energyEntityDefs" :key="`s${site}_${item.key}`" class="field">
+              <label>{{ item.label }}</label>
               <div class="input-row">
-                <span class="logic-dot" :class="isFilled(ent?.resistenze_volano_power?.entity_id) ? 'logic-ok' : 'logic-no'">●</span>
+                <span class="logic-dot" :class="isFilled(ent?.[`s${site}_${item.key}`]?.entity_id) ? 'logic-ok' : 'logic-no'">●</span>
                 <input type="text"
-                       :class="isFilled(ent?.resistenze_volano_power?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.resistenze_volano_power.entity_id"
-                       placeholder="sensor.resistenze_volano_power"
-                       @input="dirtyEnt.resistenze_volano_power = true"
+                       :class="isFilled(ent?.[`s${site}_${item.key}`]?.entity_id) ? 'input-ok' : ''"
+                       v-model="ent[`s${site}_${item.key}`].entity_id"
+                       :placeholder="item.placeholder || 'sensor.xxx'"
+                       @input="dirtyEnt[`s${site}_${item.key}`] = true"
                        @focus="onFocus" @blur="onBlur"/>
               </div>
+              <div v-if="item.help" class="help">{{ item.help }}</div>
             </div>
-            <div class="field">
-              <label>
-                <i v-if="mdiClass(ent?.resistenze_volano_energy?.attributes?.icon)" :class="mdiClass(ent?.resistenze_volano_energy?.attributes?.icon)"></i>
-                Energia Resistenze Volano
-              </label>
-              <div class="input-row">
-                <span class="logic-dot" :class="isFilled(ent?.resistenze_volano_energy?.entity_id) ? 'logic-ok' : 'logic-no'">●</span>
-                <input type="text"
-                       :class="isFilled(ent?.resistenze_volano_energy?.entity_id) ? 'input-ok' : ''"
-                       v-model="ent.resistenze_volano_energy.entity_id"
-                       placeholder="sensor.resistenze_volano_energy"
-                       @input="dirtyEnt.resistenze_volano_energy = true"
-                       @focus="onFocus" @blur="onBlur"/>
-              </div>
-            </div>
+          </div>
           <div class="actions">
             <button class="ghost" @click="saveEntities">Salva sensori</button>
           </div>
@@ -1732,7 +1253,7 @@
               {{ item.label }}
             </label>
             <div class="input-row">
-              <span class="logic-dot" :class="isFilled(act?.[item.key]?.entity_id) ? 'logic-ok' : 'logic-no'">●</span>
+              <span class="logic-dot" :class="isFilled(act?.[item.key]?.entity_id) ? 'logic-ok' : 'logic-no'">â—</span>
               <input type="text"
                      :class="[isFilled(act?.[item.key]?.entity_id) ? 'input-ok' : '', act?.[item.key]?.state === 'on' ? 'input-on' : '']"
                      v-model="act[item.key].entity_id"
@@ -1753,7 +1274,7 @@
       <div v-if="historyModal.open" class="modal-backdrop" @click.self="closeHistory">
         <div class="modal">
           <div class="modal-head">
-            <div class="modal-title">Storico 24h — {{ historyModal.title }}</div>
+            <div class="modal-title">Storico 24h â€” {{ historyModal.title }}</div>
             <button class="ghost" @click="closeHistory">Chiudi</button>
           </div>
           <div class="modal-body">
@@ -1772,7 +1293,7 @@
             </svg>
             <div class="legend small">
               <span class="legend-item"><span class="legend-dot acs"></span>{{ historyModal.title }}</span>
-              <span class="legend-item muted">Y: °C ({{ historyModal.minY }}–{{ historyModal.maxY }})</span>
+              <span class="legend-item muted">Y: Â°C ({{ historyModal.minY }}â€“{{ historyModal.maxY }})</span>
               <span class="legend-item muted">X: {{ historyModal.rangeLabel }}</span>
             </div>
           </div>
@@ -1794,7 +1315,7 @@
               </div>
             </div>
             <div class="thermo-controls">
-              <button class="thermo-btn" @click="changeZoneSetpoint(-0.5)">−</button>
+              <button class="thermo-btn" @click="changeZoneSetpoint(-0.5)">âˆ’</button>
               <button class="thermo-btn" @click="changeZoneSetpoint(0.5)">+</button>
             </div>
           </div>
@@ -1929,6 +1450,55 @@ const actuatorDefs = [
   { key: 'gas_boiler_ta', label: 'TA Caldaia Gas Emergenza Riscaldamento', impl: true }
 ]
 
+const energyEntityDefs = [
+  { key: 'pv_power', label: 'PV Power (W)', placeholder: 'sensor.zcs_pv_power' },
+  { key: 'pv_power_aux', label: 'PV Power Aux (W)', placeholder: 'sensor.zcs_pv1_power' },
+  { key: 'pv_power_total', label: 'PV Power Totale (W)', placeholder: 'sensor.zcs_pv_total' },
+  { key: 'load_power', label: 'Carico casa (W)', placeholder: 'sensor.zcs_activepower_load_sys' },
+  { key: 'grid_power', label: 'Rete (PCC) totale (W)', placeholder: 'sensor.zcs_activepower_pcc_total', help: 'Segno da verificare: positivo=import o export.' },
+  { key: 'grid_import_power', label: 'Import rete (W)', placeholder: 'sensor.zcs_grid_import' },
+  { key: 'grid_export_power', label: 'Export rete (W)', placeholder: 'sensor.zcs_grid_export' },
+  { key: 'battery_power', label: 'Batteria Potenza (W)', placeholder: 'sensor.zcs_battery_power', help: 'Segno da verificare: positivo=carica o scarica.' },
+  { key: 'battery_voltage', label: 'Batteria Tensione (V)', placeholder: 'sensor.zcs_battery_voltage' },
+  { key: 'battery_current', label: 'Batteria Corrente (A)', placeholder: 'sensor.zcs_battery_current' },
+  { key: 'battery_soc', label: 'Batteria SOC (%)', placeholder: 'sensor.zcs_battery_soc' },
+  { key: 'battery_soh', label: 'Batteria SOH (%)', placeholder: 'sensor.zcs_battery_soh' },
+  { key: 'battery_temp', label: 'Batteria Temperatura (C)', placeholder: 'sensor.zcs_battery_temperature' },
+  { key: 'storage_control_mode', label: 'Storage Control Mode', placeholder: 'sensor.zcs_storage_control_mode' },
+  { key: 'timed_charge_start', label: 'Timed Charge Start', placeholder: 'sensor.zcs_timed_charge_start' },
+  { key: 'timed_charge_end', label: 'Timed Charge End', placeholder: 'sensor.zcs_timed_charge_end' },
+  { key: 'timed_charge_power', label: 'Timed Charge Power', placeholder: 'sensor.zcs_timed_charge_power' },
+  { key: 'timed_discharge_start', label: 'Timed Discharge Start', placeholder: 'sensor.zcs_timed_discharge_start' },
+  { key: 'timed_discharge_end', label: 'Timed Discharge End', placeholder: 'sensor.zcs_timed_discharge_end' },
+  { key: 'timed_discharge_power', label: 'Timed Discharge Power', placeholder: 'sensor.zcs_timed_discharge_power' },
+  { key: 'today_production_kwh', label: 'Today Production (kWh)', placeholder: 'sensor.zcs_today_production' },
+  { key: 'today_load_kwh', label: 'Today Load (kWh)', placeholder: 'sensor.zcs_today_load_consumption' },
+  { key: 'today_import_kwh', label: 'Today Import (kWh)', placeholder: 'sensor.zcs_today_energy_import' },
+  { key: 'today_export_kwh', label: 'Today Export (kWh)', placeholder: 'sensor.zcs_today_energy_export' },
+  { key: 'forecast_today_kwh', label: 'Forecast PV Oggi (kWh)', placeholder: 'sensor.pv_forecast_today' },
+  { key: 'forecast_tomorrow_kwh', label: 'Forecast PV Domani (kWh)', placeholder: 'sensor.pv_forecast_tomorrow' },
+  { key: 'inverter_status', label: 'Inverter Status', placeholder: 'sensor.zcs_inverter_status' },
+  { key: 'device_fault', label: 'Device Fault', placeholder: 'sensor.zcs_device_fault' },
+  { key: 'grid_frequency', label: 'Grid Frequency (Hz)', placeholder: 'sensor.zcs_grid_frequency' },
+  { key: 'ambient_temp_1', label: 'Ambient Temperature 1 (C)', placeholder: 'sensor.zcs_ambient_temperature_1' },
+  { key: 'ambient_temp_2', label: 'Ambient Temperature 2 (C)', placeholder: 'sensor.zcs_ambient_temperature_2' },
+  { key: 'module_temp_1', label: 'Module Temperature 1 (C)', placeholder: 'sensor.zcs_module_temperature_1' },
+  { key: 'module_temp_2', label: 'Module Temperature 2 (C)', placeholder: 'sensor.zcs_module_temperature_2' },
+  { key: 'module_temp_3', label: 'Module Temperature 3 (C)', placeholder: 'sensor.zcs_module_temperature_3' },
+  { key: 'radiator_temp_1', label: 'Radiator Temperature 1 (C)', placeholder: 'sensor.zcs_radiator_temperature_1' },
+  { key: 'radiator_temp_2', label: 'Radiator Temperature 2 (C)', placeholder: 'sensor.zcs_radiator_temperature_2' },
+  { key: 'radiator_temp_3', label: 'Radiator Temperature 3 (C)', placeholder: 'sensor.zcs_radiator_temperature_3' },
+  { key: 'radiator_temp_4', label: 'Radiator Temperature 4 (C)', placeholder: 'sensor.zcs_radiator_temperature_4' },
+  { key: 'radiator_temp_5', label: 'Radiator Temperature 5 (C)', placeholder: 'sensor.zcs_radiator_temperature_5' },
+  { key: 'radiator_temp_6', label: 'Radiator Temperature 6 (C)', placeholder: 'sensor.zcs_radiator_temperature_6' },
+]
+
+const siteList = computed(() => {
+  const n = Number(sp.value?.runtime?.sites_count || 1)
+  const safe = Number.isFinite(n) ? Math.min(3, Math.max(1, Math.round(n))) : 1
+  return Array.from({ length: safe }, (_, i) => i + 1)
+})
+
 const isFilled = (v) => (typeof v === 'string' ? v.trim().length > 0 : false)
 const filteredActuators = computed(() => {
   const q = filterAct.value.trim().toLowerCase()
@@ -1936,7 +1506,7 @@ const filteredActuators = computed(() => {
   return actuatorDefs.filter(a => (a.label.toLowerCase().includes(q) || a.key.toLowerCase().includes(q)))
 })
 
-const fmtTemp = (v) => (Number.isFinite(v) ? `${v.toFixed(1)}°C` : 'n/d')
+const fmtTemp = (v) => (Number.isFinite(v) ? `${v.toFixed(1)}Â°C` : 'n/d')
 const fmtDelta = (a, b) => {
   const da = Number(a)
   const db = Number(b)
@@ -1960,14 +1530,14 @@ function statsLabel(values, unit){
   const min = Math.min(...values)
   const max = Math.max(...values)
   if (!Number.isFinite(min) || !Number.isFinite(max)) return 'n/d'
-  return `${min.toFixed(1)}–${max.toFixed(1)} ${unit}`.trim()
+  return `${min.toFixed(1)}â€“${max.toFixed(1)} ${unit}`.trim()
 }
 const tempStats = computed(() => {
   const vals = []
   vals.push(...(history.value.t_acs_alto || []))
   vals.push(...(history.value.t_puffer_alto || []))
   vals.push(...(history.value.t_volano_alto || []))
-  return { label: statsLabel(vals, '°C') }
+  return { label: statsLabel(vals, 'Â°C') }
 })
 const exportStats = computed(() => {
   const vals = history.value.export_w || []
@@ -1975,7 +1545,7 @@ const exportStats = computed(() => {
   const min = Math.min(...vals)
   const max = Math.max(...vals)
   if (!Number.isFinite(min) || !Number.isFinite(max)) return { label: 'n/d' }
-  return { label: `${Math.round(min)}–${Math.round(max)} W` }
+  return { label: `${Math.round(min)}â€“${Math.round(max)} W` }
 })
 function addZone(key){
   if (!sp.value?.impianto) return
@@ -2074,7 +1644,7 @@ function openZone(z){
   zoneModal.value = {
     open: true,
     entity_id: z.entity_id,
-    title: `${z.group} — ${z.entity_id}`,
+    title: `${z.group} â€” ${z.entity_id}`,
     temperature: Number(z.temperature) || 0,
     setpoint: Number(z.setpoint) || 0,
     hvac_action: z.hvac_action || z.state || ''
@@ -2096,7 +1666,7 @@ const hvacLabel = (s) => {
   if (v.includes('heat')) return 'In riscaldamento'
   if (v.includes('cool')) return 'In raffrescamento'
   if (v.includes('off')) return 'Spento'
-  return v ? v : '—'
+  return v ? v : 'â€”'
 }
 const changeZoneSetpoint = async (delta) => {
   if (!zoneModal.value.entity_id) return
@@ -2922,3 +2492,5 @@ details.form summary{cursor:pointer;list-style:none}
 .badge-mini.idle{background:rgba(148,163,184,.08)}
 @keyframes flow{0%{stroke-dashoffset:0}100%{stroke-dashoffset:-36}}
 </style>
+
+
