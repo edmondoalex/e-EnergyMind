@@ -1,4 +1,4 @@
-# e-ThermoMind — Project log (estratto dalla conversazione)
+# e-EnergyMind — Project log (estratto dalla conversazione)
 Data export: 2026-02-08 (Europe/Rome)
 
 > Nota: non posso garantire un “verbatim transcript” perfetto al 100% dell’intera chat (limiti tecnici dell’interfaccia),
@@ -10,7 +10,7 @@ Data export: 2026-02-08 (Europe/Rome)
 - HA resta I/O (sensori/switch). Setpoint/stati/logica dentro addon.
 
 ## Nome Add-on
-- **e-ThermoMind**
+- **e-EnergyMind**
 
 ## Architettura concordata
 - Motore modulare a “state machine”:

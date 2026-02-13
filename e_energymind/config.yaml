@@ -1,7 +1,7 @@
-name: e-ThermoMind
-slug: e_thermomind
-description: "PLC termico: orchestrazione ACS/Puffer/Volano/Solare con UI Admin/User (Vue)"
-version: "0.6.58"
+name: e-EnergyMind
+slug: e_energymind
+description: "Gestione energetica fotovoltaica con UI Admin/User (Vue)"
+version: "0.1.0"
 arch: [amd64, aarch64, armv7]
 init: false
 startup: services
@@ -9,14 +9,14 @@ boot: auto
 host_network: true
 homeassistant_api: true
 hassio_api: true
-panel_icon: mdi:thermostat
-panel_title: e-ThermoMind
+panel_icon: mdi:solar-power
+panel_title: e-EnergyMind
 ingress: true
-ingress_port: 8099
+ingress_port: 8100
 ports:
-  8099/tcp: 8099
+  8100/tcp: 8100
 ports_description:
-  8099/tcp: "Web UI (ingress/proxy)"
+  8100/tcp: "Web UI (ingress/proxy)"
 options:
   log_level: info
   pdc_enabled: false

@@ -25,7 +25,7 @@ def _read_app_version() -> str:
     return "0.0.0"
 
 APP_VERSION = _read_app_version()
-app = FastAPI(title="e-ThermoMind", version=APP_VERSION)
+app = FastAPI(title="e-EnergyMind", version=APP_VERSION)
 ha = HAClient()
 cfg = load_config()
 ws_task: asyncio.Task | None = None

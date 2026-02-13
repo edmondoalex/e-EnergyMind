@@ -1,4 +1,4 @@
-# Worklog — e-ThermoMind
+# Worklog — e-EnergyMind
 
 ## 2026-02-08
 - Normalizzazione config e setpoint con guardie su input e defaults.

@@ -1,7 +1,7 @@
 <template>
   <div class="wrap">
     <header class="top">
-      <div class="brand">e-ThermoMind</div>
+      <div class="brand">e-EnergyMind</div>
       <div class="top-actions">
         <button class="action-btn" @click="saveAll">Salva tutto</button>
         <button class="action-btn" @click="exportConfig">Esporta config</button>
@@ -846,7 +846,7 @@
           <div class="row"><strong>Schema impianto (live)</strong></div>
           <div class="muted">Flussi evidenziati in tempo reale.</div>
           <div class="diagram diagram-photo" :style="{ backgroundImage: `url(${schemaImg})` }">
-            <svg class="diagram-overlay" viewBox="0 0 1347 864" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Schema impianto e-ThermoMind">
+            <svg class="diagram-overlay" viewBox="0 0 1347 864" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Schema impianto e-EnergyMind">
               <defs>
                 <radialGradient id="dotGlow" cx="50%" cy="50%" r="50%">
                   <stop offset="0%" stop-color="#7ff6e6" stop-opacity="1"/>
