@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable
 
 DATA_DIR = Path("/data")
-CONF_PATH = DATA_DIR / "thermomind_config.json"
+CONF_PATH = DATA_DIR / "energymind_config.json"
 
 DEFAULT_CONFIG: Dict[str, Any] = {
   "entities": {

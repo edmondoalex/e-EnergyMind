@@ -1,7 +1,7 @@
-# e‑ThermoMind — Master Spec (per Codex) — v1.0
+# e‑EnergyMind — Master Spec (per Codex) — v1.0
 Ultimo aggiornamento: 2026-02-09 (Europe/Rome)
 
-Questo documento definisce in modo **minuzioso** cosa deve fare l’add-on **e‑ThermoMind** per Home Assistant, fino ad arrivare ad una versione “finita” (MVP+ e poi estensioni).
+Questo documento definisce in modo **minuzioso** cosa deve fare l’add-on **e‑EnergyMind** per Home Assistant, fino ad arrivare ad una versione “finita” (MVP+ e poi estensioni).
 È scritto per essere dato in pasto a un agente di coding (es. Codex) come guida operativa.
 
 ---
@@ -236,7 +236,7 @@ Futuro:
 ## 4) Configurazione & persistenza
 
 - Persistenza in `/data` (addon storage) citeturn0search2
-- File: `/data/thermomind_config.json`
+- File: `/data/energymind_config.json`
 - Import/Export JSON da Admin
 
 Schema config (minimo):

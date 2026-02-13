@@ -1,4 +1,4 @@
-# e‑ThermoMind — CODEX HANDOFF “All‑in‑One” (logica blueprint → addon)
+# e‑EnergyMind — CODEX HANDOFF “All‑in‑One” (logica blueprint → addon)
 Data: 2026-02-09 (Europe/Rome)
 
 Scopo: questo documento è pensato per **Codex**. Deve permettere di iniziare a implementare la logica dell’addon **senza** dover rileggere tutta la chat.

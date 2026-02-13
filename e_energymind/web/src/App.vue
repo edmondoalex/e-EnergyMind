@@ -2483,7 +2483,7 @@ async function exportConfig(){
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = 'thermomind_config.json'
+  a.download = 'energymind_config.json'
   a.click()
   URL.revokeObjectURL(url)
 }
