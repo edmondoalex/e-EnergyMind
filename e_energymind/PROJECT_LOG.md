@@ -179,3 +179,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.4.0.
 - Backend: `/api/device_entities` ora accetta `device_name` e include device list + sample device_id.
 - Versione add-on aggiornata a 1.4.1.
+- Backend: endpoint `/api/ha_debug` per verificare accesso ai registry HA.
+- Versione add-on aggiornata a 1.4.2.

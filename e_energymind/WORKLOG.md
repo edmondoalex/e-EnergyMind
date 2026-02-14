@@ -149,6 +149,8 @@
 - Versione add-on aggiornata a 1.4.0.
 - Backend: `/api/device_entities` ora accetta `device_name` e include device list + sample device_id.
 - Versione add-on aggiornata a 1.4.1.
+- Backend: endpoint `/api/ha_debug` per verificare accesso ai registry HA.
+- Versione add-on aggiornata a 1.4.2.
 ## 2026-02-09
 - UI: restyle completo e schema impianto più pulito e leggibile.
 - Backend: attuazione live per Volano→ACS, Volano→Puffer e Puffer→ACS con sequenze valvola→pompa.

@@ -529,3 +529,32 @@ async def get_asset(path: str):
         media_type, _ = mimetypes.guess_type(str(fallback))
         return FileResponse(str(fallback), media_type=media_type)
     raise HTTPException(status_code=404, detail="Not Found")
+
+
+@app.get("/api/ha_debug")
+async def ha_debug():
+    out = {
+        "enabled": ha.enabled,
+        "token_source": getattr(ha, "token_source", None),
+        "base_url": getattr(ha, "_base_url", None),
+    }
+    if not ha._session:
+        out["session"] = "none"
+        return JSONResponse(out)
+    async def _probe(path: str):
+        url = f"{ha._http_url}/{path.lstrip('/')}"
+        try:
+            async with ha._session.get(url) as r:
+                status = r.status
+                data = None
+                try:
+                    data = await r.json()
+                except Exception:
+                    data = await r.text()
+                size = len(data) if isinstance(data, list) else None
+                return {"status": status, "size": size, "sample": data[:1] if isinstance(data, list) else data}
+        except Exception as exc:
+            return {"error": str(exc)}
+    out["device_registry"] = await _probe("/config/device_registry/list")
+    out["entity_registry"] = await _probe("/config/entity_registry/list")
+    return JSONResponse(out)
