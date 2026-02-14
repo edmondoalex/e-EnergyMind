@@ -171,3 +171,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.3.6.
 - Admin: flag manuali persistenti in config (`runtime.ui_flags`).
 - Versione add-on aggiornata a 1.3.7.
+- UI: ripristino flags da localStorage se config vuoto + salvataggio locale continuo.
+- Versione add-on aggiornata a 1.3.8.

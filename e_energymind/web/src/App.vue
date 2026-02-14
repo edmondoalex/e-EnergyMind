@@ -314,6 +314,9 @@ const toggleManual = async (site, key) => {
   const cur = manualFlags.value?.[k]
   const next = !(cur === true)
   manualFlags.value = { ...manualFlags.value, [k]: next }
+  try {
+    localStorage.setItem('energymind_manual_flags', JSON.stringify(manualFlags.value))
+  } catch {}
   if (sp.value?.runtime) {
     sp.value.runtime.ui_flags = { ...manualFlags.value }
     await saveConfig()
@@ -476,6 +479,21 @@ async function saveAll(){
 
 onMounted(async()=>{
   await loadAll()
+  // One-time recovery: if config has no flags but localStorage has them, restore.
+  try {
+    const raw = localStorage.getItem('energymind_manual_flags')
+    if (raw) {
+      const lsFlags = JSON.parse(raw) || {}
+      const hasCfgFlags = sp.value?.runtime?.ui_flags && Object.keys(sp.value.runtime.ui_flags).length > 0
+      if (!hasCfgFlags && Object.keys(lsFlags).length > 0) {
+        manualFlags.value = { ...lsFlags }
+        if (sp.value?.runtime) {
+          sp.value.runtime.ui_flags = { ...lsFlags }
+          await saveConfig()
+        }
+      }
+    }
+  } catch {}
   startPolling()
 })
 onBeforeUnmount(()=>{ stopPolling() })
