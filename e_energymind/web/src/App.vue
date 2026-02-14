@@ -150,18 +150,8 @@
 
         <details class="form" open v-if="ent">
           <summary class="section">Sensori energia (read-only)</summary>
-          <div v-for="site in siteList" :key="`site-${site}`" class="set-section">
-            <div class="section-title">Utenza {{ site }}</div>
-            <div class="field">
-              <label>Seleziona dispositivo (opzionale)</label>
-              <select v-model="sp.devices[`s${site}`].id" @change="onDeviceSelect(site)">
-                <option value="">-- scegli (opzionale) --</option>
-                <option v-for="d in devicesList" :key="d.id" :value="d.id">
-                  {{ d.name_by_user || d.name || d.id }}
-                </option>
-              </select>
-              <div class="help">Seleziona il dispositivo da HA per auto compilare ID/nome. Puoi anche inserire manualmente.</div>
-            </div>
+            <div v-for="site in siteList" :key="`site-${site}`" class="set-section">
+              <div class="section-title">Utenza {{ site }}</div>
             <div class="field">
               <label>Device name (HA)</label>
               <input type="text"
@@ -224,7 +214,6 @@ const actions = ref([])
 let pollTimer = null
 const editingCount = ref(0)
 const dirtyEnt = ref({})
-const devicesList = ref([])
 
 const energyEntityDefs = [
   { key: 'pv_power', label: 'PV Power (W)', placeholder: 'sensor.zcs_pv_power' },
@@ -290,16 +279,6 @@ const getEnt = (site, key) => {
   return ent.value[`s${site}_${key}`] || null
 }
 
-function onDeviceSelect(site){
-  const id = sp.value?.devices?.[`s${site}`]?.id || ''
-  if (!id) return
-  const d = devicesList.value.find(x => x.id === id)
-  if (!d) return
-  if (sp.value?.devices?.[`s${site}`]) {
-    sp.value.devices[`s${site}`].name = d.name_by_user || d.name || ''
-  }
-  saveConfig()
-}
 function canAutoMap(site){
   const dev = sp.value?.devices?.[`s${site}`] || {}
   const name = (dev.name || '').trim()
@@ -335,14 +314,6 @@ async function loadConfig(){
 async function saveConfig(){
   await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(sp.value)})
   await loadConfig()
-}
-async function loadDevices(){
-  try {
-    const r = await fetch('/api/devices')
-    if (!r.ok) return
-    const data = await r.json()
-    devicesList.value = data.items || []
-  } catch {}
 }
 async function loadEntities(){
   if (editingCount.value > 0) return
@@ -388,7 +359,6 @@ async function refresh(){
 }
 async function loadAll(){
   await loadConfig()
-  await loadDevices()
   await loadEntities()
   await refresh()
 }

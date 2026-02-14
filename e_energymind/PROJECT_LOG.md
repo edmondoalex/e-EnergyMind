@@ -142,3 +142,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.2.2.
 - Auto-map: fallback su stati HA con match per `device_name` quando device registry non è disponibile.
 - Versione add-on aggiornata a 1.2.3.
+- Admin: rimosso selettore dispositivo (restano nome/ID manuali).
+- Versione add-on aggiornata a 1.2.4.
