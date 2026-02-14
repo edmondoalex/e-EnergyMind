@@ -231,3 +231,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Report: copia automatica in /share/reports oltre che /data/reports.
 - Versione add-on aggiornata a 1.7.1.
 - Fix crash: indentation in _num_or_none. Version 1.7.2.
+- Report: salvataggio solo in /share/reports (niente doppioni).
+- Versione add-on aggiornata a 1.7.3.

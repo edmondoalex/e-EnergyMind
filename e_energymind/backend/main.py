@@ -36,8 +36,7 @@ last_report_date: str | None = None
 
 DB_PATH = Path("/data/energymind.db")
 ALL_ENTITIES_PATH = Path("/data/energymind_all_entities.json")
-REPORT_DIR = Path("/data/reports")
-SHARE_REPORT_DIR = Path("/share/reports")
+REPORT_DIR = Path("/share/reports")
 LOG_INTERVAL_S = 10
 HISTORY_INTERVAL_S = 30
 RETENTION_DAYS = 90
@@ -476,7 +475,6 @@ def _local_time_str(ts: int) -> str:
 
 def _report_paths(date_str: str) -> tuple[Path, Path]:
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    SHARE_REPORT_DIR.mkdir(parents=True, exist_ok=True)
     md = REPORT_DIR / f"report_{date_str}.md"
     js = REPORT_DIR / f"report_{date_str}.json"
     return md, js
@@ -603,9 +601,6 @@ def _generate_report_for_day(date_str: str) -> None:
     md_path, js_path = _report_paths(date_str)
     md_path.write_text("\n".join(md_lines), encoding="utf-8")
     js_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
-    # also copy to /share/reports for easy access
-    (SHARE_REPORT_DIR / md_path.name).write_text(md_path.read_text(encoding="utf-8"), encoding="utf-8")
-    (SHARE_REPORT_DIR / js_path.name).write_text(js_path.read_text(encoding="utf-8"), encoding="utf-8")
 
 
 def _maybe_generate_daily_report() -> None:
