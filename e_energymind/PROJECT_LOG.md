@@ -144,3 +144,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.2.3.
 - Admin: rimosso selettore dispositivo (restano nome/ID manuali).
 - Versione add-on aggiornata a 1.2.4.
+- Auto-map: ampliati pattern per `battery_soc` e `today_import_kwh`.
+- Versione add-on aggiornata a 1.2.5.
