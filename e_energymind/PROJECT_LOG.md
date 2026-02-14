@@ -235,3 +235,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.7.3.
 - Report: endpoint manuale /api/reports/generate per generazione immediata.
 - Versione add-on aggiornata a 1.7.4.
+- Admin: aggiunto pulsante 'Genera report ora'.
+- Versione add-on aggiornata a 1.7.5.

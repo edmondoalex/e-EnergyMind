@@ -103,6 +103,7 @@
           </span>
           <span class="muted">HA</span>
           <span class="muted">Ultimo aggiornamento: {{ lastUpdate ? lastUpdate.toLocaleTimeString() : '-' }}</span>
+          <span class="muted" v-if="dbInfo?.size_human">DB: {{ dbInfo.size_human }}</span>
         </div>
 
         <div class="form">
@@ -210,7 +211,9 @@
 
         <div class="actions">
           <button class="ghost" @click="loadAll">Ricarica</button>
+          <button class="ghost" @click="generateReport">Genera report ora</button>
         </div>
+        <div v-if="reportStatus?.ok" class="muted">Report generato: {{ reportStatus.date }} in {{ reportStatus.dir }}</div>
       </section>
     </main>
 
@@ -261,6 +264,8 @@ const dbInfo = ref(null)
 const lastUpdate = ref(null)
 const pollMs = ref(3000)
 const actions = ref([])
+const analysis = ref({ ok: false, events: [], missing: [] })
+const reportStatus = ref(null)
 let pollTimer = null
 const editingCount = ref(0)
 const dirtyEnt = ref({})
@@ -580,8 +585,22 @@ async function refresh(){
   dbInfo.value = await d.json()
   const a = await fetch('/api/actions')
   actions.value = (await a.json()).items || []
+  if (tab.value === 'user') {
+    try {
+      const an = await fetch(`/api/analysis?site=1&hours=24`)
+      analysis.value = await an.json()
+    } catch {}
+  }
   await loadEntities()
   lastUpdate.value = new Date()
+}
+
+async function generateReport(){
+  try {
+    const r = await fetch('/api/reports/generate', { method: 'POST' })
+    if (!r.ok) return
+    reportStatus.value = await r.json()
+  } catch {}
 }
 async function loadAll(){
   await loadConfig()
