@@ -124,3 +124,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.1.3.
 - Hotfix static: mount `/assets` separato + `FileResponse` per `/` e `/index.html`.
 - Versione add-on aggiornata a 1.1.4.
+- Hotfix static: fallback mount `/assets` su `/app/static` se `assets/` non esiste.
+- Versione add-on aggiornata a 1.1.5.

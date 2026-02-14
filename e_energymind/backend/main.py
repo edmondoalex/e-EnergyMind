@@ -412,6 +412,10 @@ def _mount_assets() -> None:
     assets_dir = Path("/app/static/assets")
     if assets_dir.is_dir():
         app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+        return
+    fallback_dir = Path("/app/static")
+    if fallback_dir.is_dir():
+        app.mount("/assets", StaticFiles(directory=fallback_dir), name="assets")
 
 
 _mount_assets()
