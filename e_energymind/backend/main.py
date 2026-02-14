@@ -384,6 +384,23 @@ async def auto_map(payload: Dict[str, Any]):
     return JSONResponse({"ok": True, "mapped": count, "device": device.get("name") or device.get("name_by_user") or device.get("id")})
 
 
+@app.get("/api/devices")
+async def list_devices():
+    if not ha.enabled:
+        raise HTTPException(status_code=400, detail="HA not connected")
+    devices = await ha.api_get("/config/device_registry/list") or []
+    out = []
+    for d in devices:
+        out.append({
+            "id": d.get("id"),
+            "name": d.get("name"),
+            "name_by_user": d.get("name_by_user"),
+            "model": d.get("model"),
+            "manufacturer": d.get("manufacturer"),
+        })
+    return JSONResponse({"items": out})
+
+
 @app.get("/api/routes")
 async def get_routes():
     return JSONResponse({"routes": [str(r.path) for r in app.router.routes]})

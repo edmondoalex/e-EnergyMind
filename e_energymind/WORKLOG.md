@@ -39,6 +39,7 @@
 - Fix routing: API non più oscurate da statici; assets serviti su `/assets`.
 - Auto-mapping: import entità da device HA via nome/ID (Admin).
 - Fix auto-mapping: uso endpoint `device_registry/list` e `entity_registry/list`.
+- Aggiunto endpoint `/api/devices` per elencare device HA con id e nome.
 - Pallino verde/rosso per gestito/non gestito.
 - Fix salvataggio attuatori (salva solo entity_id).
 - Indicatore popolato/non popolato per entita e attuatori in Admin.
