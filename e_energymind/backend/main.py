@@ -343,7 +343,24 @@ async def auto_map(payload: Dict[str, Any]):
 
     device, dev_entities = await _get_device_entities(device_id or None, device_name or None)
     if not device:
-        raise HTTPException(status_code=404, detail="Device not found")
+        # Fallback: try matching by name across states if device registry is unavailable
+        if device_name:
+            dn = _norm(device_name)
+            dev_entities = []
+            for eid, st in (ha.states or {}).items():
+                if not isinstance(st, dict):
+                    continue
+                fname = st.get("attributes", {}).get("friendly_name", "")
+                text = f"{eid} {fname}"
+                if dn and dn in _norm(text):
+                    dev_entities.append({
+                        "entity_id": eid,
+                        "name": fname,
+                        "original_name": fname,
+                    })
+            device = {"name": device_name}
+        if not device:
+            raise HTTPException(status_code=404, detail="Device not found")
 
     patterns = _patterns()
     used = set()

@@ -110,6 +110,8 @@
 - Versione add-on aggiornata a 1.2.1.
 - Backend: aggiunta route `/api/auto_map/` per compatibilità (trailing slash).
 - Versione add-on aggiornata a 1.2.2.
+- Auto-map: fallback su stati HA con match per `device_name` quando device registry non è disponibile.
+- Versione add-on aggiornata a 1.2.3.
 ## 2026-02-09
 - UI: restyle completo e schema impianto più pulito e leggibile.
 - Backend: attuazione live per Volano→ACS, Volano→Puffer e Puffer→ACS con sequenze valvola→pompa.
