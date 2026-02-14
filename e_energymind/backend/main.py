@@ -7,7 +7,6 @@ from typing import Any, Dict
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
 
 from .ha_client import HAClient
 from .storage import load_config, save_config, apply_config, apply_entities, ENERGY_ENTITY_KEYS
@@ -26,9 +25,6 @@ def _load_version() -> str:
 APP_VERSION = _load_version()
 
 app = FastAPI(title="e-EnergyMind", version=APP_VERSION)
-
-# Serve UI static files
-app.mount("/assets", StaticFiles(directory="/app/static/assets"), name="assets")
 
 ha = HAClient()
 ha_task: asyncio.Task | None = None
@@ -266,6 +262,14 @@ async def index():
 @app.get("/index.html")
 async def index_html():
     return FileResponse("/app/static/index.html")
+
+
+@app.get("/assets/{path:path}")
+async def assets(path: str):
+    file_path = Path("/app/static/assets") / path
+    if file_path.exists():
+        return FileResponse(file_path)
+    raise HTTPException(status_code=404, detail="Asset not found")
 
 
 @app.on_event("startup")
