@@ -170,18 +170,11 @@
             <div v-for="item in visibleEntityDefs(site)" :key="`s${site}_${item.key}`" class="field">
               <label class="label-row">
                 <span>{{ labelFor(site, item.key, item.label) }}</span>
-                <div class="flag-group">
-                  <span class="state-flag" :class="isOn(site, item.key) ? 'state-on' : 'state-off'">
-                    <input class="flag-checkbox" type="checkbox" :checked="isOn(site, item.key)"
-                           @change="toggleManual(site, item.key)"/>
-                    <span>{{ isOn(site, item.key) ? 'ON' : 'OFF' }}</span>
-                  </span>
-                  <span class="state-flag hist" :class="isHistKey(`s${site}_${item.key}`) ? 'state-on' : 'state-off'">
-                    <input class="flag-checkbox" type="checkbox" :checked="isHistKey(`s${site}_${item.key}`)"
-                           @change="toggleHistKey(`s${site}_${item.key}`)"/>
-                    <span>H</span>
-                  </span>
-                </div>
+                <span class="state-flag" :class="isOn(site, item.key) ? 'state-on' : 'state-off'">
+                  <input class="flag-checkbox" type="checkbox" :checked="isOn(site, item.key)"
+                         @change="toggleManual(site, item.key)"/>
+                  <span>{{ isOn(site, item.key) ? 'ON' : 'OFF' }}</span>
+                </span>
               </label>
               <div class="input-row">
                 <span class="logic-dot" :class="isFilled(ent?.[`s${site}_${item.key}`]?.entity_id) ? 'logic-ok' : 'logic-no'">●</span>
@@ -201,18 +194,11 @@
             <div v-for="e in allEntities(site)" :key="`all-${site}-${e.entity_id}`" class="field field-readonly">
               <label class="label-row">
                 <span>{{ e.name || e.original_name || e.entity_id }}</span>
-                <div class="flag-group">
-                  <span class="state-flag" :class="isOnKey(`all_s${site}_${e.entity_id}`) ? 'state-on' : 'state-off'">
-                    <input class="flag-checkbox" type="checkbox" :checked="isOnKey(`all_s${site}_${e.entity_id}`)"
-                           @change="toggleManualKey(`all_s${site}_${e.entity_id}`)"/>
-                    <span>{{ isOnKey(`all_s${site}_${e.entity_id}`) ? 'ON' : 'OFF' }}</span>
-                  </span>
-                  <span class="state-flag hist" :class="isHistKey(`all_s${site}_${e.entity_id}`) ? 'state-on' : 'state-off'">
-                    <input class="flag-checkbox" type="checkbox" :checked="isHistKey(`all_s${site}_${e.entity_id}`)"
-                           @change="toggleHistKey(`all_s${site}_${e.entity_id}`)"/>
-                    <span>H</span>
-                  </span>
-                </div>
+                <span class="state-flag" :class="isOnKey(`all_s${site}_${e.entity_id}`) ? 'state-on' : 'state-off'">
+                  <input class="flag-checkbox" type="checkbox" :checked="isOnKey(`all_s${site}_${e.entity_id}`)"
+                         @change="toggleManualKey(`all_s${site}_${e.entity_id}`)"/>
+                  <span>{{ isOnKey(`all_s${site}_${e.entity_id}`) ? 'ON' : 'OFF' }}</span>
+                </span>
               </label>
               <div class="input-row">
                 <span class="logic-dot logic-ok">●</span>
@@ -245,6 +231,12 @@
         <div v-if="historyModal.series.length > 0" class="muted">
           Range: 24h · punti: {{ historyModal.series.length }} · unità: {{ historyModal.unit || '-' }}
         </div>
+        <div v-if="historyModal.samples.length > 0" class="muted">
+          Esempi XY:
+          <span v-for="(s, i) in historyModal.samples" :key="`s-${i}`" class="sample">
+            ({{ s.t }}, {{ s.v }}{{ s.unit ? ' ' + s.unit : '' }})
+          </span>
+        </div>
       </div>
     </div>
   </div>
@@ -268,7 +260,7 @@ const showAll = ref(false)
 const overwriteMap = ref({ 1: false, 2: false, 3: false })
 const manualFlags = ref({})
 const historyFlags = ref({})
-const historyModal = ref({ open: false, title: '', series: [], unit: '' })
+const historyModal = ref({ open: false, title: '', series: [], unit: '', samples: [] })
 const allEntitiesState = ref({ 1: [], 2: [], 3: [] })
 
 const energyEntityDefs = [
@@ -386,20 +378,8 @@ const toggleManualKey = async (k) => {
   }
 }
 const toggleManual = async (site, key) => toggleManualKey(`s${site}_${key}`)
-const isHistKey = (k) => {
-  const v = historyFlags.value?.[k]
-  if (typeof v === 'boolean') return v
-  return false
-}
-const toggleHistKey = async (k) => {
-  const cur = historyFlags.value?.[k]
-  const next = !(cur === true)
-  historyFlags.value = { ...historyFlags.value, [k]: next }
-  if (sp.value?.runtime) {
-    sp.value.runtime.ui_history_flags = { ...historyFlags.value }
-    await saveConfig()
-  }
-}
+const isHistKey = () => false
+const toggleHistKey = async () => {}
 const labelFor = (site, key, fallback) => {
   const e = getEnt(site, key)
   const fn = e?.attributes?.friendly_name
@@ -437,7 +417,7 @@ const selectedEntities = (site) => {
         label: labelFor(site, item.key, item.label),
         value: fmtEntity(getEnt(site, item.key)),
         entity_id: entityId,
-        history: isHistKey(key),
+        history: true,
       })
     }
   }
@@ -449,24 +429,25 @@ const selectedEntities = (site) => {
       label: e.name || e.original_name || e.entity_id,
       value: fmtEntityRaw(e.state, e.attributes),
       entity_id: e.entity_id,
-      history: isHistKey(key),
+      history: true,
     })
   }
   return out
 }
 
 async function openHistory(item, site){
-  if (!item?.history) return
   if (!item?.entity_id) return
   const r = await fetch(`/api/history?site=${site}&hours=24&entity_id=${encodeURIComponent(item.entity_id)}`)
   if (!r.ok) return
   const data = await r.json()
   const items = Array.isArray(data.items) ? data.items : []
+  const samples = pickSamples(items)
   historyModal.value = {
     open: true,
     title: item.label,
     unit: items.find(i => i.unit)?.unit || '',
-    series: items
+    series: items,
+    samples
   }
 }
 
@@ -503,9 +484,6 @@ async function loadConfig(){
   }
   if (sp.value?.runtime?.ui_flags && typeof sp.value.runtime.ui_flags === 'object') {
     manualFlags.value = { ...sp.value.runtime.ui_flags }
-  }
-  if (sp.value?.runtime?.ui_history_flags && typeof sp.value.runtime.ui_history_flags === 'object') {
-    historyFlags.value = { ...sp.value.runtime.ui_history_flags }
   }
 }
 async function saveConfig(){
@@ -638,6 +616,28 @@ function chartPath(series){
     d += ` L ${scaleX(pts[i].x)} ${scaleY(pts[i].y)}`
   }
   return d
+}
+
+function fmtTs(ts){
+  const d = new Date(ts * 1000)
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  return `${hh}:${mm}`
+}
+
+function pickSamples(items){
+  if (!Array.isArray(items) || items.length === 0) return []
+  if (items.length <= 3) {
+    return items.map(i => ({ t: fmtTs(i.ts), v: i.value, unit: i.unit }))
+  }
+  const mid = items[Math.floor(items.length / 2)]
+  const first = items[0]
+  const last = items[items.length - 1]
+  return [
+    { t: fmtTs(first.ts), v: first.value, unit: first.unit },
+    { t: fmtTs(mid.ts), v: mid.value, unit: mid.unit },
+    { t: fmtTs(last.ts), v: last.value, unit: last.unit },
+  ]
 }
 
 async function exportConfig(){
@@ -1043,6 +1043,10 @@ body{
   border:1px solid var(--line);
   border-radius:10px;
   margin:8px 0;
+}
+.sample{
+  margin-left:8px;
+  display:inline-block;
 }
 
 @media (max-width: 1100px){

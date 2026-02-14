@@ -213,3 +213,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.6.0.
 - DB: storico su tabella unica history, scrittura solo su cambio valore (niente duplicati).
 - Versione add-on aggiornata a 1.6.2.
+- User: nel popup storico aggiunti esempi XY (3 punti: inizio/mezzo/fine).
+- Versione add-on aggiornata a 1.6.3.
