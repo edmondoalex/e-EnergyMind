@@ -35,6 +35,7 @@ action_log: list[str] = []
 DB_PATH = Path("/data/energymind.db")
 ALL_ENTITIES_PATH = Path("/data/energymind_all_entities.json")
 LOG_INTERVAL_S = 10
+HISTORY_INTERVAL_S = 30
 RETENTION_DAYS = 90
 
 
@@ -101,8 +102,22 @@ def _db_init() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS history (
+              ts INTEGER NOT NULL,
+              site INTEGER NOT NULL,
+              entity_id TEXT NOT NULL,
+              value REAL,
+              raw TEXT,
+              unit TEXT
+            )
+            """
+        )
         conn.execute("CREATE INDEX IF NOT EXISTS idx_samples_ts ON samples(ts)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_samples_site_key ON samples(site, key)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_history_ts ON history(ts)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_history_site_entity ON history(site, entity_id)")
         conn.commit()
 
 
@@ -118,9 +133,22 @@ def _db_insert_rows(rows: list[tuple]) -> int:
     return len(rows)
 
 
+def _db_insert_history(rows: list[tuple]) -> int:
+    if not rows:
+        return 0
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.executemany(
+            "INSERT INTO history (ts, site, entity_id, value, raw, unit) VALUES (?,?,?,?,?,?)",
+            rows,
+        )
+        conn.commit()
+    return len(rows)
+
+
 def _db_prune(cutoff_ts: int) -> int:
     with sqlite3.connect(DB_PATH) as conn:
         cur = conn.execute("DELETE FROM samples WHERE ts < ?", (cutoff_ts,))
+        conn.execute("DELETE FROM history WHERE ts < ?", (cutoff_ts,))
         conn.commit()
         return cur.rowcount or 0
 
@@ -166,6 +194,51 @@ def _collect_rows() -> list[tuple]:
         if isinstance(attrs, dict):
             unit = attrs.get("unit_of_measurement")
         rows.append((now_ts, site, key, val, None if raw is None else str(raw), None if unit is None else str(unit)))
+    return rows
+
+
+def _collect_history_rows() -> list[tuple]:
+    cfg = load_config()
+    flags = cfg.get("runtime", {}).get("ui_history_flags", {}) or {}
+    ent_cfg = cfg.get("entities", {}) or {}
+    now_ts = int(time.time())
+    rows: list[tuple] = []
+
+    def add_entity(site: int, entity_id: str):
+        st = ha.states.get(entity_id)
+        if not st:
+            return
+        raw = st.get("state")
+        val = _num_or_none(raw)
+        unit = None
+        attrs = st.get("attributes") or {}
+        if isinstance(attrs, dict):
+            unit = attrs.get("unit_of_measurement")
+        rows.append((now_ts, site, entity_id, val, None if raw is None else str(raw), None if unit is None else str(unit)))
+
+    for key, enabled in flags.items():
+        if enabled is not True:
+            continue
+        if key.startswith("all_s"):
+            parts = key.split("_", 2)
+            if len(parts) != 3:
+                continue
+            site_part = parts[1][1:] if parts[1].startswith("s") else parts[1]
+            if not site_part.isdigit():
+                continue
+            site = int(site_part)
+            entity_id = parts[2]
+            if entity_id:
+                add_entity(site, entity_id)
+        elif key.startswith("s"):
+            parsed = _parse_site_key(key)
+            if not parsed:
+                continue
+            site, ent_key = parsed
+            entity_id = ent_cfg.get(f"s{site}_{ent_key}")
+            if entity_id:
+                add_entity(site, entity_id)
+
     return rows
 
 
@@ -266,6 +339,7 @@ async def _get_device_entities(device_id: str | None, device_name: str | None) -
 async def _logging_loop():
     _db_init()
     last_prune = 0.0
+    last_history = 0.0
     while True:
         try:
             rows = await asyncio.to_thread(_collect_rows)
@@ -273,6 +347,12 @@ async def _logging_loop():
                 inserted = await asyncio.to_thread(_db_insert_rows, rows)
                 _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} LOG samples={inserted}")
             now = time.time()
+            if now - last_history >= HISTORY_INTERVAL_S:
+                hrows = await asyncio.to_thread(_collect_history_rows)
+                if hrows:
+                    inserted_h = await asyncio.to_thread(_db_insert_history, hrows)
+                    _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} LOG history={inserted_h}")
+                last_history = now
             if now - last_prune > 3600:
                 cutoff = int(now - (RETENTION_DAYS * 86400))
                 deleted = await asyncio.to_thread(_db_prune, cutoff)
@@ -323,6 +403,41 @@ async def get_status():
         "runtime_mode": cfg.get("runtime", {}).get("mode", "dry-run"),
         "ha_connected": bool(ha._session) and ha.enabled,
     }
+
+
+def _fmt_bytes(n: int) -> str:
+    if n < 1024:
+        return f"{n} B"
+    for unit in ("KB", "MB", "GB"):
+        n = n / 1024.0
+        if n < 1024:
+            return f"{n:.2f} {unit}"
+    return f"{n:.2f} TB"
+
+
+@app.get("/api/db_info")
+async def db_info():
+    size = DB_PATH.stat().st_size if DB_PATH.exists() else 0
+    return {"size_bytes": size, "size_human": _fmt_bytes(size)}
+
+
+@app.get("/api/history")
+async def get_history(entity_id: str = "", site: int = 1, hours: int = 24):
+    entity_id = (entity_id or "").strip()
+    if not entity_id:
+        raise HTTPException(status_code=400, detail="Missing entity_id")
+    if site not in (1, 2, 3):
+        raise HTTPException(status_code=400, detail="Invalid site")
+    hours = max(1, min(168, int(hours)))
+    since_ts = int(time.time()) - hours * 3600
+    with sqlite3.connect(DB_PATH) as conn:
+        cur = conn.execute(
+            "SELECT ts, value, raw, unit FROM history WHERE site = ? AND entity_id = ? AND ts >= ? ORDER BY ts ASC",
+            (site, entity_id, since_ts),
+        )
+        rows = cur.fetchall()
+    items = [{"ts": r[0], "value": r[1], "raw": r[2], "unit": r[3]} for r in rows]
+    return JSONResponse({"site": site, "entity_id": entity_id, "hours": hours, "items": items})
 
 
 @app.get("/api/config")

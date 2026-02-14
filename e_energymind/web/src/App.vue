@@ -35,6 +35,7 @@
           </span>
           <span class="muted">HA</span>
           <span class="muted">Ultimo aggiornamento: {{ lastUpdate ? lastUpdate.toLocaleTimeString() : '-' }}</span>
+          <span class="muted" v-if="dbInfo?.size_human">DB: {{ dbInfo.size_human }}</span>
         </div>
         <p v-if="status?.runtime_mode !== 'live'" class="muted">Dry-run: nessun comando agli attuatori. Analisi solo lettura.</p>
 
@@ -70,7 +71,7 @@
             <div v-if="selectedEntities(site).length === 0" class="muted">Nessuna entità selezionata.</div>
             <div v-else class="entity-list">
               <div v-for="item in selectedEntities(site)" :key="`sel-${site}-${item.key}`"
-                   class="entity-row row-on">
+                   class="entity-row row-on clickable" @click="openHistory(item, site)">
                 <span class="entity-name">{{ item.label }}</span>
                 <span class="entity-value">{{ item.value }}</span>
               </div>
@@ -169,11 +170,18 @@
             <div v-for="item in visibleEntityDefs(site)" :key="`s${site}_${item.key}`" class="field">
               <label class="label-row">
                 <span>{{ labelFor(site, item.key, item.label) }}</span>
-                <span class="state-flag" :class="isOn(site, item.key) ? 'state-on' : 'state-off'">
-                  <input class="flag-checkbox" type="checkbox" :checked="isOn(site, item.key)"
-                         @change="toggleManual(site, item.key)"/>
-                  <span>{{ isOn(site, item.key) ? 'ON' : 'OFF' }}</span>
-                </span>
+                <div class="flag-group">
+                  <span class="state-flag" :class="isOn(site, item.key) ? 'state-on' : 'state-off'">
+                    <input class="flag-checkbox" type="checkbox" :checked="isOn(site, item.key)"
+                           @change="toggleManual(site, item.key)"/>
+                    <span>{{ isOn(site, item.key) ? 'ON' : 'OFF' }}</span>
+                  </span>
+                  <span class="state-flag hist" :class="isHistKey(`s${site}_${item.key}`) ? 'state-on' : 'state-off'">
+                    <input class="flag-checkbox" type="checkbox" :checked="isHistKey(`s${site}_${item.key}`)"
+                           @change="toggleHistKey(`s${site}_${item.key}`)"/>
+                    <span>H</span>
+                  </span>
+                </div>
               </label>
               <div class="input-row">
                 <span class="logic-dot" :class="isFilled(ent?.[`s${site}_${item.key}`]?.entity_id) ? 'logic-ok' : 'logic-no'">●</span>
@@ -193,11 +201,18 @@
             <div v-for="e in allEntities(site)" :key="`all-${site}-${e.entity_id}`" class="field field-readonly">
               <label class="label-row">
                 <span>{{ e.name || e.original_name || e.entity_id }}</span>
-                <span class="state-flag" :class="isOnKey(`all_s${site}_${e.entity_id}`) ? 'state-on' : 'state-off'">
-                  <input class="flag-checkbox" type="checkbox" :checked="isOnKey(`all_s${site}_${e.entity_id}`)"
-                         @change="toggleManualKey(`all_s${site}_${e.entity_id}`)"/>
-                  <span>{{ isOnKey(`all_s${site}_${e.entity_id}`) ? 'ON' : 'OFF' }}</span>
-                </span>
+                <div class="flag-group">
+                  <span class="state-flag" :class="isOnKey(`all_s${site}_${e.entity_id}`) ? 'state-on' : 'state-off'">
+                    <input class="flag-checkbox" type="checkbox" :checked="isOnKey(`all_s${site}_${e.entity_id}`)"
+                           @change="toggleManualKey(`all_s${site}_${e.entity_id}`)"/>
+                    <span>{{ isOnKey(`all_s${site}_${e.entity_id}`) ? 'ON' : 'OFF' }}</span>
+                  </span>
+                  <span class="state-flag hist" :class="isHistKey(`all_s${site}_${e.entity_id}`) ? 'state-on' : 'state-off'">
+                    <input class="flag-checkbox" type="checkbox" :checked="isHistKey(`all_s${site}_${e.entity_id}`)"
+                           @change="toggleHistKey(`all_s${site}_${e.entity_id}`)"/>
+                    <span>H</span>
+                  </span>
+                </div>
               </label>
               <div class="input-row">
                 <span class="logic-dot logic-ok">●</span>
@@ -216,6 +231,22 @@
         </div>
       </section>
     </main>
+
+    <div v-if="historyModal.open" class="modal-backdrop" @click="historyModal.open=false">
+      <div class="modal" @click.stop>
+        <div class="modal-header">
+          <strong>{{ historyModal.title }}</strong>
+          <button class="ghost" @click="historyModal.open=false">Chiudi</button>
+        </div>
+        <div v-if="historyModal.series.length === 0" class="muted">Nessun dato storico disponibile.</div>
+        <svg v-else class="chart" viewBox="0 0 640 220" preserveAspectRatio="none">
+          <path :d="chartPath(historyModal.series)" fill="none" stroke="var(--accent)" stroke-width="2" />
+        </svg>
+        <div v-if="historyModal.series.length > 0" class="muted">
+          Range: 24h · punti: {{ historyModal.series.length }} · unità: {{ historyModal.unit || '-' }}
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -226,6 +257,7 @@ const tab = ref('user')
 const sp = ref(null)
 const ent = ref(null)
 const status = ref(null)
+const dbInfo = ref(null)
 const lastUpdate = ref(null)
 const pollMs = ref(3000)
 const actions = ref([])
@@ -235,6 +267,8 @@ const dirtyEnt = ref({})
 const showAll = ref(false)
 const overwriteMap = ref({ 1: false, 2: false, 3: false })
 const manualFlags = ref({})
+const historyFlags = ref({})
+const historyModal = ref({ open: false, title: '', series: [], unit: '' })
 const allEntitiesState = ref({ 1: [], 2: [], 3: [] })
 
 const energyEntityDefs = [
@@ -352,6 +386,20 @@ const toggleManualKey = async (k) => {
   }
 }
 const toggleManual = async (site, key) => toggleManualKey(`s${site}_${key}`)
+const isHistKey = (k) => {
+  const v = historyFlags.value?.[k]
+  if (typeof v === 'boolean') return v
+  return false
+}
+const toggleHistKey = async (k) => {
+  const cur = historyFlags.value?.[k]
+  const next = !(cur === true)
+  historyFlags.value = { ...historyFlags.value, [k]: next }
+  if (sp.value?.runtime) {
+    sp.value.runtime.ui_history_flags = { ...historyFlags.value }
+    await saveConfig()
+  }
+}
 const labelFor = (site, key, fallback) => {
   const e = getEnt(site, key)
   const fn = e?.attributes?.friendly_name
@@ -383,10 +431,13 @@ const selectedEntities = (site) => {
   for (const item of energyEntityDefs) {
     const key = `s${site}_${item.key}`
     if (isOnKey(key) && isMapped(site, item.key)) {
+      const entityId = getEnt(site, item.key)?.entity_id || ''
       out.push({
         key,
         label: labelFor(site, item.key, item.label),
         value: fmtEntity(getEnt(site, item.key)),
+        entity_id: entityId,
+        history: isHistKey(key),
       })
     }
   }
@@ -397,9 +448,26 @@ const selectedEntities = (site) => {
       key,
       label: e.name || e.original_name || e.entity_id,
       value: fmtEntityRaw(e.state, e.attributes),
+      entity_id: e.entity_id,
+      history: isHistKey(key),
     })
   }
   return out
+}
+
+async function openHistory(item, site){
+  if (!item?.history) return
+  if (!item?.entity_id) return
+  const r = await fetch(`/api/history?site=${site}&hours=24&entity_id=${encodeURIComponent(item.entity_id)}`)
+  if (!r.ok) return
+  const data = await r.json()
+  const items = Array.isArray(data.items) ? data.items : []
+  historyModal.value = {
+    open: true,
+    title: item.label,
+    unit: items.find(i => i.unit)?.unit || '',
+    series: items
+  }
 }
 
 function canAutoMap(site){
@@ -435,6 +503,9 @@ async function loadConfig(){
   }
   if (sp.value?.runtime?.ui_flags && typeof sp.value.runtime.ui_flags === 'object') {
     manualFlags.value = { ...sp.value.runtime.ui_flags }
+  }
+  if (sp.value?.runtime?.ui_history_flags && typeof sp.value.runtime.ui_history_flags === 'object') {
+    historyFlags.value = { ...sp.value.runtime.ui_history_flags }
   }
 }
 async function saveConfig(){
@@ -522,6 +593,8 @@ async function refresh(){
   if (tab.value === 'admin' || editingCount.value > 0) return
   const s = await fetch('/api/status')
   status.value = await s.json()
+  const d = await fetch('/api/db_info')
+  dbInfo.value = await d.json()
   const a = await fetch('/api/actions')
   actions.value = (await a.json()).items || []
   await loadEntities()
@@ -544,6 +617,27 @@ function startPolling(){
 function stopPolling(){
   if (pollTimer) clearInterval(pollTimer)
   pollTimer = null
+}
+
+function chartPath(series){
+  const pts = series
+    .map(p => ({ x: Number(p.ts), y: Number(p.value) }))
+    .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y))
+  if (pts.length === 0) return ''
+  const minX = Math.min(...pts.map(p => p.x))
+  const maxX = Math.max(...pts.map(p => p.x))
+  const minY = Math.min(...pts.map(p => p.y))
+  const maxY = Math.max(...pts.map(p => p.y))
+  const w = 640, h = 220
+  const dx = maxX === minX ? 1 : (maxX - minX)
+  const dy = maxY === minY ? 1 : (maxY - minY)
+  const scaleX = (x) => ((x - minX) / dx) * w
+  const scaleY = (y) => h - ((y - minY) / dy) * h
+  let d = `M ${scaleX(pts[0].x)} ${scaleY(pts[0].y)}`
+  for (let i = 1; i < pts.length; i++) {
+    d += ` L ${scaleX(pts[i].x)} ${scaleY(pts[i].y)}`
+  }
+  return d
 }
 
 async function exportConfig(){
@@ -906,6 +1000,49 @@ body{
 .state-off{
   border-color:rgba(107,114,128,0.4);
   color:var(--off);
+}
+.state-flag.hist{
+  min-width:34px;
+  justify-content:center;
+}
+.flag-group{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.entity-row.clickable{
+  cursor:pointer;
+}
+.modal-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:20;
+}
+.modal{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+  width:min(900px, 92vw);
+  box-shadow:var(--shadow);
+}
+.modal-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:8px;
+}
+.chart{
+  width:100%;
+  height:240px;
+  background:#0b121a;
+  border:1px solid var(--line);
+  border-radius:10px;
+  margin:8px 0;
 }
 
 @media (max-width: 1100px){
