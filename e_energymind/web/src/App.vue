@@ -222,7 +222,19 @@
         </div>
         <div v-if="historyModal.series.length === 0" class="muted">Nessun dato storico disponibile.</div>
         <svg v-else class="chart" viewBox="0 0 640 220" preserveAspectRatio="none">
-          <path :d="chartPath(historyModal.series)" fill="none" stroke="var(--accent)" stroke-width="2" />
+          <g class="axis">
+            <line x1="40" y1="10" x2="40" y2="210" />
+            <line x1="40" y1="210" x2="630" y2="210" />
+            <g v-for="(t, i) in chartMeta(historyModal.series).yTicks" :key="`y-${i}`">
+              <line :x1="40" :y1="t.y" :x2="630" :y2="t.y" class="grid"/>
+              <text :x="36" :y="t.y + 4" text-anchor="end">{{ t.label }}</text>
+            </g>
+            <g v-for="(t, i) in chartMeta(historyModal.series).xTicks" :key="`x-${i}`">
+              <line :x1="t.x" :y1="210" :x2="t.x" :y2="10" class="grid"/>
+              <text :x="t.x" :y="218" text-anchor="middle">{{ t.label }}</text>
+            </g>
+          </g>
+          <path :d="chartMeta(historyModal.series).path" fill="none" stroke="var(--accent)" stroke-width="2" />
         </svg>
         <div v-if="historyModal.series.length > 0" class="muted">
           Range: 24h · punti: {{ historyModal.series.length }} · unità: {{ historyModal.unit || '-' }}
@@ -599,16 +611,48 @@ function chartPath(series){
   const maxX = Math.max(...pts.map(p => p.x))
   const minY = Math.min(...pts.map(p => p.y))
   const maxY = Math.max(...pts.map(p => p.y))
-  const w = 640, h = 220
+  const left = 40, right = 10, top = 10, bottom = 10
+  const w = 640 - left - right
+  const h = 220 - top - bottom
   const dx = maxX === minX ? 1 : (maxX - minX)
   const dy = maxY === minY ? 1 : (maxY - minY)
-  const scaleX = (x) => ((x - minX) / dx) * w
-  const scaleY = (y) => h - ((y - minY) / dy) * h
+  const scaleX = (x) => left + ((x - minX) / dx) * w
+  const scaleY = (y) => top + h - ((y - minY) / dy) * h
   let d = `M ${scaleX(pts[0].x)} ${scaleY(pts[0].y)}`
   for (let i = 1; i < pts.length; i++) {
     d += ` L ${scaleX(pts[i].x)} ${scaleY(pts[i].y)}`
   }
   return d
+}
+
+function chartMeta(series){
+  const pts = series
+    .map(p => ({ x: Number(p.ts), y: Number(p.value) }))
+    .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y))
+  if (pts.length === 0) return { path: '', xTicks: [], yTicks: [] }
+  const minX = Math.min(...pts.map(p => p.x))
+  const maxX = Math.max(...pts.map(p => p.x))
+  const minY = Math.min(...pts.map(p => p.y))
+  const maxY = Math.max(...pts.map(p => p.y))
+  const left = 40, right = 10, top = 10, bottom = 10
+  const w = 640 - left - right
+  const h = 220 - top - bottom
+  const dx = maxX === minX ? 1 : (maxX - minX)
+  const dy = maxY === minY ? 1 : (maxY - minY)
+  const scaleX = (x) => left + ((x - minX) / dx) * w
+  const scaleY = (y) => top + h - ((y - minY) / dy) * h
+  const path = chartPath(series)
+  const yTicks = []
+  for (let i = 0; i <= 4; i++) {
+    const v = minY + (dy * i / 4)
+    yTicks.push({ y: scaleY(v), label: v.toFixed(2) })
+  }
+  const xTicks = []
+  for (let i = 0; i <= 4; i++) {
+    const v = minX + (dx * i / 4)
+    xTicks.push({ x: scaleX(v), label: fmtTs(v) })
+  }
+  return { path, xTicks, yTicks }
 }
 
 function fmtTs(ts){
@@ -1027,6 +1071,17 @@ body{
   border:1px solid var(--line);
   border-radius:10px;
   margin:8px 0;
+}
+.axis line{
+  stroke:rgba(159,176,195,0.35);
+  stroke-width:1;
+}
+.axis text{
+  fill:var(--muted);
+  font-size:10px;
+}
+.axis .grid{
+  stroke:rgba(159,176,195,0.12);
 }
 .sample{
   margin-left:8px;

@@ -219,3 +219,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.6.4.
 - Admin: rimosso flag Storico (grafico ora su click per tutte le entità selezionate).
 - Versione add-on aggiornata a 1.6.5.
+- Grafico storico: aggiunta scala assi X/Y con tick e griglia.
+- Versione add-on aggiornata a 1.6.6.
