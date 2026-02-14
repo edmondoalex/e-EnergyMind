@@ -44,65 +44,32 @@
             <span class="muted" v-if="deviceLabel(site)"> — {{ deviceLabel(site) }}</span>
           </div>
           <div class="grid">
-            <div class="kpi">
-              <div class="k">PV Power</div>
-              <div class="v">{{ fmtEntity(getEnt(site, 'pv_power')) }}</div>
-            </div>
-            <div class="kpi">
-              <div class="k">Carico casa</div>
-              <div class="v">{{ fmtEntity(getEnt(site, 'load_power')) }}</div>
-            </div>
-            <div class="kpi">
-              <div class="k">Rete (PCC)</div>
-              <div class="v">{{ fmtEntity(getEnt(site, 'grid_power')) }}</div>
-            </div>
-            <div class="kpi">
-              <div class="k">Import rete</div>
-              <div class="v">{{ fmtEntity(getEnt(site, 'grid_import_power')) }}</div>
-            </div>
-            <div class="kpi">
-              <div class="k">Export rete</div>
-              <div class="v">{{ fmtEntity(getEnt(site, 'grid_export_power')) }}</div>
-            </div>
-            <div class="kpi">
-              <div class="k">Batteria Power</div>
-              <div class="v">{{ fmtEntity(getEnt(site, 'battery_power')) }}</div>
-            </div>
-            <div class="kpi">
-              <div class="k">Batteria SOC</div>
-              <div class="v">{{ fmtEntity(getEnt(site, 'battery_soc')) }}</div>
-            </div>
-            <div class="kpi">
-              <div class="k">Batteria Temp</div>
-              <div class="v">{{ fmtEntity(getEnt(site, 'battery_temp')) }}</div>
+            <div v-for="item in userKpiDefs.filter(i => isMapped(site, i.key))" :key="`u1-${site}-${item.key}`" class="kpi">
+              <div class="k">{{ item.label }}</div>
+              <div class="v">{{ fmtEntity(getEnt(site, item.key)) }}</div>
             </div>
           </div>
           <div class="row3">
-            <div class="kpi kpi-center">
-              <div class="k">Produzione oggi</div>
-              <div class="v">{{ fmtEntity(getEnt(site, 'today_production_kwh')) }}</div>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">Consumo oggi</div>
-              <div class="v">{{ fmtEntity(getEnt(site, 'today_load_kwh')) }}</div>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">Import oggi</div>
-              <div class="v">{{ fmtEntity(getEnt(site, 'today_import_kwh')) }}</div>
+            <div v-for="item in userDailyDefs.filter(i => isMapped(site, i.key))" :key="`u2-${site}-${item.key}`" class="kpi kpi-center">
+              <div class="k">{{ item.label }}</div>
+              <div class="v">{{ fmtEntity(getEnt(site, item.key)) }}</div>
             </div>
           </div>
           <div class="row3">
-            <div class="kpi kpi-center">
-              <div class="k">Export oggi</div>
-              <div class="v">{{ fmtEntity(getEnt(site, 'today_export_kwh')) }}</div>
+            <div v-for="item in userForecastDefs.filter(i => isMapped(site, i.key))" :key="`u3-${site}-${item.key}`" class="kpi kpi-center">
+              <div class="k">{{ item.label }}</div>
+              <div class="v">{{ fmtEntity(getEnt(site, item.key)) }}</div>
             </div>
-            <div class="kpi kpi-center">
-              <div class="k">Forecast oggi</div>
-              <div class="v">{{ fmtEntity(getEnt(site, 'forecast_today_kwh')) }}</div>
-            </div>
-            <div class="kpi kpi-center">
-              <div class="k">Forecast domani</div>
-              <div class="v">{{ fmtEntity(getEnt(site, 'forecast_tomorrow_kwh')) }}</div>
+          </div>
+
+          <div class="card inner">
+            <div class="row"><strong>Entità mappate</strong></div>
+            <div v-if="mappedEntries(site).length === 0" class="muted">Nessuna entità mappata.</div>
+            <div v-else class="entity-list">
+              <div v-for="item in mappedEntries(site)" :key="`mapped-${site}-${item.key}`" class="entity-row">
+                <span class="entity-name">{{ item.label }}</span>
+                <span class="entity-value">{{ fmtEntity(getEnt(site, item.key)) }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -276,6 +243,27 @@ const energyEntityDefs = [
   { key: 'radiator_temp_6', label: 'Radiator Temperature 6 (C)', placeholder: 'sensor.zcs_radiator_temperature_6' },
 ]
 
+const userKpiDefs = [
+  { key: 'pv_power', label: 'PV Power' },
+  { key: 'load_power', label: 'Carico casa' },
+  { key: 'grid_power', label: 'Rete (PCC)' },
+  { key: 'grid_import_power', label: 'Import rete' },
+  { key: 'grid_export_power', label: 'Export rete' },
+  { key: 'battery_power', label: 'Batteria Power' },
+  { key: 'battery_soc', label: 'Batteria SOC' },
+  { key: 'battery_temp', label: 'Batteria Temp' },
+]
+const userDailyDefs = [
+  { key: 'today_production_kwh', label: 'Produzione oggi' },
+  { key: 'today_load_kwh', label: 'Consumo oggi' },
+  { key: 'today_import_kwh', label: 'Import oggi' },
+  { key: 'today_export_kwh', label: 'Export oggi' },
+]
+const userForecastDefs = [
+  { key: 'forecast_today_kwh', label: 'Forecast oggi' },
+  { key: 'forecast_tomorrow_kwh', label: 'Forecast domani' },
+]
+
 const siteList = computed(() => {
   const n = Number(sp.value?.runtime?.sites_count || 1)
   const safe = Number.isFinite(n) ? Math.min(3, Math.max(1, Math.round(n))) : 1
@@ -283,6 +271,10 @@ const siteList = computed(() => {
 })
 
 const isFilled = (v) => (typeof v === 'string' ? v.trim().length > 0 : false)
+const isMapped = (site, key) => {
+  const eid = ent.value?.[`s${site}_${key}`]?.entity_id || ''
+  return String(eid).trim().length > 0
+}
 const fmtEntity = (e) => {
   if (!e) return 'n/d'
   const raw = e.state
@@ -308,6 +300,9 @@ const visibleEntityDefs = (site) => {
     const eid = ent.value?.[`s${site}_${item.key}`]?.entity_id || ''
     return String(eid).trim().length > 0
   })
+}
+const mappedEntries = (site) => {
+  return energyEntityDefs.filter((item) => isMapped(site, item.key))
 }
 
 function canAutoMap(site){
@@ -610,6 +605,23 @@ body{
 .kpi-center{ text-align:center; }
 .k{ font-size:12px; color:var(--muted); }
 .v{ font-size:18px; font-weight:700; margin-top:6px; }
+.entity-list{
+  margin-top:8px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.entity-row{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  padding:6px 8px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#0b121a;
+}
+.entity-name{ color:var(--muted); }
+.entity-value{ font-weight:600; }
 .actions{
   margin-top:12px;
   display:flex;

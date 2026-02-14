@@ -152,3 +152,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.2.7.
 - UI: mostrato nome dispositivo per ogni utenza in User/Admin.
 - Versione add-on aggiornata a 1.2.8.
+- User: mostra solo KPI mappati + lista “Entità mappate” per utenza.
+- Versione add-on aggiornata a 1.2.9.
