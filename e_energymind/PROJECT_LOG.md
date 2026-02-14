@@ -185,3 +185,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.4.3.
 - Debug: `/api/ha_debug` ora mostra stato `options.json` e presenza token.
 - Versione add-on aggiornata a 1.4.4.
+- Backend: accesso ai registry HA via WebSocket (non REST).
+- Versione add-on aggiornata a 1.4.5.

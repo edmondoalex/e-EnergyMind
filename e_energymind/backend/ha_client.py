@@ -20,6 +20,9 @@ class HAClient:
         self.enabled = bool(self._token)
         self.token_source = "env" if os.environ.get("SUPERVISOR_TOKEN") or os.environ.get("HASSIO_TOKEN") else "secret"
         self._state_cb = None
+        self._next_id = 10
+        self._pending: Dict[int, asyncio.Future] = {}
+        self._pending_lock = asyncio.Lock()
 
     def set_state_callback(self, callback):
         self._state_cb = callback
@@ -147,6 +150,12 @@ class HAClient:
             return
         while True:
             msg = await self._ws.receive_json()
+            msg_id = msg.get("id")
+            if isinstance(msg_id, int):
+                fut = self._pending.pop(msg_id, None)
+                if fut and not fut.done():
+                    fut.set_result(msg)
+                    continue
             if msg.get("type") == "event" and msg.get("event", {}).get("event_type") == "state_changed":
                 ev = msg["event"]["data"]
                 ent = ev.get("entity_id")
@@ -160,6 +169,27 @@ class HAClient:
                                 await res
                         except Exception as exc:
                             self._log.debug("State callback error: %s", exc)
+
+    async def ws_call(self, command_type: str, payload: Dict[str, Any] | None = None) -> Any:
+        if not self._ws:
+            return None
+        async with self._pending_lock:
+            msg_id = self._next_id
+            self._next_id += 1
+        fut = asyncio.get_event_loop().create_future()
+        self._pending[msg_id] = fut
+        req = {"id": msg_id, "type": command_type}
+        if payload:
+            req.update(payload)
+        await self._ws.send_json(req)
+        try:
+            msg = await asyncio.wait_for(fut, timeout=10)
+        except Exception:
+            self._pending.pop(msg_id, None)
+            return None
+        if not msg.get("success", False):
+            return None
+        return msg.get("result")
 
     async def run(self):
         backoff = 1

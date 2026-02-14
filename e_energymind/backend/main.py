@@ -208,8 +208,8 @@ def _match_key(entry: dict, patterns: Dict[str, list[str]]) -> list[str]:
 
 
 async def _get_device_entities(device_id: str | None, device_name: str | None) -> tuple[dict | None, list[dict]]:
-    devices = await ha.api_get("/config/device_registry/list") or []
-    entities = await ha.api_get("/config/entity_registry/list") or []
+    devices = await ha.ws_call("config/device_registry/list") or []
+    entities = await ha.ws_call("config/entity_registry/list") or []
     if not isinstance(devices, list) or not isinstance(entities, list):
         return None, []
 
@@ -424,7 +424,7 @@ async def auto_map_slash(payload: Dict[str, Any]):
 async def list_devices():
     if not ha.enabled:
         raise HTTPException(status_code=400, detail="HA not connected")
-    devices = await ha.api_get("/config/device_registry/list") or []
+    devices = await ha.ws_call("config/device_registry/list") or []
     out = []
     for d in devices:
         out.append({
@@ -445,8 +445,8 @@ async def device_entities(device_id: str = "", device_name: str = ""):
     device_name = (device_name or "").strip()
     if not device_id and not device_name:
         raise HTTPException(status_code=400, detail="Missing device_id")
-    entities = await ha.api_get("/config/entity_registry/list") or []
-    devices = await ha.api_get("/config/device_registry/list") or []
+    entities = await ha.ws_call("config/entity_registry/list") or []
+    devices = await ha.ws_call("config/device_registry/list") or []
     target_id = device_id
     if not target_id and device_name and isinstance(devices, list):
         dn = device_name.strip().lower()
@@ -556,20 +556,13 @@ async def ha_debug():
     if not ha._session:
         out["session"] = "none"
         return JSONResponse(out)
-    async def _probe(path: str):
-        url = f"{ha._http_url}/{path.lstrip('/')}"
-        try:
-            async with ha._session.get(url) as r:
-                status = r.status
-                data = None
-                try:
-                    data = await r.json()
-                except Exception:
-                    data = await r.text()
-                size = len(data) if isinstance(data, list) else None
-                return {"status": status, "size": size, "sample": data[:1] if isinstance(data, list) else data}
-        except Exception as exc:
-            return {"error": str(exc)}
-    out["device_registry"] = await _probe("/config/device_registry/list")
-    out["entity_registry"] = await _probe("/config/entity_registry/list")
+    async def _probe_ws(cmd: str):
+        res = await ha.ws_call(cmd)
+        if res is None:
+            return {"status": "error", "size": None}
+        size = len(res) if isinstance(res, list) else None
+        sample = res[:1] if isinstance(res, list) else res
+        return {"status": "ok", "size": size, "sample": sample}
+    out["device_registry"] = await _probe_ws("config/device_registry/list")
+    out["entity_registry"] = await _probe_ws("config/entity_registry/list")
     return JSONResponse(out)

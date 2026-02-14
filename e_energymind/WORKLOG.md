@@ -155,6 +155,8 @@
 - Versione add-on aggiornata a 1.4.3.
 - Debug: `/api/ha_debug` ora mostra stato `options.json` e presenza token.
 - Versione add-on aggiornata a 1.4.4.
+- Backend: accesso ai registry HA via WebSocket (non REST).
+- Versione add-on aggiornata a 1.4.5.
 ## 2026-02-09
 - UI: restyle completo e schema impianto più pulito e leggibile.
 - Backend: attuazione live per Volano→ACS, Volano→Puffer e Puffer→ACS con sequenze valvola→pompa.
