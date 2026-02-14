@@ -26,6 +26,19 @@ class HAClient:
 
     def _load_auth(self) -> tuple[Optional[str], str]:
         base_url = "http://supervisor/core"
+        # Prefer explicit HA token from options (user provided)
+        options_path = Path("/data/options.json")
+        if options_path.exists():
+            try:
+                data = json.loads(options_path.read_text(encoding="utf-8"))
+                ha_token = data.get("ha_token")
+                ha_url = data.get("ha_url") or "http://homeassistant:8123"
+                if isinstance(ha_token, str) and ha_token.strip():
+                    self.token_source = "options"
+                    return ha_token.strip(), ha_url.rstrip("/")
+            except Exception:
+                pass
+
         env_token = os.environ.get("SUPERVISOR_TOKEN") or os.environ.get("HASSIO_TOKEN")
         if env_token:
             self.token_source = "env"
@@ -44,18 +57,6 @@ class HAClient:
                     return secret_path.read_text(encoding="utf-8").strip(), base_url
                 except Exception:
                     return None, base_url
-
-        options_path = Path("/data/options.json")
-        if options_path.exists():
-            try:
-                data = json.loads(options_path.read_text(encoding="utf-8"))
-                ha_token = data.get("ha_token")
-                ha_url = data.get("ha_url") or "http://homeassistant:8123"
-                if isinstance(ha_token, str) and ha_token.strip():
-                    self.token_source = "options"
-                    return ha_token.strip(), ha_url.rstrip("/")
-            except Exception:
-                pass
 
         return None, base_url
 

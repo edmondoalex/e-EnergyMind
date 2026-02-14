@@ -181,3 +181,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.4.1.
 - Backend: endpoint `/api/ha_debug` per verificare accesso ai registry HA.
 - Versione add-on aggiornata a 1.4.2.
+- Backend: priorità al token HA da options (ha_token) rispetto al supervisor token.
+- Versione add-on aggiornata a 1.4.3.
