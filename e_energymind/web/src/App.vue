@@ -44,19 +44,22 @@
             <span class="muted" v-if="deviceLabel(site)"> — {{ deviceLabel(site) }}</span>
           </div>
           <div class="grid">
-            <div v-for="item in userKpiDefs.filter(i => isMapped(site, i.key))" :key="`u1-${site}-${item.key}`" class="kpi">
+            <div v-for="item in userKpiDefs.filter(i => isMapped(site, i.key))" :key="`u1-${site}-${item.key}`" class="kpi"
+                 :class="isOn(site, item.key) ? 'kpi-on' : ''">
               <div class="k">{{ labelFor(site, item.key, item.label) }}</div>
               <div class="v">{{ fmtEntity(getEnt(site, item.key)) }}</div>
             </div>
           </div>
           <div class="row3">
-            <div v-for="item in userDailyDefs.filter(i => isMapped(site, i.key))" :key="`u2-${site}-${item.key}`" class="kpi kpi-center">
+            <div v-for="item in userDailyDefs.filter(i => isMapped(site, i.key))" :key="`u2-${site}-${item.key}`" class="kpi kpi-center"
+                 :class="isOn(site, item.key) ? 'kpi-on' : ''">
               <div class="k">{{ labelFor(site, item.key, item.label) }}</div>
               <div class="v">{{ fmtEntity(getEnt(site, item.key)) }}</div>
             </div>
           </div>
           <div class="row3">
-            <div v-for="item in userForecastDefs.filter(i => isMapped(site, i.key))" :key="`u3-${site}-${item.key}`" class="kpi kpi-center">
+            <div v-for="item in userForecastDefs.filter(i => isMapped(site, i.key))" :key="`u3-${site}-${item.key}`" class="kpi kpi-center"
+                 :class="isOn(site, item.key) ? 'kpi-on' : ''">
               <div class="k">{{ labelFor(site, item.key, item.label) }}</div>
               <div class="v">{{ fmtEntity(getEnt(site, item.key)) }}</div>
             </div>
@@ -306,14 +309,15 @@ const isOn = (site, key) => {
   if (typeof manual === 'boolean') return manual
   return false
 }
-const toggleManual = (site, key) => {
+const toggleManual = async (site, key) => {
   const k = `s${site}_${key}`
   const cur = manualFlags.value?.[k]
   const next = !(cur === true)
   manualFlags.value = { ...manualFlags.value, [k]: next }
-  try {
-    localStorage.setItem('energymind_manual_flags', JSON.stringify(manualFlags.value))
-  } catch {}
+  if (sp.value?.runtime) {
+    sp.value.runtime.ui_flags = { ...manualFlags.value }
+    await saveConfig()
+  }
 }
 const labelFor = (site, key, fallback) => {
   const e = getEnt(site, key)
@@ -367,6 +371,9 @@ async function loadConfig(){
   }
   if (sp.value?.runtime?.ui_poll_ms) {
     pollMs.value = Number(sp.value.runtime.ui_poll_ms) || 3000
+  }
+  if (sp.value?.runtime?.ui_flags && typeof sp.value.runtime.ui_flags === 'object') {
+    manualFlags.value = { ...sp.value.runtime.ui_flags }
   }
 }
 async function saveConfig(){
@@ -468,10 +475,6 @@ async function saveAll(){
 }
 
 onMounted(async()=>{
-  try {
-    const raw = localStorage.getItem('energymind_manual_flags')
-    if (raw) manualFlags.value = JSON.parse(raw) || {}
-  } catch {}
   await loadAll()
   startPolling()
 })
@@ -641,6 +644,10 @@ body{
   border:1px solid var(--line);
   border-radius:12px;
   padding:10px 12px;
+}
+.kpi-on{
+  background:rgba(45,212,191,0.12);
+  border-color:rgba(45,212,191,0.6);
 }
 .kpi-center{ text-align:center; }
 .k{ font-size:12px; color:var(--muted); }

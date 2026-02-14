@@ -139,6 +139,8 @@
 - Versione add-on aggiornata a 1.3.5.
 - Admin: flag manuale con checkbox (on=colora input, off=spento).
 - Versione add-on aggiornata a 1.3.6.
+- Admin: flag manuali persistenti in config (`runtime.ui_flags`).
+- Versione add-on aggiornata a 1.3.7.
 ## 2026-02-09
 - UI: restyle completo e schema impianto più pulito e leggibile.
 - Backend: attuazione live per Volano→ACS, Volano→Puffer e Puffer→ACS con sequenze valvola→pompa.
