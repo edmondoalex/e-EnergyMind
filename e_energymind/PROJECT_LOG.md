@@ -117,3 +117,8 @@ Data export: 2026-02-08 (Europe/Rome)
   - `/api/setpoints` include `gas_emergenza`;
   - persistenza flag “Storico” per Volano Alto/Basso;
   - log “SAVE …” in Ultime azioni per setpoints/entities/actuators/modules.
+
+## Aggiornamenti 2026-02-14
+- Fix static UI: mount StaticFiles su `/` (html=True) per servire index+assets e prevenire errori 500 su `/assets`.
+- Rimosse route `FileResponse` dedicate a `/` e `/index.html` (static gestisce tutto).
+- Versione add-on aggiornata a 1.1.3.

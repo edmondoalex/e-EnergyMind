@@ -87,6 +87,11 @@
 - User: schema impianto animato con flussi live.
 - Resistenze: generale segue step (ON se step>0, OFF se step=0).
 - Runtime mode: cambio live/dry-run salvato automaticamente.
+
+## 2026-02-14
+- Fix static UI: mount unico su `/` (StaticFiles html=True) per servire `index.html` e `assets` senza 500 su `/assets`.
+- Rimossi handler `FileResponse` per `/` e `/index.html` (delegati a StaticFiles).
+- Versione add-on aggiornata a 1.1.3.
 ## 2026-02-09
 - UI: restyle completo e schema impianto più pulito e leggibile.
 - Backend: attuazione live per Volano→ACS, Volano→Puffer e Puffer→ACS con sequenze valvola→pompa.

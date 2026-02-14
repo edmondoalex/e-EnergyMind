@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import Any, Dict
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from .ha_client import HAClient
 from .storage import load_config, save_config, apply_config, apply_entities, ENERGY_ENTITY_KEYS
@@ -254,24 +255,6 @@ async def _logging_loop():
         await asyncio.sleep(LOG_INTERVAL_S)
 
 
-@app.get("/")
-async def index():
-    return FileResponse("/app/static/index.html")
-
-
-@app.get("/index.html")
-async def index_html():
-    return FileResponse("/app/static/index.html")
-
-
-@app.get("/assets/{path:path}")
-async def assets(path: str):
-    file_path = Path("/app/static/assets") / path
-    if file_path.exists():
-        return FileResponse(file_path)
-    raise HTTPException(status_code=404, detail="Asset not found")
-
-
 @app.on_event("startup")
 async def startup_event():
     global ha_task, log_task
@@ -413,3 +396,12 @@ async def get_routes():
 @app.get("/api/actions")
 async def get_actions():
     return JSONResponse({"items": action_log})
+
+
+def _mount_static() -> None:
+    static_dir = Path("/app/static")
+    if static_dir.is_dir():
+        app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+
+
+_mount_static()
