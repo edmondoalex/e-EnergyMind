@@ -35,6 +35,11 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "s2": {"name": "", "id": ""},
         "s3": {"name": "", "id": ""},
     },
+    "all_entities": {
+        "s1": [],
+        "s2": [],
+        "s3": [],
+    },
     "security": {
         "user_pin": "",
     },
@@ -81,6 +86,13 @@ def normalize_config(raw: Dict[str, Any]) -> Dict[str, Any]:
             cfg["devices"][key]["name"] = str(src.get("name") or "").strip()
             cfg["devices"][key]["id"] = str(src.get("id") or "").strip()
 
+    all_entities = raw.get("all_entities", {})
+    if isinstance(all_entities, dict):
+        for key in ("s1", "s2", "s3"):
+            items = all_entities.get(key, [])
+            if isinstance(items, list):
+                cfg["all_entities"][key] = items
+
     security = raw.get("security", {})
     if isinstance(security, dict) and isinstance(security.get("user_pin"), str):
         cfg["security"]["user_pin"] = security.get("user_pin", "")
@@ -113,6 +125,13 @@ def apply_config(cfg: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any]
                 cfg["devices"][key]["name"] = str(src.get("name") or "").strip()
             if "id" in src:
                 cfg["devices"][key]["id"] = str(src.get("id") or "").strip()
+
+    all_entities = payload.get("all_entities", {})
+    if isinstance(all_entities, dict):
+        for key in ("s1", "s2", "s3"):
+            items = all_entities.get(key)
+            if isinstance(items, list):
+                cfg["all_entities"][key] = items
 
     security = payload.get("security", {})
     if isinstance(security, dict) and isinstance(security.get("user_pin"), str):
