@@ -133,6 +133,8 @@
 - Versione add-on aggiornata a 1.3.2.
 - UI Admin: etichette sensori prese da HA `friendly_name` (fallback ai label interni).
 - Versione add-on aggiornata a 1.3.3.
+- Admin: flag ON/OFF accanto alle entità + input verde quando stato ON.
+- Versione add-on aggiornata a 1.3.4.
 ## 2026-02-09
 - UI: restyle completo e schema impianto più pulito e leggibile.
 - Backend: attuazione live per Volano→ACS, Volano→Puffer e Puffer→ACS con sequenze valvola→pompa.

@@ -162,11 +162,16 @@
             </div>
             <div v-if="visibleEntityDefs(site).length === 0" class="muted">Nessuna entità importata. Usa “Importa entità da dispositivo”.</div>
             <div v-for="item in visibleEntityDefs(site)" :key="`s${site}_${item.key}`" class="field">
-              <label>{{ labelFor(site, item.key, item.label) }}</label>
+              <label class="label-row">
+                <span>{{ labelFor(site, item.key, item.label) }}</span>
+                <span class="state-flag" :class="isOn(site, item.key) ? 'state-on' : 'state-off'">
+                  {{ isOn(site, item.key) ? 'ON' : 'OFF' }}
+                </span>
+              </label>
               <div class="input-row">
                 <span class="logic-dot" :class="isFilled(ent?.[`s${site}_${item.key}`]?.entity_id) ? 'logic-ok' : 'logic-no'">●</span>
                 <input type="text"
-                       :class="isFilled(ent?.[`s${site}_${item.key}`]?.entity_id) ? 'input-ok' : ''"
+                       :class="[isFilled(ent?.[`s${site}_${item.key}`]?.entity_id) ? 'input-ok' : '', isOn(site, item.key) ? 'input-on' : '']"
                        v-model="ent[`s${site}_${item.key}`].entity_id"
                        :placeholder="item.placeholder || 'sensor.xxx'"
                        @input="dirtyEnt[`s${site}_${item.key}`] = true"
@@ -292,6 +297,12 @@ const fmtEntity = (e) => {
 const getEnt = (site, key) => {
   if (!ent.value) return null
   return ent.value[`s${site}_${key}`] || null
+}
+const isOn = (site, key) => {
+  const e = getEnt(site, key)
+  if (!e) return false
+  const v = String(e.state ?? '').toLowerCase()
+  return v === 'on' || v === 'true' || v === '1' || v === 'active'
 }
 const labelFor = (site, key, fallback) => {
   const e = getEnt(site, key)
@@ -715,6 +726,33 @@ body{
 .logic-ok{ color:var(--ok); }
 .logic-no{ color:var(--danger); }
 .input-ok{ border-color:var(--ok) !important; box-shadow:0 0 0 2px rgba(45,212,191,0.15); }
+.input-on{
+  background:rgba(45,212,191,0.12) !important;
+  border-color:rgba(45,212,191,0.6) !important;
+}
+.label-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.state-flag{
+  font-size:11px;
+  font-weight:700;
+  padding:2px 8px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  color:var(--muted);
+}
+.state-on{
+  border-color:rgba(45,212,191,0.6);
+  color:var(--ok);
+  background:rgba(45,212,191,0.12);
+}
+.state-off{
+  border-color:rgba(107,114,128,0.4);
+  color:var(--off);
+}
 
 @media (max-width: 1100px){
   .grid{ grid-template-columns:repeat(2, minmax(140px,1fr)); }
