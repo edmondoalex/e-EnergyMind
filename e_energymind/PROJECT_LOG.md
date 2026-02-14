@@ -177,3 +177,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.3.9.
 - Backend: endpoint `/api/device_entities?device_id=...` per elenco entità dispositivo.
 - Versione add-on aggiornata a 1.4.0.
+- Backend: `/api/device_entities` ora accetta `device_name` e include device list + sample device_id.
+- Versione add-on aggiornata a 1.4.1.

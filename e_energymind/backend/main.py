@@ -438,17 +438,27 @@ async def list_devices():
 
 
 @app.get("/api/device_entities")
-async def device_entities(device_id: str = ""):
+async def device_entities(device_id: str = "", device_name: str = ""):
     if not ha.enabled:
         raise HTTPException(status_code=400, detail="HA not connected")
     device_id = (device_id or "").strip()
-    if not device_id:
+    device_name = (device_name or "").strip()
+    if not device_id and not device_name:
         raise HTTPException(status_code=400, detail="Missing device_id")
     entities = await ha.api_get("/config/entity_registry/list") or []
+    devices = await ha.api_get("/config/device_registry/list") or []
+    target_id = device_id
+    if not target_id and device_name and isinstance(devices, list):
+        dn = device_name.strip().lower()
+        for d in devices:
+            name = (d.get("name_by_user") or d.get("name") or "").strip().lower()
+            if name == dn:
+                target_id = d.get("id")
+                break
     items = []
     if isinstance(entities, list):
         for e in entities:
-            if e.get("device_id") != device_id:
+            if target_id and e.get("device_id") != target_id:
                 continue
             items.append({
                 "entity_id": e.get("entity_id"),
@@ -457,7 +467,35 @@ async def device_entities(device_id: str = ""):
                 "platform": e.get("platform"),
                 "disabled_by": e.get("disabled_by"),
             })
-    return JSONResponse({"device_id": device_id, "items": items})
+    # sample device_ids present in registry (debug)
+    sample_ids = []
+    if isinstance(entities, list):
+        seen = set()
+        for e in entities:
+            did = e.get("device_id")
+            if not did or did in seen:
+                continue
+            seen.add(did)
+            sample_ids.append(did)
+            if len(sample_ids) >= 20:
+                break
+    device_list = []
+    if isinstance(devices, list):
+        for d in devices:
+            device_list.append({
+                "id": d.get("id"),
+                "name": d.get("name"),
+                "name_by_user": d.get("name_by_user"),
+                "model": d.get("model"),
+                "manufacturer": d.get("manufacturer"),
+            })
+    return JSONResponse({
+        "device_id": target_id or device_id,
+        "device_name": device_name,
+        "items": items,
+        "devices": device_list,
+        "entity_device_ids_sample": sample_ids,
+    })
 
 
 @app.get("/api/routes")
