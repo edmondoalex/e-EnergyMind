@@ -237,3 +237,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.7.4.
 - Admin: aggiunto pulsante 'Genera report ora'.
 - Versione add-on aggiornata a 1.7.5.
+- Admin: pulsante report spostato in cima alla sezione Configurazione.
+- Versione add-on aggiornata a 1.7.6.

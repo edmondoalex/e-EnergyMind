@@ -108,6 +108,10 @@
 
         <div class="form">
           <h3 class="section">Configurazione</h3>
+          <div class="actions">
+            <button class="ghost" @click="generateReport">Genera report ora</button>
+          </div>
+          <div v-if="reportStatus?.ok" class="muted">Report generato: {{ reportStatus.date }} in {{ reportStatus.dir }}</div>
           <div v-if="sp" class="field">
             <label>Numero utenze</label>
             <select v-model.number="sp.runtime.sites_count" @change="saveConfig">
@@ -211,9 +215,7 @@
 
         <div class="actions">
           <button class="ghost" @click="loadAll">Ricarica</button>
-          <button class="ghost" @click="generateReport">Genera report ora</button>
         </div>
-        <div v-if="reportStatus?.ok" class="muted">Report generato: {{ reportStatus.date }} in {{ reportStatus.dir }}</div>
       </section>
     </main>
 
