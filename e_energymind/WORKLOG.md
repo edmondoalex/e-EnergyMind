@@ -172,3 +172,6 @@
 - UI: sequenze separate Volano→ACS e Volano→Puffer con nomi logici.
 - Config: timer separati per Volano→ACS e Volano→Puffer (start/stop).
 - User: grafico rapido temperature + export.
+- Backend: elenco completo entit� salvato anche in /data/energymind_all_entities.json (persistente).
+- UI Admin: elenco completo caricato da /api/entities_all anche se la config non lo riporta.
+- Versione add-on aggiornata a 1.5.0.

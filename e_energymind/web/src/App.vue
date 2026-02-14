@@ -228,6 +228,7 @@ const dirtyEnt = ref({})
 const showAll = ref(false)
 const overwriteMap = ref({ 1: false, 2: false, 3: false })
 const manualFlags = ref({})
+const allEntitiesState = ref({ 1: [], 2: [], 3: [] })
 
 const energyEntityDefs = [
   { key: 'pv_power', label: 'PV Power (W)', placeholder: 'sensor.zcs_pv_power' },
@@ -348,6 +349,8 @@ const deviceLabel = (site) => {
   return name || (id ? `ID ${id}` : '')
 }
 const allEntities = (site) => {
+  const list = allEntitiesState.value?.[site] || []
+  if (list.length > 0) return list
   return sp.value?.all_entities?.[`s${site}`] || []
 }
 const visibleEntityDefs = (site) => {
@@ -406,6 +409,15 @@ async function loadEntities(){
   const data = await r.json()
   ent.value = data
 }
+async function loadAllEntities(site){
+  try {
+    const r = await fetch(`/api/entities_all?site=${site}`)
+    if (!r.ok) return
+    const data = await r.json()
+    const items = Array.isArray(data.items) ? data.items : []
+    allEntitiesState.value = { ...allEntitiesState.value, [site]: items }
+  } catch {}
+}
 async function saveEntities(){
   const payload = {}
   for (const key of Object.keys(ent.value || {})) {
@@ -441,6 +453,7 @@ async function autoMapSite(site){
     await saveConfig()
   }
   await loadConfig()
+  await loadAllEntities(site)
   await loadEntities()
   await refresh()
   window.alert(`Importate: ${data.mapped || 0} entità (trovate: ${data.matched || 0}, già presenti: ${data.skipped_existing || 0}, totali: ${data.total_entities || 0})`)
@@ -464,6 +477,7 @@ async function syncAllEntities(site){
     await saveConfig()
   }
   await loadConfig()
+  await loadAllEntities(site)
   window.alert(`Elenco completo aggiornato: ${data.total || 0} entità`)
 }
 async function refresh(){
@@ -478,6 +492,9 @@ async function refresh(){
 async function loadAll(){
   await loadConfig()
   await loadEntities()
+  for (const site of [1,2,3]) {
+    await loadAllEntities(site)
+  }
   await refresh()
 }
 function startPolling(){

@@ -195,3 +195,6 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.4.8.
 - Admin: pulsante “Sincronizza elenco completo” (API `/api/all_entities_sync`).
 - Versione add-on aggiornata a 1.4.9.
+- Backend: lista completa entità salvata anche in file dedicato `/data/energymind_all_entities.json` per evitare overwrite.
+- UI Admin: lettura elenco completo via `/api/entities_all` (non dipende più dalla config).
+- Versione add-on aggiornata a 1.5.0.

@@ -33,6 +33,7 @@ log_task: asyncio.Task | None = None
 action_log: list[str] = []
 
 DB_PATH = Path("/data/energymind.db")
+ALL_ENTITIES_PATH = Path("/data/energymind_all_entities.json")
 LOG_INTERVAL_S = 10
 RETENTION_DAYS = 90
 
@@ -55,6 +56,34 @@ def _entity_payload(entity_id: str | None) -> Dict[str, Any]:
         "attributes": st.get("attributes", {}) or {},
         "icon": st.get("attributes", {}).get("icon"),
     }
+
+
+def _load_all_entities_store() -> Dict[str, list]:
+    if not ALL_ENTITIES_PATH.exists():
+        return {"s1": [], "s2": [], "s3": []}
+    try:
+        raw = json.loads(ALL_ENTITIES_PATH.read_text(encoding="utf-8"))
+        if not isinstance(raw, dict):
+            return {"s1": [], "s2": [], "s3": []}
+        out = {"s1": [], "s2": [], "s3": []}
+        for key in ("s1", "s2", "s3"):
+            items = raw.get(key, [])
+            if isinstance(items, list):
+                out[key] = items
+        return out
+    except Exception:
+        return {"s1": [], "s2": [], "s3": []}
+
+
+def _save_all_entities_store(data: Dict[str, list]) -> None:
+    ALL_ENTITIES_PATH.parent.mkdir(parents=True, exist_ok=True)
+    safe = {"s1": [], "s2": [], "s3": []}
+    if isinstance(data, dict):
+        for key in ("s1", "s2", "s3"):
+            items = data.get(key, [])
+            if isinstance(items, list):
+                safe[key] = items
+    ALL_ENTITIES_PATH.write_text(json.dumps(safe, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
 def _db_init() -> None:
@@ -324,8 +353,11 @@ async def get_entities():
 async def get_entities_all(site: int = 1):
     if site not in (1, 2, 3):
         raise HTTPException(status_code=400, detail="Invalid site")
-    cfg = load_config()
-    all_list = (cfg.get("all_entities", {}) or {}).get(f"s{site}", []) or []
+    store = _load_all_entities_store()
+    all_list = store.get(f"s{site}", []) or []
+    if not all_list:
+        cfg = load_config()
+        all_list = (cfg.get("all_entities", {}) or {}).get(f"s{site}", []) or []
     items = []
     for item in all_list:
         eid = item.get("entity_id")
@@ -386,6 +418,9 @@ async def all_entities_sync(payload: Dict[str, Any]):
         })
     cfg["all_entities"][f"s{site}"] = full_list
     save_config(cfg)
+    store = _load_all_entities_store()
+    store[f"s{site}"] = full_list
+    _save_all_entities_store(store)
     _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} ALL_ENTITIES site={site} total={len(full_list)}")
     return JSONResponse({"ok": True, "total": len(full_list), "device": device.get("name") or device.get("name_by_user") or device.get("id")})
 
@@ -468,6 +503,9 @@ async def auto_map(payload: Dict[str, Any]):
             "disabled_by": e.get("disabled_by"),
         })
     cfg["all_entities"][f"s{site}"] = full_list
+    store = _load_all_entities_store()
+    store[f"s{site}"] = full_list
+    _save_all_entities_store(store)
     save_config(cfg)
     _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} AUTO_MAP site={site} mapped={count}")
     return JSONResponse({
