@@ -1,7 +1,7 @@
 name: e-EnergyMind
 slug: e_energymind
 description: "Gestione energetica fotovoltaica con UI Admin/User (Vue)"
-version: "1.2.1"
+version: "1.2.2"
 arch: [amd64, aarch64, armv7]
 init: false
 startup: services

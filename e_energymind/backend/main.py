@@ -381,6 +381,11 @@ async def auto_map(payload: Dict[str, Any]):
     return JSONResponse({"ok": True, "mapped": count, "device": device.get("name") or device.get("name_by_user") or device.get("id")})
 
 
+@app.post("/api/auto_map/")
+async def auto_map_slash(payload: Dict[str, Any]):
+    return await auto_map(payload)
+
+
 @app.get("/api/devices")
 async def list_devices():
     if not ha.enabled:
