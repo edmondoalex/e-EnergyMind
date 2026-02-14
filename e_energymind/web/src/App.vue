@@ -4,6 +4,8 @@
       <div class="top-inner">
         <div class="top-left">
           <div class="brand">e-EnergyMind</div>
+        </div>
+        <div class="top-center">
           <div class="top-actions">
             <button class="action-btn" @click="saveAll">Salva tutto</button>
             <button class="action-btn" @click="exportConfig">Esporta config</button>
@@ -12,16 +14,12 @@
               <input type="file" accept="application/json" @change="importConfig"/>
             </label>
           </div>
+        </div>
+        <div class="top-right">
           <nav class="tabs">
             <button :class="{active: tab==='user'}" @click="tab='user'">User</button>
             <button :class="{active: tab==='admin'}" @click="tab='admin'">Admin</button>
           </nav>
-        </div>
-        <div class="top-right">
-          <span class="muted">v{{ status?.version || '-' }}</span>
-          <span class="badge" :class="status?.ha_connected ? 'ok' : 'off'">
-            {{ status?.ha_connected ? 'Online' : 'Offline' }}
-          </span>
         </div>
       </div>
     </header>
@@ -476,9 +474,9 @@ body{
   box-shadow:var(--shadow);
 }
 .top-inner{
-  display:flex;
+  display:grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items:center;
-  justify-content:space-between;
   gap:16px;
 }
 .top-left{
@@ -486,23 +484,26 @@ body{
   flex-direction:column;
   gap:8px;
 }
+.top-center{
+  display:flex;
+  justify-content:center;
+}
 .top-right{
   display:flex;
   align-items:center;
   gap:10px;
+  justify-content:flex-end;
   flex-wrap:wrap;
 }
 .brand{
   font-size:20px;
   font-weight:700;
   letter-spacing:0.3px;
-  margin-bottom:8px;
 }
 .top-actions{
   display:flex;
   gap:10px;
   flex-wrap:wrap;
-  margin-bottom:10px;
 }
 .action-btn{
   background:linear-gradient(135deg, var(--accent), var(--accent-2));
@@ -659,10 +660,14 @@ body{
   .grid{ grid-template-columns:repeat(2, minmax(140px,1fr)); }
   .row3{ grid-template-columns:repeat(2, minmax(160px,1fr)); }
 }
+@media (max-width: 900px){
+  .top-inner{ grid-template-columns:1fr; justify-items:start; }
+  .top-center{ justify-content:flex-start; }
+  .top-right{ justify-content:flex-start; }
+}
 @media (max-width: 640px){
   .grid{ grid-template-columns:1fr; }
   .row3{ grid-template-columns:1fr; }
   .top{ position:static; }
-  .top-inner{ flex-direction:column; align-items:flex-start; }
 }
 </style>

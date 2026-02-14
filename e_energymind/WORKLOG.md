@@ -104,6 +104,8 @@
 - Versione add-on aggiornata a 1.1.8.
 - UI: layout centrato con max-width e header allineato stile e-ThermoMind.
 - Versione add-on aggiornata a 1.1.9.
+- UI: header con brand a sinistra, azioni centrate, tab a destra (come e-ThermoMind).
+- Versione add-on aggiornata a 1.2.0.
 ## 2026-02-09
 - UI: restyle completo e schema impianto più pulito e leggibile.
 - Backend: attuazione live per Volano→ACS, Volano→Puffer e Puffer→ACS con sequenze valvola→pompa.
