@@ -404,6 +404,18 @@ async def auto_map(payload: Dict[str, Any]):
         count += 1
 
     cfg["entities"] = ent_cfg
+    # Store full device entities list (unfiltered) for reference in Admin
+    cfg.setdefault("all_entities", {})
+    full_list = []
+    for e in dev_entities:
+        full_list.append({
+            "entity_id": e.get("entity_id"),
+            "name": e.get("name"),
+            "original_name": e.get("original_name"),
+            "platform": e.get("platform"),
+            "disabled_by": e.get("disabled_by"),
+        })
+    cfg["all_entities"][f"s{site}"] = full_list
     save_config(cfg)
     _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} AUTO_MAP site={site} mapped={count}")
     return JSONResponse({
@@ -411,6 +423,7 @@ async def auto_map(payload: Dict[str, Any]):
         "mapped": count,
         "matched": len(mapped),
         "skipped_existing": skipped_existing,
+        "total_entities": len(dev_entities),
         "device": device.get("name") or device.get("name_by_user") or device.get("id"),
     })
 
@@ -438,7 +451,7 @@ async def list_devices():
 
 
 @app.get("/api/device_entities")
-async def device_entities(device_id: str = "", device_name: str = ""):
+async def device_entities(device_id: str = "", device_name: str = "", debug: int = 0):
     if not ha.enabled:
         raise HTTPException(status_code=400, detail="HA not connected")
     device_id = (device_id or "").strip()
@@ -479,23 +492,26 @@ async def device_entities(device_id: str = "", device_name: str = ""):
             sample_ids.append(did)
             if len(sample_ids) >= 20:
                 break
-    device_list = []
-    if isinstance(devices, list):
-        for d in devices:
-            device_list.append({
-                "id": d.get("id"),
-                "name": d.get("name"),
-                "name_by_user": d.get("name_by_user"),
-                "model": d.get("model"),
-                "manufacturer": d.get("manufacturer"),
-            })
-    return JSONResponse({
+    resp = {
         "device_id": target_id or device_id,
         "device_name": device_name,
+        "count": len(items),
         "items": items,
-        "devices": device_list,
-        "entity_device_ids_sample": sample_ids,
-    })
+    }
+    if debug:
+        device_list = []
+        if isinstance(devices, list):
+            for d in devices:
+                device_list.append({
+                    "id": d.get("id"),
+                    "name": d.get("name"),
+                    "name_by_user": d.get("name_by_user"),
+                    "model": d.get("model"),
+                    "manufacturer": d.get("manufacturer"),
+                })
+        resp["devices"] = device_list
+        resp["entity_device_ids_sample"] = sample_ids
+    return JSONResponse(resp)
 
 
 @app.get("/api/routes")

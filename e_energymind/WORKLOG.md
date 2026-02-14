@@ -157,6 +157,10 @@
 - Versione add-on aggiornata a 1.4.4.
 - Backend: accesso ai registry HA via WebSocket (non REST).
 - Versione add-on aggiornata a 1.4.5.
+- Admin: salvato elenco completo entità dispositivo e mostrato in UI.
+- Versione add-on aggiornata a 1.4.6.
+- Backend: `/api/device_entities` ora restituisce solo entità del device (debug opzionale).
+- Versione add-on aggiornata a 1.4.7.
 ## 2026-02-09
 - UI: restyle completo e schema impianto più pulito e leggibile.
 - Backend: attuazione live per Volano→ACS, Volano→Puffer e Puffer→ACS con sequenze valvola→pompa.
