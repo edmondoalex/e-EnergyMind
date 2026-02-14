@@ -7,7 +7,6 @@ from typing import Any, Dict
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
 
 from .ha_client import HAClient
 from .storage import load_config, save_config, apply_config, apply_entities, ENERGY_ENTITY_KEYS
@@ -409,13 +408,21 @@ async def get_actions():
 
 
 def _mount_assets() -> None:
-    assets_dir = Path("/app/static/assets")
-    if assets_dir.is_dir():
-        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
-        return
-    fallback_dir = Path("/app/static")
-    if fallback_dir.is_dir():
-        app.mount("/assets", StaticFiles(directory=fallback_dir), name="assets")
+    return
 
 
 _mount_assets()
+
+
+@app.get("/assets/{path:path}")
+async def get_asset(path: str):
+    if not path:
+        raise HTTPException(status_code=404, detail="Not Found")
+    base = Path("/app/static/assets")
+    candidate = base / path
+    if candidate.exists() and candidate.is_file():
+        return FileResponse(str(candidate))
+    fallback = Path("/app/static") / path
+    if fallback.exists() and fallback.is_file():
+        return FileResponse(str(fallback))
+    raise HTTPException(status_code=404, detail="Not Found")

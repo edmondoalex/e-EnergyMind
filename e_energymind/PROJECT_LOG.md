@@ -126,3 +126,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.1.4.
 - Hotfix static: fallback mount `/assets` su `/app/static` se `assets/` non esiste.
 - Versione add-on aggiornata a 1.1.5.
+- Hotfix static: serve `/assets/{path}` via `FileResponse` con fallback su `/app/static`.
+- Versione add-on aggiornata a 1.1.6.

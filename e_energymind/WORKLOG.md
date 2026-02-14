@@ -96,6 +96,8 @@
 - Versione add-on aggiornata a 1.1.4.
 - Hotfix static: fallback mount `/assets` su `/app/static` se `assets/` non esiste.
 - Versione add-on aggiornata a 1.1.5.
+- Hotfix static: serve `/assets/{path}` via `FileResponse` con fallback su `/app/static`.
+- Versione add-on aggiornata a 1.1.6.
 ## 2026-02-09
 - UI: restyle completo e schema impianto più pulito e leggibile.
 - Backend: attuazione live per Volano→ACS, Volano→Puffer e Puffer→ACS con sequenze valvola→pompa.
