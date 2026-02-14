@@ -384,6 +384,11 @@ async def auto_map(payload: Dict[str, Any]):
     return JSONResponse({"ok": True, "mapped": count, "device": device.get("name") or device.get("name_by_user") or device.get("id")})
 
 
+@app.get("/api/routes")
+async def get_routes():
+    return JSONResponse({"routes": [str(r.path) for r in app.router.routes]})
+
+
 @app.get("/api/actions")
 async def get_actions():
     return JSONResponse({"items": action_log})
