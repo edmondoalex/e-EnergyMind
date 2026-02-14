@@ -233,3 +233,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Fix crash: indentation in _num_or_none. Version 1.7.2.
 - Report: salvataggio solo in /share/reports (niente doppioni).
 - Versione add-on aggiornata a 1.7.3.
+- Report: endpoint manuale /api/reports/generate per generazione immediata.
+- Versione add-on aggiornata a 1.7.4.

@@ -614,6 +614,20 @@ def _maybe_generate_daily_report() -> None:
             last_report_date = date_str
 
 
+@app.post("/api/reports/generate")
+async def generate_report(date: str | None = None):
+    if date:
+        try:
+            time.strptime(date, "%Y-%m-%d")
+            date_str = date
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid date")
+    else:
+        date_str = _local_date_str(int(time.time()))
+    _generate_report_for_day(date_str)
+    return JSONResponse({"ok": True, "date": date_str, "dir": str(REPORT_DIR)})
+
+
 @app.get("/api/db_info")
 async def db_info():
     size = DB_PATH.stat().st_size if DB_PATH.exists() else 0
