@@ -199,7 +199,10 @@
                   <span>{{ isOnKey(`all_s${site}_${e.entity_id}`) ? 'ON' : 'OFF' }}</span>
                 </span>
               </label>
-              <input type="text" :class="[isOnKey(`all_s${site}_${e.entity_id}`) ? 'input-on' : '']" :value="e.entity_id" readonly />
+              <div class="input-row">
+                <span class="logic-dot logic-ok">●</span>
+                <input type="text" :class="[isOnKey(`all_s${site}_${e.entity_id}`) ? 'input-on' : '']" :value="e.entity_id" readonly />
+              </div>
             </div>
           </div>
           <div class="actions">
@@ -319,6 +322,13 @@ const fmtEntity = (e) => {
   if (Number.isFinite(num)) return `${num} ${unit}`.trim()
   return `${raw} ${unit}`.trim()
 }
+const fmtEntityRaw = (st, attrs) => {
+  if (st === null || st === undefined) return 'n/d'
+  const unit = attrs?.unit_of_measurement || ''
+  const num = Number(st)
+  if (Number.isFinite(num)) return `${num} ${unit}`.trim()
+  return `${st} ${unit}`.trim()
+}
 const getEnt = (site, key) => {
   if (!ent.value) return null
   return ent.value[`s${site}_${key}`] || null
@@ -386,7 +396,7 @@ const selectedEntities = (site) => {
     out.push({
       key,
       label: e.name || e.original_name || e.entity_id,
-      value: e.entity_id,
+      value: fmtEntityRaw(e.state, e.attributes),
     })
   }
   return out

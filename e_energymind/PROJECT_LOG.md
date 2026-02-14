@@ -204,3 +204,6 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.5.3.
 - User: rimosso elenco mappate, ora mostra solo entità con flag ON in Admin.
 - Versione add-on aggiornata a 1.5.4.
+- Admin: elenco completo nello stesso stile (label + flag + input con dot).
+- User: per entità flaggate mostra valore/state (non entity_id).
+- Versione add-on aggiornata a 1.5.5.
