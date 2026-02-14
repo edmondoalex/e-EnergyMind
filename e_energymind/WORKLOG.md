@@ -116,6 +116,8 @@
 - Versione add-on aggiornata a 1.2.4.
 - Auto-map: ampliati pattern per `battery_soc` e `today_import_kwh`.
 - Versione add-on aggiornata a 1.2.5.
+- Admin: elenco entità parte vuoto e mostra solo entità importate (toggle “Mostra tutte”).
+- Versione add-on aggiornata a 1.2.6.
 ## 2026-02-09
 - UI: restyle completo e schema impianto più pulito e leggibile.
 - Backend: attuazione live per Volano→ACS, Volano→Puffer e Puffer→ACS con sequenze valvola→pompa.

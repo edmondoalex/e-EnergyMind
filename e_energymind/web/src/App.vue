@@ -150,8 +150,17 @@
 
         <details class="form" open v-if="ent">
           <summary class="section">Sensori energia (read-only)</summary>
-            <div v-for="site in siteList" :key="`site-${site}`" class="set-section">
-              <div class="section-title">Utenza {{ site }}</div>
+          <div class="field">
+            <label>Visualizzazione entità</label>
+            <div class="actions">
+              <button class="ghost" @click="showAll = !showAll">
+                {{ showAll ? 'Mostra solo importate' : 'Mostra tutte' }}
+              </button>
+            </div>
+            <div class="help">Di default mostra solo le entità importate. Attiva “Mostra tutte” per aggiungere manualmente.</div>
+          </div>
+          <div v-for="site in siteList" :key="`site-${site}`" class="set-section">
+            <div class="section-title">Utenza {{ site }}</div>
             <div class="field">
               <label>Device name (HA)</label>
               <input type="text"
@@ -174,7 +183,8 @@
               <button class="ghost" :disabled="!canAutoMap(site)" @click="autoMapSite(site)">Importa entità da dispositivo</button>
               <div class="help" v-if="!canAutoMap(site)">Inserisci Device name o Device ID, oppure seleziona un dispositivo.</div>
             </div>
-            <div v-for="item in energyEntityDefs" :key="`s${site}_${item.key}`" class="field">
+            <div v-if="visibleEntityDefs(site).length === 0" class="muted">Nessuna entità importata. Usa “Importa entità da dispositivo”.</div>
+            <div v-for="item in visibleEntityDefs(site)" :key="`s${site}_${item.key}`" class="field">
               <label>{{ item.label }}</label>
               <div class="input-row">
                 <span class="logic-dot" :class="isFilled(ent?.[`s${site}_${item.key}`]?.entity_id) ? 'logic-ok' : 'logic-no'">●</span>
@@ -214,6 +224,7 @@ const actions = ref([])
 let pollTimer = null
 const editingCount = ref(0)
 const dirtyEnt = ref({})
+const showAll = ref(false)
 
 const energyEntityDefs = [
   { key: 'pv_power', label: 'PV Power (W)', placeholder: 'sensor.zcs_pv_power' },
@@ -277,6 +288,13 @@ const fmtEntity = (e) => {
 const getEnt = (site, key) => {
   if (!ent.value) return null
   return ent.value[`s${site}_${key}`] || null
+}
+const visibleEntityDefs = (site) => {
+  if (showAll.value) return energyEntityDefs
+  return energyEntityDefs.filter((item) => {
+    const eid = ent.value?.[`s${site}_${item.key}`]?.entity_id || ''
+    return String(eid).trim().length > 0
+  })
 }
 
 function canAutoMap(site){
