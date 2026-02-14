@@ -161,3 +161,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.3.1.
 - UI User: etichette KPI/entità prese da HA `friendly_name` (fallback ai label interni).
 - Versione add-on aggiornata a 1.3.2.
+- UI Admin: etichette sensori prese da HA `friendly_name` (fallback ai label interni).
+- Versione add-on aggiornata a 1.3.3.

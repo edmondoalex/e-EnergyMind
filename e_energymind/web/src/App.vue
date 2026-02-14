@@ -162,7 +162,7 @@
             </div>
             <div v-if="visibleEntityDefs(site).length === 0" class="muted">Nessuna entità importata. Usa “Importa entità da dispositivo”.</div>
             <div v-for="item in visibleEntityDefs(site)" :key="`s${site}_${item.key}`" class="field">
-              <label>{{ item.label }}</label>
+              <label>{{ labelFor(site, item.key, item.label) }}</label>
               <div class="input-row">
                 <span class="logic-dot" :class="isFilled(ent?.[`s${site}_${item.key}`]?.entity_id) ? 'logic-ok' : 'logic-no'">●</span>
                 <input type="text"
