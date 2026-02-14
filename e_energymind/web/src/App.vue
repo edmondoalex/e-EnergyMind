@@ -144,6 +144,27 @@
           <summary class="section">Sensori energia (read-only)</summary>
           <div v-for="site in siteList" :key="`site-${site}`" class="set-section">
             <div class="section-title">Utenza {{ site }}</div>
+            <div class="field">
+              <label>Device name (HA)</label>
+              <input type="text"
+                     v-model="sp.devices[`s${site}`].name"
+                     placeholder="ZCS Privato 1"
+                     @change="saveConfig"
+                     @focus="onFocus" @blur="onBlur"/>
+              <div class="help">Nome dispositivo esatto in Home Assistant (opzionale se usi Device ID).</div>
+            </div>
+            <div class="field">
+              <label>Device ID (HA)</label>
+              <input type="text"
+                     v-model="sp.devices[`s${site}`].id"
+                     placeholder="a1b2c3d4e5f6..."
+                     @change="saveConfig"
+                     @focus="onFocus" @blur="onBlur"/>
+              <div class="help">ID dispositivo (preferito). Lo trovi nella pagina dispositivo in HA.</div>
+            </div>
+            <div class="actions">
+              <button class="ghost" @click="autoMapSite(site)">Importa entità da dispositivo</button>
+            </div>
             <div v-for="item in energyEntityDefs" :key="`s${site}_${item.key}`" class="field">
               <label>{{ item.label }}</label>
               <div class="input-row">
@@ -261,6 +282,15 @@ function onBlur(){
 async function loadConfig(){
   const r = await fetch('/api/config')
   sp.value = await r.json()
+  if (!sp.value.devices) {
+    sp.value.devices = { s1: { name: '', id: '' }, s2: { name: '', id: '' }, s3: { name: '', id: '' } }
+  } else {
+    for (const key of ['s1','s2','s3']) {
+      if (!sp.value.devices[key]) sp.value.devices[key] = { name: '', id: '' }
+      if (typeof sp.value.devices[key].name !== 'string') sp.value.devices[key].name = ''
+      if (typeof sp.value.devices[key].id !== 'string') sp.value.devices[key].id = ''
+    }
+  }
   if (sp.value?.runtime?.ui_poll_ms) {
     pollMs.value = Number(sp.value.runtime.ui_poll_ms) || 3000
   }
@@ -283,6 +313,20 @@ async function saveEntities(){
   await fetch('/api/entities',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entities: payload})})
   dirtyEnt.value = {}
   await refresh()
+}
+async function autoMapSite(site){
+  if (!sp.value?.devices) return
+  const dev = sp.value.devices[`s${site}`] || {}
+  const payload = { site, device_name: dev.name || '', device_id: dev.id || '', overwrite: false }
+  const r = await fetch('/api/auto_map',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+  if (!r.ok) {
+    window.alert('Importa entità fallito')
+    return
+  }
+  const data = await r.json()
+  await loadEntities()
+  await refresh()
+  window.alert(`Importate: ${data.mapped || 0} entità`)
 }
 async function refresh(){
   if (tab.value === 'admin' || editingCount.value > 0) return

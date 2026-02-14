@@ -17,6 +17,7 @@ Data export: 2026-02-08 (Europe/Rome)
 - Admin: selezione numero utenze (1-3) e mapping sensori energia.
 - Backend: rimosse logiche termiche, API minimal per status/config/entities.
 - Logger: dati ogni 10s su SQLite con retention 90 giorni.
+- Auto-mapping entità da device HA (nome o device_id).
 
 ## Architettura concordata
 - Motore modulare a “state machine”:

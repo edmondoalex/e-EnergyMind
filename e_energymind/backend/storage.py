@@ -29,6 +29,11 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "ui_poll_ms": 3000,
         "sites_count": 2,
     },
+    "devices": {
+        "s1": {"name": "", "id": ""},
+        "s2": {"name": "", "id": ""},
+        "s3": {"name": "", "id": ""},
+    },
     "security": {
         "user_pin": "",
     },
@@ -66,6 +71,13 @@ def normalize_config(raw: Dict[str, Any]) -> Dict[str, Any]:
             n = int(_float(runtime["sites_count"], cfg["runtime"]["sites_count"]))
             cfg["runtime"]["sites_count"] = max(1, min(3, n))
 
+    devices = raw.get("devices", {})
+    if isinstance(devices, dict):
+        for key in ("s1", "s2", "s3"):
+            src = devices.get(key, {}) if isinstance(devices.get(key, {}), dict) else {}
+            cfg["devices"][key]["name"] = str(src.get("name") or "").strip()
+            cfg["devices"][key]["id"] = str(src.get("id") or "").strip()
+
     security = raw.get("security", {})
     if isinstance(security, dict) and isinstance(security.get("user_pin"), str):
         cfg["security"]["user_pin"] = security.get("user_pin", "")
@@ -87,6 +99,15 @@ def apply_config(cfg: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any]
         if "sites_count" in runtime:
             n = int(_float(runtime["sites_count"], cfg["runtime"]["sites_count"]))
             cfg["runtime"]["sites_count"] = max(1, min(3, n))
+
+    devices = payload.get("devices", {})
+    if isinstance(devices, dict):
+        for key in ("s1", "s2", "s3"):
+            src = devices.get(key, {}) if isinstance(devices.get(key, {}), dict) else {}
+            if "name" in src:
+                cfg["devices"][key]["name"] = str(src.get("name") or "").strip()
+            if "id" in src:
+                cfg["devices"][key]["id"] = str(src.get("id") or "").strip()
 
     security = payload.get("security", {})
     if isinstance(security, dict) and isinstance(security.get("user_pin"), str):
