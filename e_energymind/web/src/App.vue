@@ -45,19 +45,19 @@
           </div>
           <div class="grid">
             <div v-for="item in userKpiDefs.filter(i => isMapped(site, i.key))" :key="`u1-${site}-${item.key}`" class="kpi">
-              <div class="k">{{ item.label }}</div>
+              <div class="k">{{ labelFor(site, item.key, item.label) }}</div>
               <div class="v">{{ fmtEntity(getEnt(site, item.key)) }}</div>
             </div>
           </div>
           <div class="row3">
             <div v-for="item in userDailyDefs.filter(i => isMapped(site, i.key))" :key="`u2-${site}-${item.key}`" class="kpi kpi-center">
-              <div class="k">{{ item.label }}</div>
+              <div class="k">{{ labelFor(site, item.key, item.label) }}</div>
               <div class="v">{{ fmtEntity(getEnt(site, item.key)) }}</div>
             </div>
           </div>
           <div class="row3">
             <div v-for="item in userForecastDefs.filter(i => isMapped(site, i.key))" :key="`u3-${site}-${item.key}`" class="kpi kpi-center">
-              <div class="k">{{ item.label }}</div>
+              <div class="k">{{ labelFor(site, item.key, item.label) }}</div>
               <div class="v">{{ fmtEntity(getEnt(site, item.key)) }}</div>
             </div>
           </div>
@@ -67,7 +67,7 @@
             <div v-if="mappedEntries(site).length === 0" class="muted">Nessuna entità mappata.</div>
             <div v-else class="entity-list">
               <div v-for="item in mappedEntries(site)" :key="`mapped-${site}-${item.key}`" class="entity-row">
-                <span class="entity-name">{{ item.label }}</span>
+                <span class="entity-name">{{ labelFor(site, item.key, item.label) }}</span>
                 <span class="entity-value">{{ fmtEntity(getEnt(site, item.key)) }}</span>
               </div>
             </div>
@@ -292,6 +292,11 @@ const fmtEntity = (e) => {
 const getEnt = (site, key) => {
   if (!ent.value) return null
   return ent.value[`s${site}_${key}`] || null
+}
+const labelFor = (site, key, fallback) => {
+  const e = getEnt(site, key)
+  const fn = e?.attributes?.friendly_name
+  return (typeof fn === 'string' && fn.trim().length > 0) ? fn : fallback
 }
 const deviceLabel = (site) => {
   const dev = sp.value?.devices?.[`s${site}`] || {}

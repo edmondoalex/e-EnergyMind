@@ -157,3 +157,7 @@ Data export: 2026-02-08 (Europe/Rome)
 - Auto-map: risposta include `matched` e `skipped_existing`.
 - Admin: toggle “Sovrascrivi mappature esistenti” + aggiornamento nome dispositivo su import.
 - Versione add-on aggiornata a 1.3.0.
+- Auto-map: priorità a `pv_power_total` e pattern aggiuntivi per FV totale.
+- Versione add-on aggiornata a 1.3.1.
+- UI User: etichette KPI/entità prese da HA `friendly_name` (fallback ai label interni).
+- Versione add-on aggiornata a 1.3.2.
