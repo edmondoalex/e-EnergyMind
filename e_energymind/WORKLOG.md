@@ -92,6 +92,8 @@
 - Fix static UI: mount unico su `/` (StaticFiles html=True) per servire `index.html` e `assets` senza 500 su `/assets`.
 - Rimossi handler `FileResponse` per `/` e `/index.html` (delegati a StaticFiles).
 - Versione add-on aggiornata a 1.1.3.
+- Hotfix static: reintrodotto `FileResponse` per `/` + mount `/assets` separato.
+- Versione add-on aggiornata a 1.1.4.
 ## 2026-02-09
 - UI: restyle completo e schema impianto più pulito e leggibile.
 - Backend: attuazione live per Volano→ACS, Volano→Puffer e Puffer→ACS con sequenze valvola→pompa.

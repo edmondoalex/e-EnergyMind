@@ -122,3 +122,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Fix static UI: mount StaticFiles su `/` (html=True) per servire index+assets e prevenire errori 500 su `/assets`.
 - Rimosse route `FileResponse` dedicate a `/` e `/index.html` (static gestisce tutto).
 - Versione add-on aggiornata a 1.1.3.
+- Hotfix static: mount `/assets` separato + `FileResponse` per `/` e `/index.html`.
+- Versione add-on aggiornata a 1.1.4.

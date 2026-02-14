@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .ha_client import HAClient
@@ -255,6 +255,16 @@ async def _logging_loop():
         await asyncio.sleep(LOG_INTERVAL_S)
 
 
+@app.get("/")
+async def index():
+    return FileResponse("/app/static/index.html")
+
+
+@app.get("/index.html")
+async def index_html():
+    return FileResponse("/app/static/index.html")
+
+
 @app.on_event("startup")
 async def startup_event():
     global ha_task, log_task
@@ -398,10 +408,10 @@ async def get_actions():
     return JSONResponse({"items": action_log})
 
 
-def _mount_static() -> None:
-    static_dir = Path("/app/static")
-    if static_dir.is_dir():
-        app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+def _mount_assets() -> None:
+    assets_dir = Path("/app/static/assets")
+    if assets_dir.is_dir():
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
 
-_mount_static()
+_mount_assets()
