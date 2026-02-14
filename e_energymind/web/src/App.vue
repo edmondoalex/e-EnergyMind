@@ -39,7 +39,10 @@
         <p v-if="status?.runtime_mode !== 'live'" class="muted">Dry-run: nessun comando agli attuatori. Analisi solo lettura.</p>
 
         <div v-if="ent" v-for="site in siteList" :key="`user-site-${site}`" class="card inner">
-          <div class="row"><strong>Utenza {{ site }}</strong></div>
+          <div class="row">
+            <strong>Utenza {{ site }}</strong>
+            <span class="muted" v-if="deviceLabel(site)"> — {{ deviceLabel(site) }}</span>
+          </div>
           <div class="grid">
             <div class="kpi">
               <div class="k">PV Power</div>
@@ -160,7 +163,10 @@
             <div class="help">Di default mostra solo le entità importate. Attiva “Mostra tutte” per aggiungere manualmente.</div>
           </div>
           <div v-for="site in siteList" :key="`site-${site}`" class="set-section">
-            <div class="section-title">Utenza {{ site }}</div>
+            <div class="section-title">
+              Utenza {{ site }}
+              <span class="muted" v-if="deviceLabel(site)"> — {{ deviceLabel(site) }}</span>
+            </div>
             <div class="field">
               <label>Device name (HA)</label>
               <input type="text"
@@ -289,6 +295,12 @@ const fmtEntity = (e) => {
 const getEnt = (site, key) => {
   if (!ent.value) return null
   return ent.value[`s${site}_${key}`] || null
+}
+const deviceLabel = (site) => {
+  const dev = sp.value?.devices?.[`s${site}`] || {}
+  const name = String(dev.name || '').trim()
+  const id = String(dev.id || '').trim()
+  return name || (id ? `ID ${id}` : '')
 }
 const visibleEntityDefs = (site) => {
   if (showAll.value) return energyEntityDefs

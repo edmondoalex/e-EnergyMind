@@ -150,3 +150,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.2.6.
 - Admin: pulsante “Reset entità” (API `/api/entities/reset`).
 - Versione add-on aggiornata a 1.2.7.
+- UI: mostrato nome dispositivo per ogni utenza in User/Admin.
+- Versione add-on aggiornata a 1.2.8.
