@@ -221,3 +221,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.6.5.
 - Grafico storico: aggiunta scala assi X/Y con tick e griglia.
 - Versione add-on aggiornata a 1.6.6.
+- DB: backfill entity_id per storico usando la colonna key (dati di stamattina visibili).
+- Versione add-on aggiornata a 1.6.7.

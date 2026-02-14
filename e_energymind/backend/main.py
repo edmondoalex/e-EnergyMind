@@ -112,6 +112,21 @@ def _db_init() -> None:
         cols = [row[1] for row in cur.fetchall()]
         if "entity_id" not in cols:
             conn.execute("ALTER TABLE history ADD COLUMN entity_id TEXT")
+        # Backfill entity_id for legacy rows when key column exists
+        if "key" in cols:
+            cfg = load_config()
+            ent_cfg = cfg.get("entities", {}) or {}
+            for cfg_key, entity_id in ent_cfg.items():
+                if not entity_id:
+                    continue
+                parsed = _parse_site_key(cfg_key)
+                if not parsed:
+                    continue
+                site, key = parsed
+                conn.execute(
+                    "UPDATE history SET entity_id = ? WHERE entity_id IS NULL AND site = ? AND key = ?",
+                    (entity_id, site, key),
+                )
         conn.execute("CREATE INDEX IF NOT EXISTS idx_history_ts ON history(ts)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_history_site_entity ON history(site, entity_id)")
         conn.commit()
