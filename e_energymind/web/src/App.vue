@@ -69,7 +69,8 @@
             <div class="row"><strong>Entità mappate</strong></div>
             <div v-if="mappedEntries(site).length === 0" class="muted">Nessuna entità mappata.</div>
             <div v-else class="entity-list">
-              <div v-for="item in mappedEntries(site)" :key="`mapped-${site}-${item.key}`" class="entity-row">
+              <div v-for="item in mappedEntries(site)" :key="`mapped-${site}-${item.key}`"
+                   class="entity-row" :class="isOn(site, item.key) ? 'row-on' : ''">
                 <span class="entity-name">{{ labelFor(site, item.key, item.label) }}</span>
                 <span class="entity-value">{{ fmtEntity(getEnt(site, item.key)) }}</span>
               </div>
@@ -261,6 +262,7 @@ const energyEntityDefs = [
 
 const userKpiDefs = [
   { key: 'pv_power', label: 'PV Power' },
+  { key: 'pv_power_total', label: 'PV Power Totale' },
   { key: 'load_power', label: 'Carico casa' },
   { key: 'grid_power', label: 'Rete (PCC)' },
   { key: 'grid_import_power', label: 'Import rete' },
@@ -684,6 +686,10 @@ body{
   border:1px solid var(--line);
   border-radius:8px;
   background:#0b121a;
+}
+.row-on{
+  background:rgba(45,212,191,0.12);
+  border-color:rgba(45,212,191,0.6);
 }
 .entity-name{ color:var(--muted); }
 .entity-value{ font-weight:600; }

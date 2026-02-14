@@ -173,3 +173,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.3.7.
 - UI: ripristino flags da localStorage se config vuoto + salvataggio locale continuo.
 - Versione add-on aggiornata a 1.3.8.
+- User: evidenziazione anche in “Entità mappate” + KPI PV Totale.
+- Versione add-on aggiornata a 1.3.9.

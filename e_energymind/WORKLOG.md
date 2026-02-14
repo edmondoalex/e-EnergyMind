@@ -143,6 +143,8 @@
 - Versione add-on aggiornata a 1.3.7.
 - UI: ripristino flags da localStorage se config vuoto + salvataggio locale continuo.
 - Versione add-on aggiornata a 1.3.8.
+- User: evidenziazione anche in “Entità mappate” + KPI PV Totale.
+- Versione add-on aggiornata a 1.3.9.
 ## 2026-02-09
 - UI: restyle completo e schema impianto più pulito e leggibile.
 - Backend: attuazione live per Volano→ACS, Volano→Puffer e Puffer→ACS con sequenze valvola→pompa.
