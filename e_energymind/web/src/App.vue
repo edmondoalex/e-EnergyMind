@@ -153,6 +153,10 @@
               <div class="help">ID dispositivo (preferito). Lo trovi nella pagina dispositivo in HA.</div>
             </div>
             <div class="actions">
+              <label class="toggle">
+                <input type="checkbox" v-model="overwriteMap[site]">
+                <span>Sovrascrivi mappature esistenti</span>
+              </label>
               <button class="ghost" :disabled="!canAutoMap(site)" @click="autoMapSite(site)">Importa entità da dispositivo</button>
               <div class="help" v-if="!canAutoMap(site)">Inserisci Device name o Device ID, oppure seleziona un dispositivo.</div>
             </div>
@@ -199,6 +203,7 @@ let pollTimer = null
 const editingCount = ref(0)
 const dirtyEnt = ref({})
 const showAll = ref(false)
+const overwriteMap = ref({ 1: false, 2: false, 3: false })
 
 const energyEntityDefs = [
   { key: 'pv_power', label: 'PV Power (W)', placeholder: 'sensor.zcs_pv_power' },
@@ -370,16 +375,20 @@ async function autoMapSite(site){
     window.alert('Inserisci Device name o Device ID, oppure seleziona un dispositivo')
     return
   }
-  const payload = { site, device_name: dev.name || '', device_id: dev.id || '', overwrite: false }
+  const payload = { site, device_name: dev.name || '', device_id: dev.id || '', overwrite: !!overwriteMap.value[site] }
   const r = await fetch('/api/auto_map',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
   if (!r.ok) {
     window.alert('Importa entità fallito')
     return
   }
   const data = await r.json()
+  if (data.device && sp.value?.devices?.[`s${site}`]) {
+    sp.value.devices[`s${site}`].name = data.device
+    await saveConfig()
+  }
   await loadEntities()
   await refresh()
-  window.alert(`Importate: ${data.mapped || 0} entità`)
+  window.alert(`Importate: ${data.mapped || 0} entità (trovate: ${data.matched || 0}, già presenti: ${data.skipped_existing || 0})`)
 }
 async function refresh(){
   if (tab.value === 'admin' || editingCount.value > 0) return
@@ -649,6 +658,13 @@ body{
 .actions .danger{
   border-color:rgba(255,107,107,0.6);
   color:var(--danger);
+}
+.toggle{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:var(--muted);
+  font-size:13px;
 }
 .form{
   margin-top:14px;

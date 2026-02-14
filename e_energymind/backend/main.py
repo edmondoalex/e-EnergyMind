@@ -391,12 +391,14 @@ async def auto_map(payload: Dict[str, Any]):
     cfg = load_config()
     ent_cfg = cfg.get("entities", {})
     count = 0
+    skipped_existing = 0
     for key in ENERGY_ENTITY_KEYS:
         eid = mapped.get(key)
         if not eid:
             continue
         cfg_key = f"s{site}_{key}"
         if not overwrite and ent_cfg.get(cfg_key):
+            skipped_existing += 1
             continue
         ent_cfg[cfg_key] = eid
         count += 1
@@ -404,7 +406,13 @@ async def auto_map(payload: Dict[str, Any]):
     cfg["entities"] = ent_cfg
     save_config(cfg)
     _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} AUTO_MAP site={site} mapped={count}")
-    return JSONResponse({"ok": True, "mapped": count, "device": device.get("name") or device.get("name_by_user") or device.get("id")})
+    return JSONResponse({
+        "ok": True,
+        "mapped": count,
+        "matched": len(mapped),
+        "skipped_existing": skipped_existing,
+        "device": device.get("name") or device.get("name_by_user") or device.get("id"),
+    })
 
 
 @app.post("/api/auto_map/")

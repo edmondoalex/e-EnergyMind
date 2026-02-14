@@ -154,3 +154,6 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.2.8.
 - User: mostra solo KPI mappati + lista “Entità mappate” per utenza.
 - Versione add-on aggiornata a 1.2.9.
+- Auto-map: risposta include `matched` e `skipped_existing`.
+- Admin: toggle “Sovrascrivi mappature esistenti” + aggiornamento nome dispositivo su import.
+- Versione add-on aggiornata a 1.3.0.
