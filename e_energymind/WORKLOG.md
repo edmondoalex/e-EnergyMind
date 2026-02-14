@@ -98,6 +98,8 @@
 - Versione add-on aggiornata a 1.1.5.
 - Hotfix static: serve `/assets/{path}` via `FileResponse` con fallback su `/app/static`.
 - Versione add-on aggiornata a 1.1.6.
+- Hotfix static: `FileResponse` con `media_type` corretto (mimetypes) per CSS/JS.
+- Versione add-on aggiornata a 1.1.7.
 ## 2026-02-09
 - UI: restyle completo e schema impianto più pulito e leggibile.
 - Backend: attuazione live per Volano→ACS, Volano→Puffer e Puffer→ACS con sequenze valvola→pompa.

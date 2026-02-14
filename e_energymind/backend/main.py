@@ -2,6 +2,7 @@
 import json
 import time
 import sqlite3
+import mimetypes
 from pathlib import Path
 from typing import Any, Dict
 
@@ -421,8 +422,10 @@ async def get_asset(path: str):
     base = Path("/app/static/assets")
     candidate = base / path
     if candidate.exists() and candidate.is_file():
-        return FileResponse(str(candidate))
+        media_type, _ = mimetypes.guess_type(str(candidate))
+        return FileResponse(str(candidate), media_type=media_type)
     fallback = Path("/app/static") / path
     if fallback.exists() and fallback.is_file():
-        return FileResponse(str(fallback))
+        media_type, _ = mimetypes.guess_type(str(fallback))
+        return FileResponse(str(fallback), media_type=media_type)
     raise HTTPException(status_code=404, detail="Not Found")
