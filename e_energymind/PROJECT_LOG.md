@@ -193,3 +193,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.4.7.
 - Auto-map: aggiorna config e mostra totale entità importate.
 - Versione add-on aggiornata a 1.4.8.
+- Admin: pulsante “Sincronizza elenco completo” (API `/api/all_entities_sync`).
+- Versione add-on aggiornata a 1.4.9.

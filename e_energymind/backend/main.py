@@ -320,6 +320,29 @@ async def get_entities():
     return JSONResponse(out)
 
 
+@app.get("/api/entities_all")
+async def get_entities_all(site: int = 1):
+    if site not in (1, 2, 3):
+        raise HTTPException(status_code=400, detail="Invalid site")
+    cfg = load_config()
+    all_list = (cfg.get("all_entities", {}) or {}).get(f"s{site}", []) or []
+    items = []
+    for item in all_list:
+        eid = item.get("entity_id")
+        payload = _entity_payload(eid)
+        items.append({
+            "entity_id": eid,
+            "name": item.get("name"),
+            "original_name": item.get("original_name"),
+            "platform": item.get("platform"),
+            "disabled_by": item.get("disabled_by"),
+            "state": payload.get("state"),
+            "attributes": payload.get("attributes"),
+            "icon": payload.get("icon"),
+        })
+    return JSONResponse({"site": site, "items": items})
+
+
 @app.post("/api/entities")
 async def set_entities(payload: Dict[str, Any]):
     cfg = load_config()
@@ -336,6 +359,35 @@ async def reset_entities():
     save_config(cfg)
     _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} RESET entities")
     return JSONResponse({"ok": True})
+
+
+@app.post("/api/all_entities_sync")
+async def all_entities_sync(payload: Dict[str, Any]):
+    site = int(payload.get("site") or 0)
+    if site not in (1, 2, 3):
+        raise HTTPException(status_code=400, detail="Invalid site")
+    device_id = str(payload.get("device_id") or "").strip()
+    device_name = str(payload.get("device_name") or "").strip()
+    if not device_id and not device_name:
+        raise HTTPException(status_code=400, detail="Missing device_id")
+    device, dev_entities = await _get_device_entities(device_id or None, device_name or None)
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+    cfg = load_config()
+    cfg.setdefault("all_entities", {})
+    full_list = []
+    for e in dev_entities:
+        full_list.append({
+            "entity_id": e.get("entity_id"),
+            "name": e.get("name"),
+            "original_name": e.get("original_name"),
+            "platform": e.get("platform"),
+            "disabled_by": e.get("disabled_by"),
+        })
+    cfg["all_entities"][f"s{site}"] = full_list
+    save_config(cfg)
+    _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} ALL_ENTITIES site={site} total={len(full_list)}")
+    return JSONResponse({"ok": True, "total": len(full_list), "device": device.get("name") or device.get("name_by_user") or device.get("id")})
 
 
 @app.post("/api/auto_map")

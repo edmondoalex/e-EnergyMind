@@ -162,6 +162,7 @@
                 <span>Sovrascrivi mappature esistenti</span>
               </label>
               <button class="ghost" :disabled="!canAutoMap(site)" @click="autoMapSite(site)">Importa entità da dispositivo</button>
+              <button class="ghost" :disabled="!canAutoMap(site)" @click="syncAllEntities(site)">Sincronizza elenco completo</button>
               <div class="help" v-if="!canAutoMap(site)">Inserisci Device name o Device ID, oppure seleziona un dispositivo.</div>
             </div>
             <div v-if="visibleEntityDefs(site).length === 0" class="muted">Nessuna entità importata. Usa “Importa entità da dispositivo”.</div>
@@ -443,6 +444,27 @@ async function autoMapSite(site){
   await loadEntities()
   await refresh()
   window.alert(`Importate: ${data.mapped || 0} entità (trovate: ${data.matched || 0}, già presenti: ${data.skipped_existing || 0}, totali: ${data.total_entities || 0})`)
+}
+async function syncAllEntities(site){
+  if (!sp.value?.devices) return
+  const dev = sp.value.devices[`s${site}`] || {}
+  if (!canAutoMap(site)) {
+    window.alert('Inserisci Device name o Device ID')
+    return
+  }
+  const payload = { site, device_name: dev.name || '', device_id: dev.id || '' }
+  const r = await fetch('/api/all_entities_sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+  if (!r.ok) {
+    window.alert('Sync elenco fallito')
+    return
+  }
+  const data = await r.json()
+  if (data.device && sp.value?.devices?.[`s${site}`]) {
+    sp.value.devices[`s${site}`].name = data.device
+    await saveConfig()
+  }
+  await loadConfig()
+  window.alert(`Elenco completo aggiornato: ${data.total || 0} entità`)
 }
 async function refresh(){
   if (tab.value === 'admin' || editingCount.value > 0) return

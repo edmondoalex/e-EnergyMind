@@ -163,6 +163,8 @@
 - Versione add-on aggiornata a 1.4.7.
 - Auto-map: aggiorna config e mostra totale entità importate.
 - Versione add-on aggiornata a 1.4.8.
+- Admin: pulsante “Sincronizza elenco completo” (API `/api/all_entities_sync`).
+- Versione add-on aggiornata a 1.4.9.
 ## 2026-02-09
 - UI: restyle completo e schema impianto più pulito e leggibile.
 - Backend: attuazione live per Volano→ACS, Volano→Puffer e Puffer→ACS con sequenze valvola→pompa.
