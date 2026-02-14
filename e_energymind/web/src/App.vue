@@ -66,13 +66,13 @@
           </div>
 
           <div class="card inner">
-            <div class="row"><strong>Entità mappate</strong></div>
-            <div v-if="mappedEntries(site).length === 0" class="muted">Nessuna entità mappata.</div>
+            <div class="row"><strong>Entità selezionate (flag ON)</strong></div>
+            <div v-if="selectedEntities(site).length === 0" class="muted">Nessuna entità selezionata.</div>
             <div v-else class="entity-list">
-              <div v-for="item in mappedEntries(site)" :key="`mapped-${site}-${item.key}`"
-                   class="entity-row" :class="isOn(site, item.key) ? 'row-on' : ''">
-                <span class="entity-name">{{ labelFor(site, item.key, item.label) }}</span>
-                <span class="entity-value">{{ fmtEntity(getEnt(site, item.key)) }}</span>
+              <div v-for="item in selectedEntities(site)" :key="`sel-${site}-${item.key}`"
+                   class="entity-row row-on">
+                <span class="entity-name">{{ item.label }}</span>
+                <span class="entity-value">{{ item.value }}</span>
               </div>
             </div>
           </div>
@@ -186,17 +186,21 @@
               </div>
               <div v-if="item.help" class="help">{{ item.help }}</div>
             </div>
-            <details class="form">
-              <summary class="section">Entità dispositivo (tutte) — {{ allEntities(site).length }}</summary>
-              <div class="help">Elenco completo delle entità del dispositivo. Utile per confrontare.</div>
-              <div v-if="allEntities(site).length === 0" class="muted">Elenco vuoto. Esegui “Importa entità da dispositivo”.</div>
-              <div v-else class="entity-list entity-list-full">
-                <div v-for="e in allEntities(site)" :key="`all-${site}-${e.entity_id}`" class="entity-row">
-                  <span class="entity-name">{{ e.name || e.original_name || e.entity_id }}</span>
-                  <span class="entity-value">{{ e.entity_id }}</span>
-                </div>
-              </div>
-            </details>
+            <div class="field" v-if="allEntities(site).length > 0">
+              <div class="section-title">Entità dispositivo (tutte) — {{ allEntities(site).length }}</div>
+              <div class="help">Elenco completo delle entità del dispositivo (nello stesso elenco). Solo lettura.</div>
+            </div>
+            <div v-for="e in allEntities(site)" :key="`all-${site}-${e.entity_id}`" class="field field-readonly">
+              <label class="label-row">
+                <span>{{ e.name || e.original_name || e.entity_id }}</span>
+                <span class="state-flag" :class="isOnKey(`all_s${site}_${e.entity_id}`) ? 'state-on' : 'state-off'">
+                  <input class="flag-checkbox" type="checkbox" :checked="isOnKey(`all_s${site}_${e.entity_id}`)"
+                         @change="toggleManualKey(`all_s${site}_${e.entity_id}`)"/>
+                  <span>{{ isOnKey(`all_s${site}_${e.entity_id}`) ? 'ON' : 'OFF' }}</span>
+                </span>
+              </label>
+              <input type="text" :class="[isOnKey(`all_s${site}_${e.entity_id}`) ? 'input-on' : '']" :value="e.entity_id" readonly />
+            </div>
           </div>
           <div class="actions">
             <button class="ghost" @click="saveEntities">Salva sensori</button>
@@ -319,13 +323,13 @@ const getEnt = (site, key) => {
   if (!ent.value) return null
   return ent.value[`s${site}_${key}`] || null
 }
-const isOn = (site, key) => {
-  const manual = manualFlags.value?.[`s${site}_${key}`]
+const isOnKey = (k) => {
+  const manual = manualFlags.value?.[k]
   if (typeof manual === 'boolean') return manual
   return false
 }
-const toggleManual = async (site, key) => {
-  const k = `s${site}_${key}`
+const isOn = (site, key) => isOnKey(`s${site}_${key}`)
+const toggleManualKey = async (k) => {
   const cur = manualFlags.value?.[k]
   const next = !(cur === true)
   manualFlags.value = { ...manualFlags.value, [k]: next }
@@ -337,6 +341,7 @@ const toggleManual = async (site, key) => {
     await saveConfig()
   }
 }
+const toggleManual = async (site, key) => toggleManualKey(`s${site}_${key}`)
 const labelFor = (site, key, fallback) => {
   const e = getEnt(site, key)
   const fn = e?.attributes?.friendly_name
@@ -362,6 +367,29 @@ const visibleEntityDefs = (site) => {
 }
 const mappedEntries = (site) => {
   return energyEntityDefs.filter((item) => isMapped(site, item.key))
+}
+const selectedEntities = (site) => {
+  const out = []
+  for (const item of energyEntityDefs) {
+    const key = `s${site}_${item.key}`
+    if (isOnKey(key) && isMapped(site, item.key)) {
+      out.push({
+        key,
+        label: labelFor(site, item.key, item.label),
+        value: fmtEntity(getEnt(site, item.key)),
+      })
+    }
+  }
+  for (const e of allEntities(site)) {
+    const key = `all_s${site}_${e.entity_id}`
+    if (!isOnKey(key)) continue
+    out.push({
+      key,
+      label: e.name || e.original_name || e.entity_id,
+      value: e.entity_id,
+    })
+  }
+  return out
 }
 
 function canAutoMap(site){
@@ -736,6 +764,9 @@ body{
   max-height:520px;
   overflow:auto;
   padding-right:6px;
+}
+.field-readonly input{
+  opacity:0.85;
 }
 .entity-row{
   display:flex;
