@@ -228,3 +228,6 @@ Data export: 2026-02-08 (Europe/Rome)
 - Report giornaliero automatico (23:59) per entrambe le utenze con MD+JSON in /data/reports.
 - Tag cause automatici per carica parziale.
 - Versione add-on aggiornata a 1.7.0.
+- Report: copia automatica in /share/reports oltre che /data/reports.
+- Versione add-on aggiornata a 1.7.1.
+- Fix crash: indentation in _num_or_none. Version 1.7.2.
