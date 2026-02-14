@@ -165,3 +165,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.3.3.
 - Admin: flag ON/OFF accanto alle entità + input verde quando stato ON.
 - Versione add-on aggiornata a 1.3.4.
+- Admin: flag ON/OFF ora indica entità mappata e presente in HA (non stato on/off).
+- Versione add-on aggiornata a 1.3.5.

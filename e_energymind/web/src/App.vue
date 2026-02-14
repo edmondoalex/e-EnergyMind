@@ -301,8 +301,9 @@ const getEnt = (site, key) => {
 const isOn = (site, key) => {
   const e = getEnt(site, key)
   if (!e) return false
-  const v = String(e.state ?? '').toLowerCase()
-  return v === 'on' || v === 'true' || v === '1' || v === 'active'
+  const hasId = typeof e.entity_id === 'string' && e.entity_id.trim().length > 0
+  const hasState = e.state !== null && e.state !== undefined
+  return hasId && hasState
 }
 const labelFor = (site, key, fallback) => {
   const e = getEnt(site, key)
