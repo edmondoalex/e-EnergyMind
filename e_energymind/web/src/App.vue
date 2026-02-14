@@ -185,6 +185,17 @@
               </div>
               <div v-if="item.help" class="help">{{ item.help }}</div>
             </div>
+            <details class="form">
+              <summary class="section">Entità dispositivo (tutte)</summary>
+              <div class="help">Elenco completo delle entità del dispositivo. Utile per confrontare.</div>
+              <div v-if="allEntities(site).length === 0" class="muted">Elenco vuoto. Esegui “Importa entità da dispositivo”.</div>
+              <div v-else class="entity-list">
+                <div v-for="e in allEntities(site)" :key="`all-${site}-${e.entity_id}`" class="entity-row">
+                  <span class="entity-name">{{ e.name || e.original_name || e.entity_id }}</span>
+                  <span class="entity-value">{{ e.entity_id }}</span>
+                </div>
+              </div>
+            </details>
           </div>
           <div class="actions">
             <button class="ghost" @click="saveEntities">Salva sensori</button>
@@ -335,6 +346,9 @@ const deviceLabel = (site) => {
   const id = String(dev.id || '').trim()
   return name || (id ? `ID ${id}` : '')
 }
+const allEntities = (site) => {
+  return sp.value?.all_entities?.[`s${site}`] || []
+}
 const visibleEntityDefs = (site) => {
   if (showAll.value) return energyEntityDefs
   return energyEntityDefs.filter((item) => {
@@ -425,9 +439,10 @@ async function autoMapSite(site){
     sp.value.devices[`s${site}`].name = data.device
     await saveConfig()
   }
+  await loadConfig()
   await loadEntities()
   await refresh()
-  window.alert(`Importate: ${data.mapped || 0} entità (trovate: ${data.matched || 0}, già presenti: ${data.skipped_existing || 0})`)
+  window.alert(`Importate: ${data.mapped || 0} entità (trovate: ${data.matched || 0}, già presenti: ${data.skipped_existing || 0}, totali: ${data.total_entities || 0})`)
 }
 async function refresh(){
   if (tab.value === 'admin' || editingCount.value > 0) return

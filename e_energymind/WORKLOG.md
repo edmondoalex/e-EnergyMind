@@ -161,6 +161,8 @@
 - Versione add-on aggiornata a 1.4.6.
 - Backend: `/api/device_entities` ora restituisce solo entità del device (debug opzionale).
 - Versione add-on aggiornata a 1.4.7.
+- Auto-map: aggiorna config e mostra totale entità importate.
+- Versione add-on aggiornata a 1.4.8.
 ## 2026-02-09
 - UI: restyle completo e schema impianto più pulito e leggibile.
 - Backend: attuazione live per Volano→ACS, Volano→Puffer e Puffer→ACS con sequenze valvola→pompa.
