@@ -136,3 +136,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.1.9.
 - UI: header con brand a sinistra, azioni centrate, tab a destra (come e-ThermoMind).
 - Versione add-on aggiornata a 1.2.0.
+- Admin: selezione dispositivo resa opzionale, import entità attivo con device name/ID.
+- Versione add-on aggiornata a 1.2.1.

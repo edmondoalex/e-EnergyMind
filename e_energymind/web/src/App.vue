@@ -153,14 +153,14 @@
           <div v-for="site in siteList" :key="`site-${site}`" class="set-section">
             <div class="section-title">Utenza {{ site }}</div>
             <div class="field">
-              <label>Seleziona dispositivo</label>
+              <label>Seleziona dispositivo (opzionale)</label>
               <select v-model="sp.devices[`s${site}`].id" @change="onDeviceSelect(site)">
-                <option value="">-- scegli --</option>
+                <option value="">-- scegli (opzionale) --</option>
                 <option v-for="d in devicesList" :key="d.id" :value="d.id">
                   {{ d.name_by_user || d.name || d.id }}
                 </option>
               </select>
-              <div class="help">Seleziona il dispositivo da HA per auto compilare ID/nome.</div>
+              <div class="help">Seleziona il dispositivo da HA per auto compilare ID/nome. Puoi anche inserire manualmente.</div>
             </div>
             <div class="field">
               <label>Device name (HA)</label>
@@ -181,7 +181,8 @@
               <div class="help">ID dispositivo (preferito). Lo trovi nella pagina dispositivo in HA.</div>
             </div>
             <div class="actions">
-              <button class="ghost" @click="autoMapSite(site)">Importa entità da dispositivo</button>
+              <button class="ghost" :disabled="!canAutoMap(site)" @click="autoMapSite(site)">Importa entità da dispositivo</button>
+              <div class="help" v-if="!canAutoMap(site)">Inserisci Device name o Device ID, oppure seleziona un dispositivo.</div>
             </div>
             <div v-for="item in energyEntityDefs" :key="`s${site}_${item.key}`" class="field">
               <label>{{ item.label }}</label>
@@ -299,6 +300,12 @@ function onDeviceSelect(site){
   }
   saveConfig()
 }
+function canAutoMap(site){
+  const dev = sp.value?.devices?.[`s${site}`] || {}
+  const name = (dev.name || '').trim()
+  const id = (dev.id || '').trim()
+  return Boolean(name || id)
+}
 
 function onFocus(){
   editingCount.value += 1
@@ -355,6 +362,10 @@ async function saveEntities(){
 async function autoMapSite(site){
   if (!sp.value?.devices) return
   const dev = sp.value.devices[`s${site}`] || {}
+  if (!canAutoMap(site)) {
+    window.alert('Inserisci Device name o Device ID, oppure seleziona un dispositivo')
+    return
+  }
   const payload = { site, device_name: dev.name || '', device_id: dev.id || '', overwrite: false }
   const r = await fetch('/api/auto_map',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
   if (!r.ok) {
@@ -605,6 +616,10 @@ body{
   border-radius:10px;
   cursor:pointer;
   font-weight:600;
+}
+.actions button:disabled{
+  opacity:0.5;
+  cursor:not-allowed;
 }
 .actions .ghost{
   background:transparent;
