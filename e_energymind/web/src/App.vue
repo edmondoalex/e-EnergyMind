@@ -256,7 +256,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 
 const tab = ref('user')
 const sp = ref(null)
@@ -741,6 +741,14 @@ onMounted(async()=>{
     }
   } catch {}
   startPolling()
+})
+watch(tab, (t) => {
+  if (t === 'admin') {
+    stopPolling()
+  } else {
+    editingCount.value = 0
+    startPolling()
+  }
 })
 onBeforeUnmount(()=>{ stopPolling() })
 </script>
