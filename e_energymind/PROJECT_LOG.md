@@ -211,3 +211,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Backend: storico su DB ogni 30s per entità con flag Storico, endpoint /api/history + /api/db_info.
 - User: click su entità con flag Storico apre popup grafico 24h.
 - Versione add-on aggiornata a 1.6.0.
+- DB: storico su tabella unica history, scrittura solo su cambio valore (niente duplicati).
+- Versione add-on aggiornata a 1.6.2.

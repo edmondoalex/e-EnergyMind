@@ -31,6 +31,7 @@ ha = HAClient()
 ha_task: asyncio.Task | None = None
 log_task: asyncio.Task | None = None
 action_log: list[str] = []
+last_history_state: dict[str, tuple[str | None, int]] = {}
 
 DB_PATH = Path("/data/energymind.db")
 ALL_ENTITIES_PATH = Path("/data/energymind_all_entities.json")
@@ -90,18 +91,11 @@ def _save_all_entities_store(data: Dict[str, list]) -> None:
 def _db_init() -> None:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(DB_PATH) as conn:
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS samples (
-              ts INTEGER NOT NULL,
-              site INTEGER NOT NULL,
-              key TEXT NOT NULL,
-              value REAL,
-              raw TEXT,
-              unit TEXT
-            )
-            """
-        )
+        # Migrate: rename old samples -> history (keep data)
+        tables = [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        if "history" not in tables and "samples" in tables:
+            conn.execute("ALTER TABLE samples RENAME TO history")
+        # Ensure history table exists with expected columns
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS history (
@@ -114,26 +108,16 @@ def _db_init() -> None:
             )
             """
         )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_samples_ts ON samples(ts)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_samples_site_key ON samples(site, key)")
+        cur = conn.execute("PRAGMA table_info(history)")
+        cols = [row[1] for row in cur.fetchall()]
+        if "entity_id" not in cols:
+            conn.execute("ALTER TABLE history ADD COLUMN entity_id TEXT")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_history_ts ON history(ts)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_history_site_entity ON history(site, entity_id)")
         conn.commit()
 
 
 def _db_insert_rows(rows: list[tuple]) -> int:
-    if not rows:
-        return 0
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.executemany(
-            "INSERT INTO samples (ts, site, key, value, raw, unit) VALUES (?,?,?,?,?,?)",
-            rows,
-        )
-        conn.commit()
-    return len(rows)
-
-
-def _db_insert_history(rows: list[tuple]) -> int:
     if not rows:
         return 0
     with sqlite3.connect(DB_PATH) as conn:
@@ -147,8 +131,7 @@ def _db_insert_history(rows: list[tuple]) -> int:
 
 def _db_prune(cutoff_ts: int) -> int:
     with sqlite3.connect(DB_PATH) as conn:
-        cur = conn.execute("DELETE FROM samples WHERE ts < ?", (cutoff_ts,))
-        conn.execute("DELETE FROM history WHERE ts < ?", (cutoff_ts,))
+        cur = conn.execute("DELETE FROM history WHERE ts < ?", (cutoff_ts,))
         conn.commit()
         return cur.rowcount or 0
 
@@ -173,38 +156,21 @@ def _num_or_none(raw: Any) -> float | None:
 
 
 def _collect_rows() -> list[tuple]:
-    cfg = load_config()
-    ent_cfg = cfg.get("entities", {})
-    now_ts = int(time.time())
-    rows: list[tuple] = []
-    for cfg_key, entity_id in (ent_cfg or {}).items():
-        if not entity_id:
-            continue
-        parsed = _parse_site_key(cfg_key)
-        if not parsed:
-            continue
-        site, key = parsed
-        st = ha.states.get(entity_id)
-        if not st:
-            continue
-        raw = st.get("state")
-        val = _num_or_none(raw)
-        unit = None
-        attrs = st.get("attributes") or {}
-        if isinstance(attrs, dict):
-            unit = attrs.get("unit_of_measurement")
-        rows.append((now_ts, site, key, val, None if raw is None else str(raw), None if unit is None else str(unit)))
-    return rows
+    return []
 
 
 def _collect_history_rows() -> list[tuple]:
     cfg = load_config()
-    flags = cfg.get("runtime", {}).get("ui_history_flags", {}) or {}
-    ent_cfg = cfg.get("entities", {}) or {}
     now_ts = int(time.time())
     rows: list[tuple] = []
+    store = _load_all_entities_store()
+    seen: set[str] = set()
 
     def add_entity(site: int, entity_id: str):
+        key = f"{site}:{entity_id}"
+        if key in seen:
+            return
+        seen.add(key)
         st = ha.states.get(entity_id)
         if not st:
             return
@@ -214,28 +180,17 @@ def _collect_history_rows() -> list[tuple]:
         attrs = st.get("attributes") or {}
         if isinstance(attrs, dict):
             unit = attrs.get("unit_of_measurement")
-        rows.append((now_ts, site, entity_id, val, None if raw is None else str(raw), None if unit is None else str(unit)))
+        raw_str = None if raw is None else str(raw)
+        prev = last_history_state.get(key)
+        if prev and prev[0] == raw_str:
+            return
+        last_history_state[key] = (raw_str, now_ts)
+        rows.append((now_ts, site, entity_id, val, raw_str, None if unit is None else str(unit)))
 
-    for key, enabled in flags.items():
-        if enabled is not True:
-            continue
-        if key.startswith("all_s"):
-            parts = key.split("_", 2)
-            if len(parts) != 3:
-                continue
-            site_part = parts[1][1:] if parts[1].startswith("s") else parts[1]
-            if not site_part.isdigit():
-                continue
-            site = int(site_part)
-            entity_id = parts[2]
-            if entity_id:
-                add_entity(site, entity_id)
-        elif key.startswith("s"):
-            parsed = _parse_site_key(key)
-            if not parsed:
-                continue
-            site, ent_key = parsed
-            entity_id = ent_cfg.get(f"s{site}_{ent_key}")
+    for site in (1, 2, 3):
+        items = (store.get(f"s{site}") or [])
+        for e in items:
+            entity_id = e.get("entity_id")
             if entity_id:
                 add_entity(site, entity_id)
 
@@ -342,15 +297,11 @@ async def _logging_loop():
     last_history = 0.0
     while True:
         try:
-            rows = await asyncio.to_thread(_collect_rows)
-            if rows:
-                inserted = await asyncio.to_thread(_db_insert_rows, rows)
-                _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} LOG samples={inserted}")
             now = time.time()
             if now - last_history >= HISTORY_INTERVAL_S:
                 hrows = await asyncio.to_thread(_collect_history_rows)
                 if hrows:
-                    inserted_h = await asyncio.to_thread(_db_insert_history, hrows)
+                    inserted_h = await asyncio.to_thread(_db_insert_rows, hrows)
                     _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} LOG history={inserted_h}")
                 last_history = now
             if now - last_prune > 3600:
