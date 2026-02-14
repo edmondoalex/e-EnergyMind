@@ -118,6 +118,8 @@
 - Versione add-on aggiornata a 1.2.5.
 - Admin: elenco entità parte vuoto e mostra solo entità importate (toggle “Mostra tutte”).
 - Versione add-on aggiornata a 1.2.6.
+- Admin: pulsante “Reset entità” (API `/api/entities/reset`).
+- Versione add-on aggiornata a 1.2.7.
 ## 2026-02-09
 - UI: restyle completo e schema impianto più pulito e leggibile.
 - Backend: attuazione live per Volano→ACS, Volano→Puffer e Puffer→ACS con sequenze valvola→pompa.

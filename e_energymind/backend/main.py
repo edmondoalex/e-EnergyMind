@@ -329,6 +329,15 @@ async def set_entities(payload: Dict[str, Any]):
     return JSONResponse({"ok": True})
 
 
+@app.post("/api/entities/reset")
+async def reset_entities():
+    cfg = load_config()
+    cfg["entities"] = {f"s{site}_{key}": None for site in (1, 2, 3) for key in ENERGY_ENTITY_KEYS}
+    save_config(cfg)
+    _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} RESET entities")
+    return JSONResponse({"ok": True})
+
+
 @app.post("/api/auto_map")
 async def auto_map(payload: Dict[str, Any]):
     site = int(payload.get("site") or 0)

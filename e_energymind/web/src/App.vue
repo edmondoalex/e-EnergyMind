@@ -200,6 +200,7 @@
           </div>
           <div class="actions">
             <button class="ghost" @click="saveEntities">Salva sensori</button>
+            <button class="ghost danger" @click="resetEntities">Reset entità</button>
           </div>
         </details>
 
@@ -346,6 +347,13 @@ async function saveEntities(){
   }
   await fetch('/api/entities',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entities: payload})})
   dirtyEnt.value = {}
+  await refresh()
+}
+async function resetEntities(){
+  const ok = window.confirm('Resettare tutte le entità? Operazione irreversibile.')
+  if (!ok) return
+  await fetch('/api/entities/reset',{method:'POST'})
+  await loadEntities()
   await refresh()
 }
 async function autoMapSite(site){
@@ -613,6 +621,10 @@ body{
   background:transparent;
   color:var(--text);
   border:1px solid var(--line);
+}
+.actions .danger{
+  border-color:rgba(255,107,107,0.6);
+  color:var(--danger);
 }
 .form{
   margin-top:14px;
