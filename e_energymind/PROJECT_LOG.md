@@ -217,3 +217,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.6.3.
 - Admin: rimosso header ‘Entità dispositivo (tutte)’ e stile unificato con l’elenco sopra.
 - Versione add-on aggiornata a 1.6.4.
+- Admin: rimosso flag Storico (grafico ora su click per tutte le entità selezionate).
+- Versione add-on aggiornata a 1.6.5.

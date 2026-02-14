@@ -255,7 +255,6 @@ const dirtyEnt = ref({})
 const showAll = ref(false)
 const overwriteMap = ref({ 1: false, 2: false, 3: false })
 const manualFlags = ref({})
-const historyFlags = ref({})
 const historyModal = ref({ open: false, title: '', series: [], unit: '', samples: [] })
 const allEntitiesState = ref({ 1: [], 2: [], 3: [] })
 
@@ -374,8 +373,6 @@ const toggleManualKey = async (k) => {
   }
 }
 const toggleManual = async (site, key) => toggleManualKey(`s${site}_${key}`)
-const isHistKey = () => false
-const toggleHistKey = async () => {}
 const labelFor = (site, key, fallback) => {
   const e = getEnt(site, key)
   const fn = e?.attributes?.friendly_name
@@ -408,13 +405,13 @@ const selectedEntities = (site) => {
     const key = `s${site}_${item.key}`
     if (isOnKey(key) && isMapped(site, item.key)) {
       const entityId = getEnt(site, item.key)?.entity_id || ''
-      out.push({
-        key,
-        label: labelFor(site, item.key, item.label),
-        value: fmtEntity(getEnt(site, item.key)),
-        entity_id: entityId,
-        history: true,
-      })
+    out.push({
+      key,
+      label: labelFor(site, item.key, item.label),
+      value: fmtEntity(getEnt(site, item.key)),
+      entity_id: entityId,
+      history: true,
+    })
     }
   }
   for (const e of allEntities(site)) {
@@ -996,15 +993,6 @@ body{
 .state-off{
   border-color:rgba(107,114,128,0.4);
   color:var(--off);
-}
-.state-flag.hist{
-  min-width:34px;
-  justify-content:center;
-}
-.flag-group{
-  display:flex;
-  align-items:center;
-  gap:6px;
 }
 .entity-row.clickable{
   cursor:pointer;
