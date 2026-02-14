@@ -211,8 +211,8 @@ def _match_key(entry: dict, patterns: Dict[str, list[str]]) -> list[str]:
 
 
 async def _get_device_entities(device_id: str | None, device_name: str | None) -> tuple[dict | None, list[dict]]:
-    devices = await ha.api_get("/config/device_registry") or []
-    entities = await ha.api_get("/config/entity_registry") or []
+    devices = await ha.api_get("/config/device_registry/list") or []
+    entities = await ha.api_get("/config/entity_registry/list") or []
     if not isinstance(devices, list) or not isinstance(entities, list):
         return None, []
 
