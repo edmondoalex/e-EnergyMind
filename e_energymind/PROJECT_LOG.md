@@ -175,3 +175,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.3.8.
 - User: evidenziazione anche in “Entità mappate” + KPI PV Totale.
 - Versione add-on aggiornata a 1.3.9.
+- Backend: endpoint `/api/device_entities?device_id=...` per elenco entità dispositivo.
+- Versione add-on aggiornata a 1.4.0.

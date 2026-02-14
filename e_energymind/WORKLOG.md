@@ -145,6 +145,8 @@
 - Versione add-on aggiornata a 1.3.8.
 - User: evidenziazione anche in “Entità mappate” + KPI PV Totale.
 - Versione add-on aggiornata a 1.3.9.
+- Backend: endpoint `/api/device_entities?device_id=...` per elenco entità dispositivo.
+- Versione add-on aggiornata a 1.4.0.
 ## 2026-02-09
 - UI: restyle completo e schema impianto più pulito e leggibile.
 - Backend: attuazione live per Volano→ACS, Volano→Puffer e Puffer→ACS con sequenze valvola→pompa.

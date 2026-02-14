@@ -148,9 +148,9 @@ def _norm(text: str) -> str:
 
 def _patterns() -> Dict[str, list[str]]:
     return {
+        "pv_power_total": ["pv power total", "pv_total", "activepower_pv_ext", "pv ext", "pv_ext", "produzione inst fv totale", "produzione inst. fv totale"],
         "pv_power": ["pv power", "pvpower", "pv_power"],
         "pv_power_aux": ["pv1 power", "pv1_power", "pv1"],
-        "pv_power_total": ["pv power total", "pv_total", "activepower_pv_ext", "pv ext"],
         "load_power": ["activepower_load_sys", "load power", "load sys", "load_total", "consumo"],
         "grid_power": ["activepower_pcc_total", "pcc total", "grid power"],
         "grid_import_power": ["grid import", "import power", "energy import"],
@@ -435,6 +435,29 @@ async def list_devices():
             "manufacturer": d.get("manufacturer"),
         })
     return JSONResponse({"items": out})
+
+
+@app.get("/api/device_entities")
+async def device_entities(device_id: str = ""):
+    if not ha.enabled:
+        raise HTTPException(status_code=400, detail="HA not connected")
+    device_id = (device_id or "").strip()
+    if not device_id:
+        raise HTTPException(status_code=400, detail="Missing device_id")
+    entities = await ha.api_get("/config/entity_registry/list") or []
+    items = []
+    if isinstance(entities, list):
+        for e in entities:
+            if e.get("device_id") != device_id:
+                continue
+            items.append({
+                "entity_id": e.get("entity_id"),
+                "name": e.get("name"),
+                "original_name": e.get("original_name"),
+                "platform": e.get("platform"),
+                "disabled_by": e.get("disabled_by"),
+            })
+    return JSONResponse({"device_id": device_id, "items": items})
 
 
 @app.get("/api/routes")
