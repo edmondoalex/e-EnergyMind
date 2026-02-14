@@ -198,3 +198,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Backend: lista completa entit√† salvata anche in file dedicato `/data/energymind_all_entities.json` per evitare overwrite.
 - UI Admin: lettura elenco completo via `/api/entities_all` (non dipende pi√π dalla config).
 - Versione add-on aggiornata a 1.5.0.
+- UI Admin: contatore entit‡ e lista scrollabile per mostrare tutte le entit‡.
+- Versione add-on aggiornata a 1.5.1.

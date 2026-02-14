@@ -175,3 +175,5 @@
 - Backend: elenco completo entità salvato anche in /data/energymind_all_entities.json (persistente).
 - UI Admin: elenco completo caricato da /api/entities_all anche se la config non lo riporta.
 - Versione add-on aggiornata a 1.5.0.
+- UI Admin: contatore entità e lista scrollabile per mostrare tutte le entità.
+- Versione add-on aggiornata a 1.5.1.

@@ -187,10 +187,10 @@
               <div v-if="item.help" class="help">{{ item.help }}</div>
             </div>
             <details class="form">
-              <summary class="section">Entità dispositivo (tutte)</summary>
+              <summary class="section">Entità dispositivo (tutte) — {{ allEntities(site).length }}</summary>
               <div class="help">Elenco completo delle entità del dispositivo. Utile per confrontare.</div>
               <div v-if="allEntities(site).length === 0" class="muted">Elenco vuoto. Esegui “Importa entità da dispositivo”.</div>
-              <div v-else class="entity-list">
+              <div v-else class="entity-list entity-list-full">
                 <div v-for="e in allEntities(site)" :key="`all-${site}-${e.entity_id}`" class="entity-row">
                   <span class="entity-name">{{ e.name || e.original_name || e.entity_id }}</span>
                   <span class="entity-value">{{ e.entity_id }}</span>
@@ -731,6 +731,11 @@ body{
   display:flex;
   flex-direction:column;
   gap:6px;
+}
+.entity-list-full{
+  max-height:520px;
+  overflow:auto;
+  padding-right:6px;
 }
 .entity-row{
   display:flex;
