@@ -165,7 +165,9 @@
               <label class="label-row">
                 <span>{{ labelFor(site, item.key, item.label) }}</span>
                 <span class="state-flag" :class="isOn(site, item.key) ? 'state-on' : 'state-off'">
-                  {{ isOn(site, item.key) ? 'ON' : 'OFF' }}
+                  <input class="flag-checkbox" type="checkbox" :checked="isOn(site, item.key)"
+                         @change="toggleManual(site, item.key)"/>
+                  <span>{{ isOn(site, item.key) ? 'ON' : 'OFF' }}</span>
                 </span>
               </label>
               <div class="input-row">
@@ -209,6 +211,7 @@ const editingCount = ref(0)
 const dirtyEnt = ref({})
 const showAll = ref(false)
 const overwriteMap = ref({ 1: false, 2: false, 3: false })
+const manualFlags = ref({})
 
 const energyEntityDefs = [
   { key: 'pv_power', label: 'PV Power (W)', placeholder: 'sensor.zcs_pv_power' },
@@ -299,11 +302,18 @@ const getEnt = (site, key) => {
   return ent.value[`s${site}_${key}`] || null
 }
 const isOn = (site, key) => {
-  const e = getEnt(site, key)
-  if (!e) return false
-  const hasId = typeof e.entity_id === 'string' && e.entity_id.trim().length > 0
-  const hasState = e.state !== null && e.state !== undefined
-  return hasId && hasState
+  const manual = manualFlags.value?.[`s${site}_${key}`]
+  if (typeof manual === 'boolean') return manual
+  return false
+}
+const toggleManual = (site, key) => {
+  const k = `s${site}_${key}`
+  const cur = manualFlags.value?.[k]
+  const next = !(cur === true)
+  manualFlags.value = { ...manualFlags.value, [k]: next }
+  try {
+    localStorage.setItem('energymind_manual_flags', JSON.stringify(manualFlags.value))
+  } catch {}
 }
 const labelFor = (site, key, fallback) => {
   const e = getEnt(site, key)
@@ -458,6 +468,10 @@ async function saveAll(){
 }
 
 onMounted(async()=>{
+  try {
+    const raw = localStorage.getItem('energymind_manual_flags')
+    if (raw) manualFlags.value = JSON.parse(raw) || {}
+  } catch {}
   await loadAll()
   startPolling()
 })
@@ -744,6 +758,14 @@ body{
   border-radius:999px;
   border:1px solid var(--line);
   color:var(--muted);
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.flag-checkbox{
+  width:14px;
+  height:14px;
+  accent-color: #2dd4bf;
 }
 .state-on{
   border-color:rgba(45,212,191,0.6);
