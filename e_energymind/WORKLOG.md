@@ -153,6 +153,8 @@
 - Versione add-on aggiornata a 1.4.2.
 - Backend: priorità al token HA da options (ha_token) rispetto al supervisor token.
 - Versione add-on aggiornata a 1.4.3.
+- Debug: `/api/ha_debug` ora mostra stato `options.json` e presenza token.
+- Versione add-on aggiornata a 1.4.4.
 ## 2026-02-09
 - UI: restyle completo e schema impianto più pulito e leggibile.
 - Backend: attuazione live per Volano→ACS, Volano→Puffer e Puffer→ACS con sequenze valvola→pompa.

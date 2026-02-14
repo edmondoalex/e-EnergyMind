@@ -538,6 +538,21 @@ async def ha_debug():
         "token_source": getattr(ha, "token_source", None),
         "base_url": getattr(ha, "_base_url", None),
     }
+    try:
+        options_path = Path("/data/options.json")
+        out["options_exists"] = options_path.exists()
+        if options_path.exists():
+            raw = options_path.read_text(encoding="utf-8")
+            out["options_len"] = len(raw)
+            try:
+                data = json.loads(raw)
+                token = data.get("ha_token")
+                out["options_has_token"] = bool(isinstance(token, str) and token.strip())
+                out["options_url"] = data.get("ha_url")
+            except Exception:
+                out["options_parse_error"] = True
+    except Exception:
+        out["options_error"] = True
     if not ha._session:
         out["session"] = "none"
         return JSONResponse(out)
