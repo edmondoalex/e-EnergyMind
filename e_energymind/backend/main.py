@@ -601,6 +601,7 @@ def _generate_report_for_day(date_str: str) -> None:
     md_path, js_path = _report_paths(date_str)
     md_path.write_text("\n".join(md_lines), encoding="utf-8")
     js_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+    _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} REPORT generated {md_path} {js_path}")
 
 
 def _maybe_generate_daily_report() -> None:
