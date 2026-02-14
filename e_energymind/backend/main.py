@@ -491,18 +491,18 @@ def _generate_report_for_day(date_str: str) -> None:
 
     report = {
         "date": date_str,
-        "period": {"from": "00:00", "to": "23:59", "timezone": time.tzname[0]},
+        "period": {"from": "00:00", "to": "23:59", "timezone": "Europe/Rome"},
         "sites": [{"id": 1, "inverters_parallel": 3}, {"id": 2, "inverters_parallel": 2}],
         "summary": {},
         "comparison": {},
-        "partial_charge_events": {"criteria": {"surplus_gt_w": 1000, "battery_charge_lt_surplus_pct": 60, "grid_export_gt_w": 200}},
+        "partial_charge_events": {"criteria": {"surplus_gt_w": 500, "battery_charge_lt_surplus_pct": 80, "grid_export_gt_w": 50}},
         "hypotheses": [],
         "actions": [],
     }
 
     md_lines = [
         f"# Report BMS Giornaliero — {date_str}",
-        f"Periodo: 00:00–23:59 ({time.tzname[0]})",
+        "Periodo: 00:00–23:59 (Europe/Rome)",
         "Utenze: 1 (3 inverter in parallelo), 2 (2 inverter in parallelo)",
         "",
     ]
@@ -543,10 +543,10 @@ def _generate_report_for_day(date_str: str) -> None:
                 if load is None or grid is None or batt is None:
                     continue
                 surplus = pv - load
-                if surplus <= 1000:
+                if surplus <= 500:
                     continue
                 charge = abs(batt) if batt < 0 else 0.0
-                if grid > 200 and charge < surplus * 0.6:
+                if grid > 50 and charge < surplus * 0.8:
                     soc = _nearest_raw(soc_series, ts)
                     temp = _nearest_raw(temp_series, ts)
                     mode = _nearest_raw(mode_series, ts)

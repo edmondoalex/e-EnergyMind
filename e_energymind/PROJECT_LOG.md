@@ -242,3 +242,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Fix polling: resume automatico in User quando si cambia tab (evita refresh manuale).
 - Versione add-on aggiornata a 1.7.7.
 - Report: map share:rw in add-on config + log generation action. Version 1.7.8.
+- Report: soglie più permissive per carica parziale + timezone Europe/Rome.
+- Versione add-on aggiornata a 1.7.9.
