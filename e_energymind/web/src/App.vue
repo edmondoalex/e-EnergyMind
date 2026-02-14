@@ -187,10 +187,6 @@
               </div>
               <div v-if="item.help" class="help">{{ item.help }}</div>
             </div>
-            <div class="field" v-if="allEntities(site).length > 0">
-              <div class="section-title">Entità dispositivo (tutte) — {{ allEntities(site).length }}</div>
-              <div class="help">Elenco completo delle entità del dispositivo (nello stesso elenco). Solo lettura.</div>
-            </div>
             <div v-for="e in allEntities(site)" :key="`all-${site}-${e.entity_id}`" class="field field-readonly">
               <label class="label-row">
                 <span>{{ e.name || e.original_name || e.entity_id }}</span>
@@ -201,7 +197,7 @@
                 </span>
               </label>
               <div class="input-row">
-                <span class="logic-dot logic-ok">●</span>
+                <span class="logic-dot" :class="isFilled(e.entity_id) ? 'logic-ok' : 'logic-no'">●</span>
                 <input type="text" :class="[isOnKey(`all_s${site}_${e.entity_id}`) ? 'input-on' : '']" :value="e.entity_id" readonly />
               </div>
             </div>

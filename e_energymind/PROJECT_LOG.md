@@ -215,3 +215,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.6.2.
 - User: nel popup storico aggiunti esempi XY (3 punti: inizio/mezzo/fine).
 - Versione add-on aggiornata a 1.6.3.
+- Admin: rimosso header ‘Entità dispositivo (tutte)’ e stile unificato con l’elenco sopra.
+- Versione add-on aggiornata a 1.6.4.
