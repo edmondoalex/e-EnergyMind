@@ -1,19 +1,29 @@
 ﻿<template>
   <div class="wrap">
     <header class="top">
-      <div class="brand">e-EnergyMind</div>
-      <div class="top-actions">
-        <button class="action-btn" @click="saveAll">Salva tutto</button>
-        <button class="action-btn" @click="exportConfig">Esporta config</button>
-        <label class="action-btn upload">
-          Importa config
-          <input type="file" accept="application/json" @change="importConfig"/>
-        </label>
+      <div class="top-inner">
+        <div class="top-left">
+          <div class="brand">e-EnergyMind</div>
+          <div class="top-actions">
+            <button class="action-btn" @click="saveAll">Salva tutto</button>
+            <button class="action-btn" @click="exportConfig">Esporta config</button>
+            <label class="action-btn upload">
+              Importa config
+              <input type="file" accept="application/json" @change="importConfig"/>
+            </label>
+          </div>
+          <nav class="tabs">
+            <button :class="{active: tab==='user'}" @click="tab='user'">User</button>
+            <button :class="{active: tab==='admin'}" @click="tab='admin'">Admin</button>
+          </nav>
+        </div>
+        <div class="top-right">
+          <span class="muted">v{{ status?.version || '-' }}</span>
+          <span class="badge" :class="status?.ha_connected ? 'ok' : 'off'">
+            {{ status?.ha_connected ? 'Online' : 'Offline' }}
+          </span>
+        </div>
       </div>
-      <nav class="tabs">
-        <button :class="{active: tab==='user'}" @click="tab='user'">User</button>
-        <button :class="{active: tab==='admin'}" @click="tab='admin'">Admin</button>
-      </nav>
     </header>
 
     <main class="main">
@@ -444,6 +454,18 @@ body{
   display:flex;
   flex-direction:column;
 }
+.top, .main{
+  width:100%;
+  max-width:1200px;
+  margin:0 auto;
+}
+.wrap::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:radial-gradient(1200px 600px at 10% -10%, #172234 0%, var(--bg) 60%);
+  z-index:-1;
+}
 .top{
   position:sticky;
   top:0;
@@ -452,6 +474,23 @@ body{
   border-bottom:1px solid var(--line);
   padding:14px 20px;
   box-shadow:var(--shadow);
+}
+.top-inner{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+}
+.top-left{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.top-right{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
 }
 .brand{
   font-size:20px;
@@ -624,5 +663,6 @@ body{
   .grid{ grid-template-columns:1fr; }
   .row3{ grid-template-columns:1fr; }
   .top{ position:static; }
+  .top-inner{ flex-direction:column; align-items:flex-start; }
 }
 </style>

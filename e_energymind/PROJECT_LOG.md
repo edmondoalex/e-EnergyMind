@@ -132,3 +132,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.1.7.
 - UI: reintrodotti stili principali in `App.vue` (tema scuro, card, grid, bottoni).
 - Versione add-on aggiornata a 1.1.8.
+- UI: layout centrato con max-width e header allineato stile e-ThermoMind.
+- Versione add-on aggiornata a 1.1.9.
