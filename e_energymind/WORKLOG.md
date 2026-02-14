@@ -100,6 +100,8 @@
 - Versione add-on aggiornata a 1.1.6.
 - Hotfix static: `FileResponse` con `media_type` corretto (mimetypes) per CSS/JS.
 - Versione add-on aggiornata a 1.1.7.
+- UI: reintrodotti stili principali in `App.vue` (tema scuro, card, grid, bottoni).
+- Versione add-on aggiornata a 1.1.8.
 ## 2026-02-09
 - UI: restyle completo e schema impianto più pulito e leggibile.
 - Backend: attuazione live per Volano→ACS, Volano→Puffer e Puffer→ACS con sequenze valvola→pompa.
