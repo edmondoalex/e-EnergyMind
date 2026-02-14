@@ -223,3 +223,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.6.6.
 - DB: backfill entity_id per storico usando la colonna key (dati di stamattina visibili).
 - Versione add-on aggiornata a 1.6.7.
+- Storico: fallback query usa anche key legacy se entity_id mancante (dati di stamattina visibili).
+- Versione add-on aggiornata a 1.6.8.

@@ -396,11 +396,29 @@ async def get_history(entity_id: str = "", site: int = 1, hours: int = 24):
         raise HTTPException(status_code=400, detail="Invalid site")
     hours = max(1, min(168, int(hours)))
     since_ts = int(time.time()) - hours * 3600
+    cfg = load_config()
+    ent_cfg = cfg.get("entities", {}) or {}
+    key_match = None
+    for cfg_key, eid in ent_cfg.items():
+        if eid == entity_id:
+            parsed = _parse_site_key(cfg_key)
+            if parsed:
+                s, k = parsed
+                if s == site:
+                    key_match = k
+                    break
     with sqlite3.connect(DB_PATH) as conn:
-        cur = conn.execute(
-            "SELECT ts, value, raw, unit FROM history WHERE site = ? AND entity_id = ? AND ts >= ? ORDER BY ts ASC",
-            (site, entity_id, since_ts),
-        )
+        cols = [r[1] for r in conn.execute("PRAGMA table_info(history)").fetchall()]
+        if "key" in cols and key_match:
+            cur = conn.execute(
+                "SELECT ts, value, raw, unit FROM history WHERE site = ? AND (entity_id = ? OR (entity_id IS NULL AND key = ?)) AND ts >= ? ORDER BY ts ASC",
+                (site, entity_id, key_match, since_ts),
+            )
+        else:
+            cur = conn.execute(
+                "SELECT ts, value, raw, unit FROM history WHERE site = ? AND entity_id = ? AND ts >= ? ORDER BY ts ASC",
+                (site, entity_id, since_ts),
+            )
         rows = cur.fetchall()
     items = [{"ts": r[0], "value": r[1], "raw": r[2], "unit": r[3]} for r in rows]
     return JSONResponse({"site": site, "entity_id": entity_id, "hours": hours, "items": items})
