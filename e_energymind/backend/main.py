@@ -32,9 +32,11 @@ ha_task: asyncio.Task | None = None
 log_task: asyncio.Task | None = None
 action_log: list[str] = []
 last_history_state: dict[str, tuple[str | None, int]] = {}
+last_report_date: str | None = None
 
 DB_PATH = Path("/data/energymind.db")
 ALL_ENTITIES_PATH = Path("/data/energymind_all_entities.json")
+REPORT_DIR = Path("/data/reports")
 LOG_INTERVAL_S = 10
 HISTORY_INTERVAL_S = 30
 RETENTION_DAYS = 90
@@ -167,7 +169,84 @@ def _num_or_none(raw: Any) -> float | None:
     try:
         return float(raw)
     except Exception:
+    return None
+
+
+def _load_history_series(conn: sqlite3.Connection, entity_id: str, since_ts: int) -> list[tuple[int, float]]:
+    cur = conn.execute(
+        "SELECT ts, value FROM history WHERE entity_id = ? AND ts >= ? AND value IS NOT NULL ORDER BY ts ASC",
+        (entity_id, since_ts),
+    )
+    rows = cur.fetchall()
+    out = []
+    for ts, val in rows:
+        try:
+            out.append((int(ts), float(val)))
+        except Exception:
+            continue
+    return out
+
+
+def _load_history_raw_series(conn: sqlite3.Connection, entity_id: str, since_ts: int) -> list[tuple[int, str | None, float | None, str | None]]:
+    cur = conn.execute(
+        "SELECT ts, raw, value, unit FROM history WHERE entity_id = ? AND ts >= ? ORDER BY ts ASC",
+        (entity_id, since_ts),
+    )
+    rows = cur.fetchall()
+    out = []
+    for ts, raw, val, unit in rows:
+        out.append((int(ts), raw, val, unit))
+    return out
+
+
+def _nearest_raw(series: list[tuple[int, str | None, float | None, str | None]], ts: int, max_delta_s: int = 90):
+    if not series:
         return None
+    lo = 0
+    hi = len(series) - 1
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if series[mid][0] < ts:
+            lo = mid + 1
+        else:
+            hi = mid
+    idx = lo
+    cand = []
+    for j in (idx - 1, idx, idx + 1):
+        if 0 <= j < len(series):
+            cand.append(series[j])
+    if not cand:
+        return None
+    best = min(cand, key=lambda x: abs(x[0] - ts))
+    if abs(best[0] - ts) > max_delta_s:
+        return None
+    return {"ts": best[0], "raw": best[1], "value": best[2], "unit": best[3]}
+
+
+def _nearest_value(series: list[tuple[int, float]], ts: int, max_delta_s: int = 90) -> float | None:
+    if not series:
+        return None
+    # two-pointer scan by keeping index from previous use
+    lo = 0
+    hi = len(series) - 1
+    # binary search for closest ts
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if series[mid][0] < ts:
+            lo = mid + 1
+        else:
+            hi = mid
+    idx = lo
+    cand = []
+    for j in (idx - 1, idx, idx + 1):
+        if 0 <= j < len(series):
+            cand.append(series[j])
+    if not cand:
+        return None
+    best = min(cand, key=lambda x: abs(x[0] - ts))
+    if abs(best[0] - ts) > max_delta_s:
+        return None
+    return best[1]
 
 
 def _collect_rows() -> list[tuple]:
@@ -319,6 +398,7 @@ async def _logging_loop():
                     inserted_h = await asyncio.to_thread(_db_insert_rows, hrows)
                     _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} LOG history={inserted_h}")
                 last_history = now
+            await asyncio.to_thread(_maybe_generate_daily_report)
             if now - last_prune > 3600:
                 cutoff = int(now - (RETENTION_DAYS * 86400))
                 deleted = await asyncio.to_thread(_db_prune, cutoff)
@@ -381,10 +461,219 @@ def _fmt_bytes(n: int) -> str:
     return f"{n:.2f} TB"
 
 
+def _local_date_str(ts: int | None = None) -> str:
+    if ts is None:
+        ts = int(time.time())
+    lt = time.localtime(ts)
+    return f"{lt.tm_year:04d}-{lt.tm_mon:02d}-{lt.tm_mday:02d}"
+
+
+def _local_time_str(ts: int) -> str:
+    lt = time.localtime(ts)
+    return f"{lt.tm_hour:02d}:{lt.tm_min:02d}"
+
+
+def _report_paths(date_str: str) -> tuple[Path, Path]:
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    md = REPORT_DIR / f"report_{date_str}.md"
+    js = REPORT_DIR / f"report_{date_str}.json"
+    return md, js
+
+
+def _generate_report_for_day(date_str: str) -> None:
+    start_ts = int(time.mktime(time.strptime(f"{date_str} 00:00:00", "%Y-%m-%d %H:%M:%S")))
+    end_ts = start_ts + 86400
+    cfg = load_config()
+    ent_cfg = cfg.get("entities", {}) or {}
+
+    def _eid(site: int, key: str) -> str | None:
+        return ent_cfg.get(f"s{site}_{key}")
+
+    report = {
+        "date": date_str,
+        "period": {"from": "00:00", "to": "23:59", "timezone": time.tzname[0]},
+        "sites": [{"id": 1, "inverters_parallel": 3}, {"id": 2, "inverters_parallel": 2}],
+        "summary": {},
+        "comparison": {},
+        "partial_charge_events": {"criteria": {"surplus_gt_w": 1000, "battery_charge_lt_surplus_pct": 60, "grid_export_gt_w": 200}},
+        "hypotheses": [],
+        "actions": [],
+    }
+
+    md_lines = [
+        f"# Report BMS Giornaliero — {date_str}",
+        f"Periodo: 00:00–23:59 ({time.tzname[0]})",
+        "Utenze: 1 (3 inverter in parallelo), 2 (2 inverter in parallelo)",
+        "",
+    ]
+
+    with sqlite3.connect(DB_PATH) as conn:
+        for site in (1, 2):
+            pv_id = _eid(site, "pv_power_total") or _eid(site, "pv_power")
+            load_id = _eid(site, "load_power")
+            grid_id = _eid(site, "grid_power")
+            batt_id = _eid(site, "battery_power")
+            soc_id = _eid(site, "battery_soc")
+            temp_id = _eid(site, "battery_temp")
+            mode_id = _eid(site, "storage_control_mode")
+            exp_id = _eid(site, "grid_export_power")
+
+            if not all([pv_id, load_id, grid_id, batt_id]):
+                report["summary"][f"site{site}_missing"] = [k for k, v in {
+                    "pv": pv_id, "load": load_id, "grid": grid_id, "battery": batt_id
+                }.items() if not v]
+                continue
+
+            pv_series = _load_history_series(conn, pv_id, start_ts)
+            load_series = _load_history_series(conn, load_id, start_ts)
+            grid_series = _load_history_series(conn, grid_id, start_ts)
+            batt_series = _load_history_series(conn, batt_id, start_ts)
+            soc_series = _load_history_raw_series(conn, soc_id, start_ts) if soc_id else []
+            temp_series = _load_history_raw_series(conn, temp_id, start_ts) if temp_id else []
+            mode_series = _load_history_raw_series(conn, mode_id, start_ts) if mode_id else []
+            exp_series = _load_history_raw_series(conn, exp_id, start_ts) if exp_id else []
+
+            events = []
+            for ts, pv in pv_series:
+                if ts >= end_ts:
+                    break
+                load = _nearest_value(load_series, ts)
+                grid = _nearest_value(grid_series, ts)
+                batt = _nearest_value(batt_series, ts)
+                if load is None or grid is None or batt is None:
+                    continue
+                surplus = pv - load
+                if surplus <= 1000:
+                    continue
+                charge = abs(batt) if batt < 0 else 0.0
+                if grid > 200 and charge < surplus * 0.6:
+                    soc = _nearest_raw(soc_series, ts)
+                    temp = _nearest_raw(temp_series, ts)
+                    mode = _nearest_raw(mode_series, ts)
+                    exp = _nearest_raw(exp_series, ts)
+                    tags = []
+                    if soc and soc.get("value") is not None and float(soc["value"]) >= 90:
+                        tags.append("LIMIT_SOC")
+                    if temp and temp.get("value") is not None and float(temp["value"]) <= 15:
+                        tags.append("LIMIT_TEMP")
+                    if mode and (mode.get("raw") or "").strip() not in ("Self Use", "SelfUse", "Auto"):
+                        tags.append("LIMIT_MODE")
+                    if exp and (exp.get("raw") or "").strip() not in ("0", "", None):
+                        tags.append("LIMIT_EXPORT")
+                    if not tags:
+                        tags.append("LIMIT_UNKNOWN")
+                    events.append({
+                        "time": _local_time_str(ts),
+                        "ts": ts,
+                        "pv_w": pv,
+                        "load_w": load,
+                        "battery_w": batt,
+                        "grid_w": grid,
+                        "surplus_w": surplus,
+                        "soc": soc.get("value") if soc else None,
+                        "temp": temp.get("value") if temp else None,
+                        "mode": mode.get("raw") if mode else None,
+                        "export_limit": exp.get("raw") if exp else None,
+                        "tags": tags,
+                    })
+
+            report["partial_charge_events"][f"site{site}"] = events
+            report["summary"][f"site{site}_partial_charge_events"] = len(events)
+
+    md_lines.append("## Sintesi")
+    md_lines.append(f"- Utenza 1: {report['summary'].get('site1_partial_charge_events', 0)} episodi di carica parziale.")
+    md_lines.append(f"- Utenza 2: {report['summary'].get('site2_partial_charge_events', 0)} episodi di carica parziale.")
+    md_lines.append("")
+
+    for site in (1, 2):
+        md_lines.append(f"## Eventi carica parziale — Utenza {site}")
+        events = report["partial_charge_events"].get(f"site{site}", [])
+        if not events:
+            md_lines.append("Nessun evento.")
+        else:
+            for e in events[:20]:
+                md_lines.append(
+                    f"- {e['time']} PV {e['pv_w']}W, Load {e['load_w']}W, Batt {e['battery_w']}W, Grid {e['grid_w']}W, "
+                    f"SOC {e.get('soc')}, Temp {e.get('temp')}, Mode {e.get('mode')}, Tags {','.join(e.get('tags', []))}"
+                )
+        md_lines.append("")
+
+    md_path, js_path = _report_paths(date_str)
+    md_path.write_text("\n".join(md_lines), encoding="utf-8")
+    js_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def _maybe_generate_daily_report() -> None:
+    global last_report_date
+    now = time.time()
+    lt = time.localtime(now)
+    date_str = _local_date_str(int(now))
+    if lt.tm_hour == 23 and lt.tm_min == 59:
+        if last_report_date != date_str:
+            _generate_report_for_day(date_str)
+            last_report_date = date_str
+
+
 @app.get("/api/db_info")
 async def db_info():
     size = DB_PATH.stat().st_size if DB_PATH.exists() else 0
     return {"size_bytes": size, "size_human": _fmt_bytes(size)}
+
+
+@app.get("/api/analysis")
+async def analysis(site: int = 1, hours: int = 24):
+    if site not in (1, 2, 3):
+        raise HTTPException(status_code=400, detail="Invalid site")
+    hours = max(1, min(168, int(hours)))
+    since_ts = int(time.time()) - hours * 3600
+    cfg = load_config()
+    ent_cfg = cfg.get("entities", {}) or {}
+
+    # Required signals (mapped)
+    def _eid(k: str) -> str | None:
+        return ent_cfg.get(f"s{site}_{k}")
+
+    pv_id = _eid("pv_power_total") or _eid("pv_power")
+    load_id = _eid("load_power")
+    grid_id = _eid("grid_power")
+    batt_id = _eid("battery_power")
+
+    if not all([pv_id, load_id, grid_id, batt_id]):
+        return JSONResponse({"ok": False, "missing": [k for k, v in {
+            "pv_power_total": pv_id, "load_power": load_id, "grid_power": grid_id, "battery_power": batt_id
+        }.items() if not v]})
+
+    events = []
+    with sqlite3.connect(DB_PATH) as conn:
+        pv_series = _load_history_series(conn, pv_id, since_ts)
+        load_series = _load_history_series(conn, load_id, since_ts)
+        grid_series = _load_history_series(conn, grid_id, since_ts)
+        batt_series = _load_history_series(conn, batt_id, since_ts)
+
+    for ts, pv in pv_series:
+        load = _nearest_value(load_series, ts)
+        grid = _nearest_value(grid_series, ts)
+        batt = _nearest_value(batt_series, ts)
+        if load is None or grid is None or batt is None:
+            continue
+        # Heuristic: charge power is abs of negative battery power
+        charge = abs(batt) if batt < 0 else 0.0
+        surplus = pv - load
+        if surplus <= 200:
+            continue
+        # exporting while not charging enough
+        if grid > 200 and charge < surplus * 0.6:
+            events.append({
+                "ts": ts,
+                "pv": pv,
+                "load": load,
+                "grid": grid,
+                "battery_power": batt,
+                "charge_est": charge,
+                "surplus": surplus,
+            })
+
+    return JSONResponse({"ok": True, "site": site, "hours": hours, "events": events})
 
 
 @app.get("/api/history")
@@ -422,6 +711,15 @@ async def get_history(entity_id: str = "", site: int = 1, hours: int = 24):
         rows = cur.fetchall()
     items = [{"ts": r[0], "value": r[1], "raw": r[2], "unit": r[3]} for r in rows]
     return JSONResponse({"site": site, "entity_id": entity_id, "hours": hours, "items": items})
+
+
+@app.get("/api/reports")
+async def list_reports():
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    items = []
+    for p in sorted(REPORT_DIR.glob("report_*.md")):
+        items.append(p.name)
+    return JSONResponse({"items": items, "dir": str(REPORT_DIR)})
 
 
 @app.get("/api/config")

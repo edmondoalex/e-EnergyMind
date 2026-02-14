@@ -225,3 +225,6 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.6.7.
 - Storico: fallback query usa anche key legacy se entity_id mancante (dati di stamattina visibili).
 - Versione add-on aggiornata a 1.6.8.
+- Report giornaliero automatico (23:59) per entrambe le utenze con MD+JSON in /data/reports.
+- Tag cause automatici per carica parziale.
+- Versione add-on aggiornata a 1.7.0.
