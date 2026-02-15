@@ -979,6 +979,8 @@ async def insights():
             if surplus > 500 and grid_exporting and charge < surplus * 0.8:
                 status = "CARICA_PARZIALE"
                 confidence = "medium"
+                reasons.append(f"Surplus {int(surplus)}W, carica {int(charge)}W ({int(charge / surplus * 100)}%)")
+                reasons.append(f"Rete: {'export' if grid_exporting else 'import'} {int(grid)}W")
                 if soc is not None and soc >= 90:
                     reasons.append("SOC alto")
                 if temp is not None and temp <= 15:
@@ -995,8 +997,9 @@ async def insights():
                     reasons.append("Import da rete durante surplus")
                 if not reasons:
                     reasons.append("Limite interno BMS/inverter")
-                suggestions.append("Verifica limiti carica e temperatura")
+                suggestions.append("Verifica limiti carica (BMS) e temperatura batteria")
                 suggestions.append("Controlla modalità Storage e Export limit")
+                suggestions.append(f"PV {int(pv)}W · Load {int(load)}W · Batt {int(batt)}W · Grid {int(grid)}W")
         else:
             status = "DATI_INCOMPLETI"
             reasons.append("Mancano alcune entità chiave")

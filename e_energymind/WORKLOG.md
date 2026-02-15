@@ -260,3 +260,6 @@
 ## 2026-02-15
 - User: tabelle Intelligenza utenze spostate sotto Intelligenza globale (comparazione affiancata).
 
+## 2026-02-15
+- Insights: dettagli numerici su surplus/carica e potenze in cause/suggerimenti.
+
