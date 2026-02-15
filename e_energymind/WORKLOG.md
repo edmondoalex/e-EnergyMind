@@ -263,3 +263,6 @@
 ## 2026-02-15
 - Insights: dettagli numerici su surplus/carica e potenze in cause/suggerimenti.
 
+## 2026-02-15
+- Report: aggiunti dettagli surplus/carica per eventi e log INSIGHT in azioni.
+

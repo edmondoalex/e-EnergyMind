@@ -702,6 +702,8 @@ def _generate_report_for_day(date_str: str) -> None:
                         "battery_w": batt,
                         "grid_w": grid,
                         "surplus_w": surplus,
+                        "charge_w": charge,
+                        "charge_pct": round(charge / surplus * 100, 1) if surplus > 0 else None,
                         "soc": soc_val,
                         "temp": temp_val,
                         "mode": mode.get("raw") if mode else None,
@@ -757,6 +759,7 @@ def _generate_report_for_day(date_str: str) -> None:
             for e in events[:20]:
                 md_lines.append(
                     f"- {e['time']} PV {e['pv_w']}W, Load {e['load_w']}W, Batt {e['battery_w']}W, Grid {e['grid_w']}W, "
+                    f"Surplus {e.get('surplus_w')}W, Carica {e.get('charge_w')}W ({e.get('charge_pct')}%), "
                     f"SOC {e.get('soc')}, Temp {e.get('temp')}, Mode {e.get('mode')}, Tags {','.join(e.get('tags', []))}"
                 )
         md_lines.append("")
@@ -981,6 +984,11 @@ async def insights():
                 confidence = "medium"
                 reasons.append(f"Surplus {int(surplus)}W, carica {int(charge)}W ({int(charge / surplus * 100)}%)")
                 reasons.append(f"Rete: {'export' if grid_exporting else 'import'} {int(grid)}W")
+                _log_action(
+                    f"{time.strftime('%Y-%m-%d %H:%M:%S')} INSIGHT s{site} CARICA_PARZIALE "
+                    f"PV {int(pv)}W Load {int(load)}W Batt {int(batt)}W Grid {int(grid)}W "
+                    f"Surplus {int(surplus)}W Charge {int(charge)}W"
+                )
                 if soc is not None and soc >= 90:
                     reasons.append("SOC alto")
                 if temp is not None and temp <= 15:
