@@ -328,6 +328,10 @@
               <input type="text" v-model="sp.automation.flow_entities[`s${site}`].today_load" placeholder="sensor.xxx" @change="saveConfig"/>
             </div>
             <div class="field">
+              <label>Consumo casa oggi (kWh)</label>
+              <input type="text" v-model="sp.automation.flow_entities[`s${site}`].today_house" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
+            <div class="field">
               <label>Export oggi (kWh)</label>
               <input type="text" v-model="sp.automation.flow_entities[`s${site}`].today_export" placeholder="sensor.xxx" @change="saveConfig"/>
             </div>
@@ -394,6 +398,10 @@
             <div class="flow-card">
               <div class="k">Cons. oggi</div>
               <div class="v">{{ flowValue(site, 'today_load') }}</div>
+            </div>
+            <div class="flow-card">
+              <div class="k">Consumo casa oggi</div>
+              <div class="v">{{ flowValue(site, 'today_house') }}</div>
             </div>
             <div class="flow-card">
               <div class="k">Export oggi</div>
@@ -693,9 +701,10 @@ const selectedEntities = (site) => {
   for (const e of extraDatalogItems(site)) {
     if (!e.enabled) continue
     const payload = extraStates.value?.[e.entity_id]
+    const fname = payload?.attributes?.friendly_name
     out.push({
       key: `extra_s${site}_${e.entity_id}`,
-      label: e.entity_id,
+      label: (typeof fname === 'string' && fname.trim().length > 0) ? fname : e.entity_id,
       value: payload ? fmtEntityRaw(payload.state, payload.attributes) : 'n/d',
       entity_id: e.entity_id,
       history: true,
@@ -783,7 +792,7 @@ async function loadConfig(){
   for (const key of ['s1','s2','s3']) {
     if (!sp.value.automation.flow_entities[key]) sp.value.automation.flow_entities[key] = {}
     const flow = sp.value.automation.flow_entities[key]
-    for (const k of ['pv','load','battery','grid','soc','battery_v','battery_a','today_prod','today_load','today_export','today_charge','today_discharge','voltage','frequency']) {
+    for (const k of ['pv','load','battery','grid','soc','battery_v','battery_a','today_prod','today_load','today_house','today_export','today_charge','today_discharge','voltage','frequency']) {
       if (typeof flow[k] !== 'string') flow[k] = ''
     }
   }
@@ -915,7 +924,7 @@ async function refreshFlowStates(){
   const ids = []
   for (const site of siteList.value || []) {
     const flow = sp.value?.automation?.flow_entities?.[`s${site}`] || {}
-    for (const k of ['pv','load','battery','grid','soc','battery_v','battery_a','today_prod','today_load','today_export','today_charge','today_discharge']) {
+    for (const k of ['pv','load','battery','grid','soc','battery_v','battery_a','today_prod','today_load','today_house','today_export','today_charge','today_discharge','voltage','frequency']) {
       const eid = String(flow[k] || '').trim()
       if (eid) ids.push(eid)
     }

@@ -281,3 +281,9 @@ Data export: 2026-02-08 (Europe/Rome)
 - Admin: collapse per utenza separato (niente collapse globale).
 ## 2026-02-15
 - Bump versione 1.8.9.
+## 2026-02-15
+- UI: Consumo casa oggi in setting e interface.
+## 2026-02-15
+- UI User: label entita extra usa friendly_name.
+## 2026-02-15
+- Bump versione 1.9.0.

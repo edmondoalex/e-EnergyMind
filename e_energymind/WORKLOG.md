@@ -216,3 +216,9 @@
 - Admin: rimosso collapse globale; collasso separato per utenza.
 ## 2026-02-15
 - Versione add-on aggiornata a 1.8.9.
+## 2026-02-15
+- Automation setting/interface: aggiunta voce Consumo casa oggi.
+## 2026-02-15
+- User: entita extra manuali mostrano il friendly_name (se presente) invece dell'entity_id.
+## 2026-02-15
+- Versione add-on aggiornata a 1.9.0.
