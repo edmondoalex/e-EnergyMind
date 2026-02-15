@@ -222,3 +222,5 @@
 - User: entita extra manuali mostrano il friendly_name (se presente) invece dell'entity_id.
 ## 2026-02-15
 - Versione add-on aggiornata a 1.9.0.
+## 2026-02-15
+- Aggiunta pagina View-Card con flow grafico animato e responsive.

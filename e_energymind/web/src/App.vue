@@ -21,6 +21,7 @@
             <button :class="{active: tab==='admin'}" @click="tab='admin'">Admin</button>
             <button :class="{active: tab==='automation_settings'}" @click="tab='automation_settings'">Automation setting</button>
             <button :class="{active: tab==='automation_interface'}" @click="tab='automation_interface'">Automazioni interface</button>
+            <button :class="{active: tab==='view_card'}" @click="tab='view_card'">View-Card</button>
           </nav>
         </div>
       </div>
@@ -426,6 +427,85 @@
           </div>
         </div>
       </section>
+
+      <section v-else-if="tab==='view_card'" class="card">
+        <h2>View-Card</h2>
+        <p class="muted">Vista grafica stile power-flow, animata e responsive.</p>
+        <div v-for="site in siteList" :key="`view-${site}`" class="card inner">
+          <div class="row">
+            <strong>{{ siteTitle(site) }}</strong>
+          </div>
+          <div class="flow-canvas">
+            <svg class="flow-svg" viewBox="0 0 1200 650" preserveAspectRatio="xMidYMid meet">
+              <!-- Lines -->
+              <path class="flow-line pv-line" :class="flowActive(site,'pv')" d="M300 155 L520 360" />
+              <path class="flow-line batt-line" :class="flowActive(site,'battery')" d="M310 475 L520 360" />
+              <path class="flow-line load-line" :class="flowActive(site,'load')" d="M640 280 L900 240" />
+              <path class="flow-line grid-line" :class="flowActive(site,'grid')" d="M640 360 L900 500" />
+
+              <!-- Animated dots -->
+              <circle class="flow-dot pv-dot" r="6">
+                <animateMotion :dur="flowDur(site,'pv')" repeatCount="indefinite" path="M300 155 L520 360" />
+              </circle>
+              <circle class="flow-dot batt-dot" r="6">
+                <animateMotion :dur="flowDur(site,'battery')" repeatCount="indefinite" path="M310 475 L520 360" />
+              </circle>
+              <circle class="flow-dot load-dot" r="6">
+                <animateMotion :dur="flowDur(site,'load')" repeatCount="indefinite" path="M640 280 L900 240" />
+              </circle>
+              <circle class="flow-dot grid-dot" r="6">
+                <animateMotion :dur="flowDur(site,'grid')" repeatCount="indefinite" path="M640 360 L900 500" />
+              </circle>
+
+              <!-- Boxes -->
+              <g class="box pv-box">
+                <rect x="120" y="120" rx="10" ry="10" width="180" height="70"/>
+                <text x="210" y="150" text-anchor="middle" class="box-value">{{ flowValue(site,'pv') }}</text>
+                <text x="210" y="175" text-anchor="middle" class="box-label">{{ flowLabel(site,'pv','FV') }}</text>
+              </g>
+              <g class="box load-box">
+                <rect x="900" y="210" rx="10" ry="10" width="200" height="70"/>
+                <text x="1000" y="240" text-anchor="middle" class="box-value">{{ flowValue(site,'load') }}</text>
+                <text x="1000" y="265" text-anchor="middle" class="box-label">{{ flowLabel(site,'load','Consumo') }}</text>
+              </g>
+              <g class="box grid-box">
+                <rect x="900" y="470" rx="10" ry="10" width="200" height="70"/>
+                <text x="1000" y="500" text-anchor="middle" class="box-value">{{ flowValue(site,'grid') }}</text>
+                <text x="1000" y="525" text-anchor="middle" class="box-label">{{ flowLabel(site,'grid','Rete') }}</text>
+              </g>
+              <g class="box batt-box">
+                <rect x="140" y="430" rx="10" ry="10" width="200" height="90"/>
+                <text x="240" y="465" text-anchor="middle" class="box-value">{{ flowValue(site,'battery') }}</text>
+                <text x="240" y="490" text-anchor="middle" class="box-label">{{ flowLabel(site,'battery','Batteria') }}</text>
+                <text x="240" y="512" text-anchor="middle" class="box-sub">{{ flowValue(site,'battery_v') }} · {{ flowValue(site,'battery_a') }}</text>
+              </g>
+              <g class="box vf-box">
+                <rect x="560" y="300" rx="10" ry="10" width="180" height="80"/>
+                <text x="650" y="335" text-anchor="middle" class="box-value">{{ flowValue(site,'voltage') }}</text>
+                <text x="650" y="360" text-anchor="middle" class="box-value">{{ flowValue(site,'frequency') }}</text>
+              </g>
+
+              <!-- Today stats -->
+              <g class="stats pv-stats">
+                <text x="120" y="95" class="stat-title">{{ flowLabel(site,'today_prod','Energia solare oggi') }}</text>
+                <text x="120" y="115" class="stat-value">{{ flowValue(site,'today_prod') }}</text>
+              </g>
+              <g class="stats load-stats">
+                <text x="900" y="190" class="stat-title">{{ flowLabel(site,'today_house','Consumo oggi') }}</text>
+                <text x="900" y="210" class="stat-value">{{ flowValue(site,'today_house') }}</text>
+              </g>
+              <g class="stats grid-stats">
+                <text x="900" y="560" class="stat-title">{{ flowLabel(site,'today_export','Export oggi') }}</text>
+                <text x="900" y="580" class="stat-value">{{ flowValue(site,'today_export') }}</text>
+              </g>
+              <g class="stats batt-stats">
+                <text x="140" y="540" class="stat-title">Carica/Scarica oggi</text>
+                <text x="140" y="560" class="stat-value">{{ flowValue(site,'today_charge') }} · {{ flowValue(site,'today_discharge') }}</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </section>
     </main>
 
     <div v-if="historyModal.open" class="modal-backdrop" @click="historyModal.open=false">
@@ -744,6 +824,35 @@ const flowValue = (site, key) => {
   if (!e) return 'n/d'
   return fmtEntityRaw(e.state, e.attributes)
 }
+const flowLabel = (site, key, fallback) => {
+  const eid = sp.value?.automation?.flow_entities?.[`s${site}`]?.[key] || ''
+  if (!eid) return fallback
+  const cached = flowStates.value?.[eid]
+  const fn = cached?.attributes?.friendly_name
+  if (typeof fn === 'string' && fn.trim().length > 0) return fn
+  return fallback
+}
+const flowNum = (site, key) => {
+  const eid = sp.value?.automation?.flow_entities?.[`s${site}`]?.[key] || ''
+  if (!eid) return 0
+  const cached = flowStates.value?.[eid]
+  const raw = cached?.state
+  const n = Number(raw)
+  return Number.isFinite(n) ? n : 0
+}
+const flowDur = (site, key) => {
+  const n = Math.abs(flowNum(site, key))
+  const min = 1.2
+  const max = 6.0
+  if (n <= 10) return `${max}s`
+  if (n >= 5000) return `${min}s`
+  const t = max - (n / 5000) * (max - min)
+  return `${t.toFixed(2)}s`
+}
+const flowActive = (site, key) => {
+  const n = Math.abs(flowNum(site, key))
+  return n > 10 ? 'active' : ''
+}
 
 async function openHistory(item, site){
   if (!item?.entity_id) return
@@ -914,6 +1023,9 @@ async function refresh(){
     await refreshExtraStates()
   }
   if (tab.value === 'automation_interface') {
+    await refreshFlowStates()
+  }
+  if (tab.value === 'view_card') {
     await refreshFlowStates()
   }
   await loadEntities()
@@ -1465,6 +1577,68 @@ body{
   justify-content:center;
   z-index:20;
 }
+.flow-canvas{
+  width:100%;
+  overflow:hidden;
+  padding:10px 0;
+}
+.flow-svg{
+  width:100%;
+  height:auto;
+  max-height:720px;
+  background:linear-gradient(180deg, #0b0f14, #0b121a);
+  border:1px solid var(--line);
+  border-radius:16px;
+}
+.flow-line{
+  stroke:#3a3f44;
+  stroke-width:4;
+  fill:none;
+  stroke-linecap:round;
+}
+.flow-line.active{
+  stroke:#ffb000;
+}
+.pv-line.active,.load-line.active{ stroke:#ffb000; }
+.grid-line.active{ stroke:#ff5c5c; }
+.batt-line.active{ stroke:#ffa94d; }
+.flow-dot{
+  fill:#ffb000;
+  opacity:0.9;
+}
+.pv-dot{ fill:#ffb000; }
+.load-dot{ fill:#ffb000; }
+.grid-dot{ fill:#ff5c5c; }
+.batt-dot{ fill:#ffa94d; }
+.box rect{
+  fill:#13181f;
+  stroke:#2a2f36;
+  stroke-width:2;
+}
+.box-value{
+  fill:#e6eef8;
+  font-size:22px;
+  font-weight:700;
+}
+.box-label{
+  fill:#9fb0c3;
+  font-size:12px;
+}
+.box-sub{
+  fill:#c5d1dd;
+  font-size:12px;
+}
+.vf-box rect{ stroke:#ff6b6b; }
+.vf-box .box-value{ fill:#ff6b6b; font-size:18px; }
+.stats .stat-title{
+  fill:#9fb0c3;
+  font-size:12px;
+}
+.stats .stat-value{
+  fill:#ffb000;
+  font-size:16px;
+  font-weight:700;
+}
 .modal{
   background:var(--card);
   border:1px solid var(--line);
@@ -1512,6 +1686,7 @@ body{
   .top-inner{ grid-template-columns:1fr; justify-items:start; }
   .top-center{ justify-content:flex-start; }
   .top-right{ justify-content:flex-start; }
+  .flow-svg{ max-height:560px; }
 }
 @media (max-width: 640px){
   .grid{ grid-template-columns:1fr; }
