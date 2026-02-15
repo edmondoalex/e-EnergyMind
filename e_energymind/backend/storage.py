@@ -33,9 +33,9 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     },
     "automation": {
         "flow_entities": {
-            "s1": {"pv": "", "load": "", "battery": "", "grid": "", "soc": "", "battery_v": "", "battery_a": "", "today_prod": "", "today_load": "", "today_export": "", "today_charge": "", "today_discharge": "", "voltage": "", "frequency": ""},
-            "s2": {"pv": "", "load": "", "battery": "", "grid": "", "soc": "", "battery_v": "", "battery_a": "", "today_prod": "", "today_load": "", "today_export": "", "today_charge": "", "today_discharge": "", "voltage": "", "frequency": ""},
-            "s3": {"pv": "", "load": "", "battery": "", "grid": "", "soc": "", "battery_v": "", "battery_a": "", "today_prod": "", "today_load": "", "today_export": "", "today_charge": "", "today_discharge": "", "voltage": "", "frequency": ""},
+            "s1": {"pv_a": "", "pv_b": "", "pv_total": "", "pv": "", "load_total": "", "load": "", "battery": "", "grid": "", "soc": "", "soc_min": "", "battery_v": "", "battery_a": "", "today_prod": "", "today_load": "", "today_house": "", "today_export": "", "today_charge": "", "today_discharge": "", "voltage": "", "frequency": ""},
+            "s2": {"pv_a": "", "pv_b": "", "pv_total": "", "pv": "", "load_total": "", "load": "", "battery": "", "grid": "", "soc": "", "soc_min": "", "battery_v": "", "battery_a": "", "today_prod": "", "today_load": "", "today_house": "", "today_export": "", "today_charge": "", "today_discharge": "", "voltage": "", "frequency": ""},
+            "s3": {"pv_a": "", "pv_b": "", "pv_total": "", "pv": "", "load_total": "", "load": "", "battery": "", "grid": "", "soc": "", "soc_min": "", "battery_v": "", "battery_a": "", "today_prod": "", "today_load": "", "today_house": "", "today_export": "", "today_charge": "", "today_discharge": "", "voltage": "", "frequency": ""},
         },
         "extra_datalog_entities": []
     },

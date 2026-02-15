@@ -293,8 +293,24 @@
           <details v-for="site in siteList" :key="`flow-${site}`" class="set-section" open>
             <summary class="section-title">{{ siteTitle(site) }}</summary>
             <div class="field">
+              <label>Solar SAS (W)</label>
+              <input type="text" v-model="sp.automation.flow_entities[`s${site}`].pv_a" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>Pannelli portoni (W)</label>
+              <input type="text" v-model="sp.automation.flow_entities[`s${site}`].pv_b" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>Produzione FV Totale (W)</label>
+              <input type="text" v-model="sp.automation.flow_entities[`s${site}`].pv_total" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
+            <div class="field">
               <label>PV Power (W)</label>
               <input type="text" v-model="sp.automation.flow_entities[`s${site}`].pv" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>Consumo totale (W)</label>
+              <input type="text" v-model="sp.automation.flow_entities[`s${site}`].load_total" placeholder="sensor.xxx" @change="saveConfig"/>
             </div>
             <div class="field">
               <label>Consumo casa (W)</label>
@@ -311,6 +327,10 @@
             <div class="field">
               <label>SOC Batteria (%)</label>
               <input type="text" v-model="sp.automation.flow_entities[`s${site}`].soc" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>SOC Min/Target (%)</label>
+              <input type="text" v-model="sp.automation.flow_entities[`s${site}`].soc_min" placeholder="sensor.xxx" @change="saveConfig"/>
             </div>
             <div class="field">
               <label>Batteria V</label>
@@ -430,78 +450,165 @@
 
       <section v-else-if="tab==='view_card'" class="card">
         <h2>View-Card</h2>
-        <p class="muted">Vista grafica stile power-flow, animata e responsive.</p>
-        <div v-for="site in siteList" :key="`view-${site}`" class="card inner">
+        <p class="muted">Vista grafica stile power-flow, animata e responsive (icone e layout come riferimento).</p>
+        <div v-for="site in siteList" :key="`view-${site}`" class="card inner viewcard-wrap">
           <div class="row">
             <strong>{{ siteTitle(site) }}</strong>
           </div>
-          <div class="flow-canvas">
-            <svg class="flow-svg" viewBox="0 0 1200 650" preserveAspectRatio="xMidYMid meet">
+          <div class="flow-canvas viewcard-canvas">
+            <svg class="viewcard-svg" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid meet">
+              <defs>
+                <linearGradient id="glow" x1="0" x2="1">
+                  <stop offset="0%" stop-color="#ffb000"/>
+                  <stop offset="100%" stop-color="#ff8f00"/>
+                </linearGradient>
+                <linearGradient id="purpleGlow" x1="0" x2="1">
+                  <stop offset="0%" stop-color="#b548ff"/>
+                  <stop offset="100%" stop-color="#6f2dff"/>
+                </linearGradient>
+                <linearGradient id="gridGlow" x1="0" x2="1">
+                  <stop offset="0%" stop-color="#ff5757"/>
+                  <stop offset="100%" stop-color="#ff2d2d"/>
+                </linearGradient>
+              </defs>
+
+              <rect x="0" y="0" width="1200" height="700" rx="18" ry="18" class="viewcard-bg"/>
+              <text x="600" y="60" text-anchor="middle" class="viewcard-title">{{ siteTitle(site).toUpperCase() }}</text>
+
+              <!-- PV daily energy -->
+              <g class="vc-pv-head">
+                <g class="icon-sun" transform="translate(70 98)">
+                  <circle cx="14" cy="14" r="10"/>
+                  <g class="sun-rays">
+                    <line x1="14" y1="-2" x2="14" y2="6"/>
+                    <line x1="14" y1="22" x2="14" y2="30"/>
+                    <line x1="-2" y1="14" x2="6" y2="14"/>
+                    <line x1="22" y1="14" x2="30" y2="14"/>
+                    <line x1="4" y1="4" x2="9" y2="9"/>
+                    <line x1="24" y1="24" x2="19" y2="19"/>
+                    <line x1="24" y1="4" x2="19" y2="9"/>
+                    <line x1="4" y1="24" x2="9" y2="19"/>
+                  </g>
+                </g>
+                <text x="110" y="112" class="vc-kwh">{{ flowValue(site,'today_prod') }}</text>
+                <text x="110" y="132" class="vc-label">{{ flowLabel(site,'today_prod','ENERGIA SOLARE OGGI') }}</text>
+              </g>
+
+              <!-- PV boxes -->
+              <g class="vc-box pv-box" transform="translate(70 150)">
+                <rect width="190" height="62" rx="10" ry="10"/>
+                <text x="95" y="38" text-anchor="middle" class="vc-value">{{ flowValue(site,'pv_a') }}</text>
+                <text x="95" y="56" text-anchor="middle" class="vc-label">{{ flowLabel(site,'pv_a','Solare SAS') }}</text>
+                <text x="10" y="56" class="vc-sub">{{ flowPercent(site,'pv_a','pv_total') }}</text>
+              </g>
+              <g class="vc-box pv-box" transform="translate(280 150)">
+                <rect width="190" height="62" rx="10" ry="10"/>
+                <text x="95" y="38" text-anchor="middle" class="vc-value">{{ flowValue(site,'pv_b') }}</text>
+                <text x="95" y="56" text-anchor="middle" class="vc-label">{{ flowLabel(site,'pv_b','Pannelli portoni') }}</text>
+                <text x="10" y="56" class="vc-sub">{{ flowPercent(site,'pv_b','pv_total') }}</text>
+              </g>
+              <g class="vc-box pv-box" transform="translate(140 300)">
+                <rect width="190" height="70" rx="10" ry="10"/>
+                <text x="95" y="40" text-anchor="middle" class="vc-value">{{ flowValueOr(site,'pv_total','pv') }}</text>
+                <text x="95" y="60" text-anchor="middle" class="vc-label">{{ flowLabelOr(site,'pv_total','pv','FV Totale') }}</text>
+                <text x="10" y="60" class="vc-sub">{{ flowPercent(site,'pv_total','pv_total') }}</text>
+              </g>
+
+              <!-- Inverter box -->
+              <g class="vc-box inv-box" transform="translate(510 315)">
+                <rect width="140" height="50" rx="8" ry="8"/>
+                <text x="70" y="32" text-anchor="middle" class="vc-value inv-value">{{ flowValue(site,'load') }}</text>
+              </g>
+
+              <!-- Voltage/Frequency -->
+              <g class="vc-box vf-box" transform="translate(610 330)">
+                <rect width="170" height="80" rx="10" ry="10"/>
+                <text x="85" y="35" text-anchor="middle" class="vf-value">{{ flowValue(site,'voltage') }}</text>
+                <text x="85" y="60" text-anchor="middle" class="vf-value">{{ flowValue(site,'frequency') }}</text>
+              </g>
+
+              <!-- Load boxes -->
+              <g class="vc-box load-box" transform="translate(820 210)">
+                <rect width="200" height="62" rx="10" ry="10"/>
+                <text x="100" y="36" text-anchor="middle" class="vc-value load-muted">{{ flowValueOr(site,'load_total','load') }}</text>
+                <text x="100" y="56" text-anchor="middle" class="vc-label muted">{{ flowLabel(site,'today_house','CONSUMO OGGI') }}</text>
+              </g>
+              <text x="860" y="300" class="vc-kwh">{{ flowValue(site,'today_house') }}</text>
+              <g class="vc-box load-box active" transform="translate(820 295)">
+                <rect width="200" height="62" rx="10" ry="10"/>
+                <text x="100" y="36" text-anchor="middle" class="vc-value">{{ flowValue(site,'load') }}</text>
+                <text x="100" y="56" text-anchor="middle" class="vc-label">{{ flowLabel(site,'load','Consumo') }}</text>
+              </g>
+
+              <!-- House icon -->
+              <g class="icon-house" transform="translate(1030 290)">
+                <polygon points="40,0 0,30 10,30 10,70 70,70 70,30 80,30"/>
+                <rect x="35" y="42" width="20" height="28"/>
+              </g>
+              <text x="1045" y="378" class="vc-label">Consumo</text>
+
+              <!-- Battery -->
+              <g class="vc-box batt-box" transform="translate(70 460)">
+                <rect width="210" height="80" rx="10" ry="10"/>
+                <text x="105" y="35" text-anchor="middle" class="vc-value batt-value">{{ flowValue(site,'battery') }}</text>
+                <text x="105" y="56" text-anchor="middle" class="vc-label">{{ flowLabel(site,'battery','Battery Power') }}</text>
+                <text x="105" y="74" text-anchor="middle" class="vc-sub">{{ flowValue(site,'battery_v') }} · {{ flowValue(site,'battery_a') }}</text>
+              </g>
+              <g class="icon-battery" transform="translate(300 470)">
+                <rect x="0" y="0" width="54" height="84" rx="8" ry="8"/>
+                <rect x="16" y="-10" width="22" height="10" rx="4" ry="4"/>
+                <rect class="battery-fill" x="6" :y="batteryFillY(site)" width="42" :height="batteryFillH(site)"/>
+              </g>
+              <text x="300" y="575" class="vc-label">{{ flowValue(site,'soc') }} | {{ flowValue(site,'soc_min') }}</text>
+              <text x="70" y="560" class="vc-label purple">Carica oggi</text>
+              <text x="70" y="585" class="vc-kwh purple">{{ flowValue(site,'today_charge') }}</text>
+              <text x="70" y="610" class="vc-label purple">Scarica oggi</text>
+              <text x="70" y="635" class="vc-kwh purple">{{ flowValue(site,'today_discharge') }}</text>
+
+              <!-- Grid box -->
+              <g class="vc-box grid-box" transform="translate(820 470)">
+                <rect width="200" height="62" rx="10" ry="10"/>
+                <text x="100" y="36" text-anchor="middle" class="vc-value grid-value">{{ flowValue(site,'grid') }}</text>
+              </g>
+              <g class="icon-grid" transform="translate(1040 500)">
+                <polygon points="40,0 0,70 80,70"/>
+                <rect x="28" y="20" width="24" height="50"/>
+                <line x1="12" y1="40" x2="68" y2="40"/>
+                <line x1="20" y1="55" x2="60" y2="55"/>
+              </g>
+              <text x="900" y="555" class="vc-label grid">Vendita Giornaliera</text>
+              <text x="900" y="575" class="vc-kwh grid">{{ flowValue(site,'today_export') }}</text>
+              <text x="900" y="600" class="vc-label grid">Consumo Giornaliero</text>
+              <text x="900" y="620" class="vc-kwh grid">{{ flowValue(site,'today_house') }}</text>
+
               <!-- Lines -->
-              <path class="flow-line pv-line" :class="flowActive(site,'pv')" d="M300 155 L520 360" />
-              <path class="flow-line batt-line" :class="flowActive(site,'battery')" d="M310 475 L520 360" />
-              <path class="flow-line load-line" :class="flowActive(site,'load')" d="M640 280 L900 240" />
-              <path class="flow-line grid-line" :class="flowActive(site,'grid')" d="M640 360 L900 500" />
+              <path class="vc-line pv-line" :class="flowActive(site,'pv_a')" d="M170 212 L210 300" />
+              <path class="vc-line pv-line" :class="flowActive(site,'pv_b')" d="M375 212 L260 300" />
+              <path class="vc-line pv-line" :class="flowActive(site,'pv_total')" d="M235 370 L510 340" />
+              <path class="vc-line load-line" :class="flowActive(site,'load')" d="M650 340 L820 326" />
+              <path class="vc-line grid-line" :class="flowActive(site,'grid')" d="M650 360 L820 500" />
+              <path class="vc-line batt-line" :class="flowActive(site,'battery')" d="M520 370 L240 500" />
+              <path class="vc-line vf-line" :class="flowActive(site,'voltage')" d="M650 360 L610 370" />
 
-              <!-- Animated dots -->
-              <circle class="flow-dot pv-dot" r="6">
-                <animateMotion :dur="flowDur(site,'pv')" repeatCount="indefinite" path="M300 155 L520 360" />
+              <!-- Dots -->
+              <circle class="vc-dot pv-dot" r="5">
+                <animateMotion :dur="flowDur(site,'pv_a')" repeatCount="indefinite" path="M170 212 L210 300"/>
               </circle>
-              <circle class="flow-dot batt-dot" r="6">
-                <animateMotion :dur="flowDur(site,'battery')" repeatCount="indefinite" path="M310 475 L520 360" />
+              <circle class="vc-dot pv-dot" r="5">
+                <animateMotion :dur="flowDur(site,'pv_b')" repeatCount="indefinite" path="M375 212 L260 300"/>
               </circle>
-              <circle class="flow-dot load-dot" r="6">
-                <animateMotion :dur="flowDur(site,'load')" repeatCount="indefinite" path="M640 280 L900 240" />
+              <circle class="vc-dot pv-dot" r="5">
+                <animateMotion :dur="flowDur(site,'pv_total')" repeatCount="indefinite" path="M235 370 L510 340"/>
               </circle>
-              <circle class="flow-dot grid-dot" r="6">
-                <animateMotion :dur="flowDur(site,'grid')" repeatCount="indefinite" path="M640 360 L900 500" />
+              <circle class="vc-dot load-dot" r="5">
+                <animateMotion :dur="flowDur(site,'load')" repeatCount="indefinite" path="M650 340 L820 326"/>
               </circle>
-
-              <!-- Boxes -->
-              <g class="box pv-box">
-                <rect x="120" y="120" rx="10" ry="10" width="180" height="70"/>
-                <text x="210" y="150" text-anchor="middle" class="box-value">{{ flowValue(site,'pv') }}</text>
-                <text x="210" y="175" text-anchor="middle" class="box-label">{{ flowLabel(site,'pv','FV') }}</text>
-              </g>
-              <g class="box load-box">
-                <rect x="900" y="210" rx="10" ry="10" width="200" height="70"/>
-                <text x="1000" y="240" text-anchor="middle" class="box-value">{{ flowValue(site,'load') }}</text>
-                <text x="1000" y="265" text-anchor="middle" class="box-label">{{ flowLabel(site,'load','Consumo') }}</text>
-              </g>
-              <g class="box grid-box">
-                <rect x="900" y="470" rx="10" ry="10" width="200" height="70"/>
-                <text x="1000" y="500" text-anchor="middle" class="box-value">{{ flowValue(site,'grid') }}</text>
-                <text x="1000" y="525" text-anchor="middle" class="box-label">{{ flowLabel(site,'grid','Rete') }}</text>
-              </g>
-              <g class="box batt-box">
-                <rect x="140" y="430" rx="10" ry="10" width="200" height="90"/>
-                <text x="240" y="465" text-anchor="middle" class="box-value">{{ flowValue(site,'battery') }}</text>
-                <text x="240" y="490" text-anchor="middle" class="box-label">{{ flowLabel(site,'battery','Batteria') }}</text>
-                <text x="240" y="512" text-anchor="middle" class="box-sub">{{ flowValue(site,'battery_v') }} · {{ flowValue(site,'battery_a') }}</text>
-              </g>
-              <g class="box vf-box">
-                <rect x="560" y="300" rx="10" ry="10" width="180" height="80"/>
-                <text x="650" y="335" text-anchor="middle" class="box-value">{{ flowValue(site,'voltage') }}</text>
-                <text x="650" y="360" text-anchor="middle" class="box-value">{{ flowValue(site,'frequency') }}</text>
-              </g>
-
-              <!-- Today stats -->
-              <g class="stats pv-stats">
-                <text x="120" y="95" class="stat-title">{{ flowLabel(site,'today_prod','Energia solare oggi') }}</text>
-                <text x="120" y="115" class="stat-value">{{ flowValue(site,'today_prod') }}</text>
-              </g>
-              <g class="stats load-stats">
-                <text x="900" y="190" class="stat-title">{{ flowLabel(site,'today_house','Consumo oggi') }}</text>
-                <text x="900" y="210" class="stat-value">{{ flowValue(site,'today_house') }}</text>
-              </g>
-              <g class="stats grid-stats">
-                <text x="900" y="560" class="stat-title">{{ flowLabel(site,'today_export','Export oggi') }}</text>
-                <text x="900" y="580" class="stat-value">{{ flowValue(site,'today_export') }}</text>
-              </g>
-              <g class="stats batt-stats">
-                <text x="140" y="540" class="stat-title">Carica/Scarica oggi</text>
-                <text x="140" y="560" class="stat-value">{{ flowValue(site,'today_charge') }} · {{ flowValue(site,'today_discharge') }}</text>
-              </g>
+              <circle class="vc-dot grid-dot" r="5">
+                <animateMotion :dur="flowDur(site,'grid')" repeatCount="indefinite" path="M650 360 L820 500"/>
+              </circle>
+              <circle class="vc-dot batt-dot" r="5">
+                <animateMotion :dur="flowDur(site,'battery')" repeatCount="indefinite" path="M520 370 L240 500"/>
+              </circle>
             </svg>
           </div>
         </div>
@@ -828,6 +935,44 @@ const flowValue = (site, key) => {
   if (!e) return 'n/d'
   return fmtEntityRaw(e.state, e.attributes)
 }
+const flowValueOr = (site, key, fallbackKey) => {
+  const v = flowValue(site, key)
+  if (v !== 'n/d') return v
+  return fallbackKey ? flowValue(site, fallbackKey) : v
+}
+const flowLabelOr = (site, key, fallbackKey, fallbackLabel) => {
+  const lbl = flowLabel(site, key, '')
+  if (lbl && lbl !== 'n/d') return lbl
+  if (fallbackKey) {
+    const fb = flowLabel(site, fallbackKey, '')
+    if (fb && fb !== 'n/d') return fb
+  }
+  return fallbackLabel || 'n/d'
+}
+const flowNumber = (site, key) => {
+  const eid = sp.value?.automation?.flow_entities?.[`s${site}`]?.[key] || ''
+  if (!eid) return null
+  const cached = flowStates.value?.[eid]
+  const src = cached || entityById(site, eid)
+  if (!src) return null
+  const num = Number(String(src.state).replace(',', '.'))
+  return Number.isFinite(num) ? num : null
+}
+const flowPercent = (site, key, totalKey) => {
+  const v = flowNumber(site, key)
+  const t = flowNumber(site, totalKey)
+  if (!Number.isFinite(v) || !Number.isFinite(t) || t === 0) return '0%'
+  return `${Math.round((v / t) * 100)}%`
+}
+const batteryFillH = (site) => {
+  const soc = flowNumber(site, 'soc')
+  const pct = Math.max(0, Math.min(100, Number.isFinite(soc) ? soc : 0))
+  return (70 * pct) / 100
+}
+const batteryFillY = (site) => {
+  const h = batteryFillH(site)
+  return 70 - h + 6
+}
 const flowLabel = (site, key, fallback) => {
   const eid = sp.value?.automation?.flow_entities?.[`s${site}`]?.[key] || ''
   if (!eid) return fallback
@@ -1040,7 +1185,7 @@ async function refreshFlowStates(){
   const ids = []
   for (const site of siteList.value || []) {
     const flow = sp.value?.automation?.flow_entities?.[`s${site}`] || {}
-    for (const k of ['pv','load','battery','grid','soc','battery_v','battery_a','today_prod','today_load','today_house','today_export','today_charge','today_discharge','voltage','frequency']) {
+    for (const k of ['pv_a','pv_b','pv_total','pv','load_total','load','battery','grid','soc','soc_min','battery_v','battery_a','today_prod','today_load','today_house','today_export','today_charge','today_discharge','voltage','frequency']) {
       const eid = String(flow[k] || '').trim()
       if (eid) ids.push(eid)
     }
@@ -1593,6 +1738,131 @@ body{
   background:linear-gradient(180deg, #0b0f14, #0b121a);
   border:1px solid var(--line);
   border-radius:16px;
+}
+.viewcard-canvas{
+  padding:6px 0 12px;
+}
+.viewcard-svg{
+  width:100%;
+  height:auto;
+  background:#171717;
+  border:1px solid #2a2a2a;
+  border-radius:16px;
+}
+.viewcard-bg{
+  fill:#1b1b1b;
+  stroke:#2a2a2a;
+  stroke-width:1;
+}
+.viewcard-title{
+  fill:#8f8f8f;
+  font-size:26px;
+  font-weight:700;
+  letter-spacing:1px;
+}
+.vc-label{
+  fill:#9fb0c3;
+  font-size:12px;
+}
+.vc-label.muted{ fill:#6f7a86; }
+.vc-kwh{
+  fill:#ffb000;
+  font-size:16px;
+  font-weight:700;
+}
+.vc-kwh.grid{ fill:#6f8cff; }
+.vc-kwh.purple{ fill:#b548ff; }
+.vc-label.grid{ fill:#6f8cff; }
+.vc-label.purple{ fill:#b548ff; }
+.vc-box rect{
+  fill:#22262b;
+  stroke:#3a3f44;
+  stroke-width:2;
+}
+.vc-box.pv-box rect{
+  stroke:#ffb000;
+}
+.vc-box.load-box rect{
+  stroke:#5b5f66;
+}
+.vc-box.load-box.active rect{
+  stroke:#ffb000;
+}
+.vc-box.grid-box rect{
+  stroke:#ff5757;
+}
+.vc-box.batt-box rect{
+  stroke:#b548ff;
+}
+.vc-box.vf-box rect{
+  stroke:#6f8cff;
+}
+.vc-value{
+  fill:#e8eef6;
+  font-size:18px;
+  font-weight:700;
+}
+.vc-value.load-muted{
+  fill:#9aa3ad;
+}
+.vc-value.grid-value{
+  fill:#ff5757;
+}
+.batt-value{
+  fill:#b548ff;
+}
+.vf-value{
+  fill:#6f8cff;
+  font-size:18px;
+  font-weight:700;
+}
+.vc-sub{
+  fill:#ffb000;
+  font-size:12px;
+}
+.inv-box rect{
+  fill:#15181c;
+  stroke:#2c3036;
+}
+.inv-value{
+  fill:#9aa3ad;
+  font-size:16px;
+}
+.vc-line{
+  fill:none;
+  stroke-width:4;
+  stroke-linecap:round;
+}
+.vc-line.pv-line{ stroke:url(#glow); }
+.vc-line.load-line{ stroke:#ffb000; }
+.vc-line.grid-line{ stroke:url(#gridGlow); }
+.vc-line.batt-line{ stroke:url(#purpleGlow); }
+.vc-line.vf-line{ stroke:#6f8cff; }
+.vc-line.active{ filter: drop-shadow(0 0 6px rgba(255,176,0,0.6)); }
+.vc-dot{ opacity:0.9; }
+.vc-dot.pv-dot{ fill:#ffb000; }
+.vc-dot.load-dot{ fill:#ffb000; }
+.vc-dot.grid-dot{ fill:#ff5757; }
+.vc-dot.batt-dot{ fill:#b548ff; }
+.icon-sun circle{ fill:#ffb000; }
+.icon-sun .sun-rays line{ stroke:#ffb000; stroke-width:2; }
+.icon-house polygon, .icon-house rect{
+  fill:#ffb000;
+}
+.icon-grid polygon, .icon-grid rect{
+  fill:#6f8cff;
+}
+.icon-grid line{
+  stroke:#2c3f7a;
+  stroke-width:4;
+}
+.icon-battery rect{
+  fill:#1b1b1b;
+  stroke:#b548ff;
+  stroke-width:3;
+}
+.icon-battery .battery-fill{
+  fill:#b548ff;
 }
 .flow-line{
   stroke:#3a3f44;

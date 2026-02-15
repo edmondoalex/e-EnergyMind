@@ -228,3 +228,8 @@
 - Fix build: corretta chain v-if/v-else-if per tab view_card.
 ## 2026-02-15
 - Versione add-on aggiornata a 1.9.2.
+## 2026-02-15
+- View-Card: layout e icone aggiornati per replica visiva.
+- Flow entities: aggiunti Solar SAS, Pannelli portoni, FV totale, Consumo totale, SOC target.
+- Automation setting: nuovi campi per View-Card.
+

@@ -293,3 +293,4 @@ Data export: 2026-02-08 (Europe/Rome)
 - Fix: v-else/v-else-if chain in App.vue (tab view_card).
 ## 2026-02-15
 - Bump versione 1.9.2.
+## 2026-02-15\n- View-Card: aggiornata grafica con icone, colori e layout stile riferimento.\n- Flow entities estese per Solar SAS / Pannelli portoni / FV totale / Consumo totale / SOC target.\n
