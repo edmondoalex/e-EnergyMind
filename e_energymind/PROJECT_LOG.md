@@ -296,3 +296,4 @@ Data export: 2026-02-08 (Europe/Rome)
 ## 2026-02-15\n- View-Card: aggiornata grafica con icone, colori e layout stile riferimento.\n- Flow entities estese per Solar SAS / Pannelli portoni / FV totale / Consumo totale / SOC target.\n
 ## 2026-02-15\n- View-Card: linee rese ortogonali per layout pulito.\n
 ## 2026-02-15\n- View-Card: tracciati linee allineati allo schema di riferimento.\n
+## 2026-02-15\n- View-Card: sostituito SVG con layout HTML+SVG (dash flow) in stile reference.\n

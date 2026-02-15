@@ -239,3 +239,6 @@
 ## 2026-02-15
 - View-Card: linee riallineate per layout identico (tratti e angoli).
 
+## 2026-02-15
+- View-Card: layout e linee ricostruiti con HTML+SVG e dash animation (stile reference).
+

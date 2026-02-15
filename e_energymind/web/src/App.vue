@@ -450,167 +450,107 @@
 
       <section v-else-if="tab==='view_card'" class="card">
         <h2>View-Card</h2>
-        <p class="muted">Vista grafica stile power-flow, animata e responsive (icone e layout come riferimento).</p>
+        <p class="muted">Vista grafica stile power-flow, animata e responsive.</p>
         <div v-for="site in siteList" :key="`view-${site}`" class="card inner viewcard-wrap">
           <div class="row">
             <strong>{{ siteTitle(site) }}</strong>
           </div>
-          <div class="flow-canvas viewcard-canvas">
-            <svg class="viewcard-svg" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid meet">
-              <defs>
-                <linearGradient id="glow" x1="0" x2="1">
-                  <stop offset="0%" stop-color="#ffb000"/>
-                  <stop offset="100%" stop-color="#ff8f00"/>
-                </linearGradient>
-                <linearGradient id="purpleGlow" x1="0" x2="1">
-                  <stop offset="0%" stop-color="#b548ff"/>
-                  <stop offset="100%" stop-color="#6f2dff"/>
-                </linearGradient>
-                <linearGradient id="gridGlow" x1="0" x2="1">
-                  <stop offset="0%" stop-color="#ff5757"/>
-                  <stop offset="100%" stop-color="#ff2d2d"/>
-                </linearGradient>
-              </defs>
+          <div class="viewcard-panel">
+            <div class="viewcard-title">{{ siteTitle(site).toUpperCase() }}</div>
 
-              <rect x="0" y="0" width="1200" height="700" rx="18" ry="18" class="viewcard-bg"/>
-              <text x="600" y="60" text-anchor="middle" class="viewcard-title">{{ siteTitle(site).toUpperCase() }}</text>
+            <div class="viewcard-box yellow viewcard-today">
+              <div class="val">{{ flowValue(site,'today_prod') }}</div>
+              <div class="lab">Energia solare oggi</div>
+            </div>
 
-              <!-- PV daily energy -->
-              <g class="vc-pv-head">
-                <g class="icon-sun" transform="translate(70 98)">
-                  <circle cx="14" cy="14" r="10"/>
-                  <g class="sun-rays">
-                    <line x1="14" y1="-2" x2="14" y2="6"/>
-                    <line x1="14" y1="22" x2="14" y2="30"/>
-                    <line x1="-2" y1="14" x2="6" y2="14"/>
-                    <line x1="22" y1="14" x2="30" y2="14"/>
-                    <line x1="4" y1="4" x2="9" y2="9"/>
-                    <line x1="24" y1="24" x2="19" y2="19"/>
-                    <line x1="24" y1="4" x2="19" y2="9"/>
-                    <line x1="4" y1="24" x2="9" y2="19"/>
-                  </g>
-                </g>
-                <text x="110" y="112" class="vc-kwh">{{ flowValue(site,'today_prod') }}</text>
-                <text x="110" y="132" class="vc-label">{{ flowLabel(site,'today_prod','ENERGIA SOLARE OGGI') }}</text>
-              </g>
+            <div class="viewcard-box yellow viewcard-solar">
+              <div class="val">{{ flowValueOr(site,'pv_total','pv') }}</div>
+              <div class="lab">Solare</div>
+            </div>
 
-              <!-- PV boxes -->
-              <g class="vc-box pv-box" transform="translate(70 150)">
-                <rect width="190" height="62" rx="10" ry="10"/>
-                <text x="95" y="38" text-anchor="middle" class="vc-value">{{ flowValue(site,'pv_a') }}</text>
-                <text x="95" y="56" text-anchor="middle" class="vc-label">{{ flowLabel(site,'pv_a','Solare SAS') }}</text>
-                <text x="10" y="56" class="vc-sub">{{ flowPercent(site,'pv_a','pv_total') }}</text>
-              </g>
-              <g class="vc-box pv-box" transform="translate(280 150)">
-                <rect width="190" height="62" rx="10" ry="10"/>
-                <text x="95" y="38" text-anchor="middle" class="vc-value">{{ flowValue(site,'pv_b') }}</text>
-                <text x="95" y="56" text-anchor="middle" class="vc-label">{{ flowLabel(site,'pv_b','Pannelli portoni') }}</text>
-                <text x="10" y="56" class="vc-sub">{{ flowPercent(site,'pv_b','pv_total') }}</text>
-              </g>
-              <g class="vc-box pv-box" transform="translate(140 300)">
-                <rect width="190" height="70" rx="10" ry="10"/>
-                <text x="95" y="40" text-anchor="middle" class="vc-value">{{ flowValueOr(site,'pv_total','pv') }}</text>
-                <text x="95" y="60" text-anchor="middle" class="vc-label">{{ flowLabelOr(site,'pv_total','pv','FV Totale') }}</text>
-                <text x="10" y="60" class="vc-sub">{{ flowPercent(site,'pv_total','pv_total') }}</text>
-              </g>
+            <div class="viewcard-box yellow viewcard-house">
+              <div class="val">{{ flowValue(site,'load') }}</div>
+              <div class="lab">Consumo casa</div>
+            </div>
 
-              <!-- Inverter box -->
-              <g class="vc-box inv-box" transform="translate(510 315)">
-                <rect width="140" height="50" rx="8" ry="8"/>
-                <text x="70" y="32" text-anchor="middle" class="vc-value inv-value">{{ flowValue(site,'load') }}</text>
-              </g>
+            <div class="viewcard-box red viewcard-grid">
+              <div class="val">{{ flowValue(site,'grid') }}</div>
+              <div class="lab">Rete (import + / export -)</div>
+            </div>
 
-              <!-- Voltage/Frequency -->
-              <g class="vc-box vf-box" transform="translate(610 330)">
-                <rect width="170" height="80" rx="10" ry="10"/>
-                <text x="85" y="35" text-anchor="middle" class="vf-value">{{ flowValue(site,'voltage') }}</text>
-                <text x="85" y="60" text-anchor="middle" class="vf-value">{{ flowValue(site,'frequency') }}</text>
-              </g>
+            <div class="viewcard-box purple viewcard-batt">
+              <div class="val">{{ flowValue(site,'battery') }}</div>
+              <div class="lab">Batteria (scarica + / carica -)</div>
+            </div>
 
-              <!-- Load boxes -->
-              <g class="vc-box load-box" transform="translate(820 210)">
-                <rect width="200" height="62" rx="10" ry="10"/>
-                <text x="100" y="36" text-anchor="middle" class="vc-value load-muted">{{ flowValueOr(site,'load_total','load') }}</text>
-                <text x="100" y="56" text-anchor="middle" class="vc-label muted">{{ flowLabel(site,'today_house','CONSUMO OGGI') }}</text>
-              </g>
-              <text x="860" y="300" class="vc-kwh">{{ flowValue(site,'today_house') }}</text>
-              <g class="vc-box load-box active" transform="translate(820 295)">
-                <rect width="200" height="62" rx="10" ry="10"/>
-                <text x="100" y="36" text-anchor="middle" class="vc-value">{{ flowValue(site,'load') }}</text>
-                <text x="100" y="56" text-anchor="middle" class="vc-label">{{ flowLabel(site,'load','Consumo') }}</text>
-              </g>
+            <div class="viewcard-box purple viewcard-soc">
+              <div class="val">{{ flowValue(site,'soc') }}</div>
+              <div class="lab">SoC</div>
+            </div>
 
-              <!-- House icon -->
-              <g class="icon-house" transform="translate(1030 290)">
-                <polygon points="40,0 0,30 10,30 10,70 70,70 70,30 80,30"/>
-                <rect x="35" y="42" width="20" height="28"/>
-              </g>
-              <text x="1045" y="378" class="vc-label">Consumo</text>
+            <div class="viewcard-box red viewcard-vf">
+              <div class="val">{{ flowValue(site,'voltage') }}</div>
+              <div class="lab">{{ flowValue(site,'frequency') }}</div>
+            </div>
 
-              <!-- Battery -->
-              <g class="vc-box batt-box" transform="translate(70 460)">
-                <rect width="210" height="80" rx="10" ry="10"/>
-                <text x="105" y="35" text-anchor="middle" class="vc-value batt-value">{{ flowValue(site,'battery') }}</text>
-                <text x="105" y="56" text-anchor="middle" class="vc-label">{{ flowLabel(site,'battery','Battery Power') }}</text>
-                <text x="105" y="74" text-anchor="middle" class="vc-sub">{{ flowValue(site,'battery_v') }} · {{ flowValue(site,'battery_a') }}</text>
-              </g>
-              <g class="icon-battery" transform="translate(300 470)">
-                <rect x="0" y="0" width="54" height="84" rx="8" ry="8"/>
-                <rect x="16" y="-10" width="22" height="10" rx="4" ry="4"/>
-                <rect class="battery-fill" x="6" :y="batteryFillY(site)" width="42" :height="batteryFillH(site)"/>
-              </g>
-              <text x="300" y="575" class="vc-label">{{ flowValue(site,'soc') }} | {{ flowValue(site,'soc_min') }}</text>
-              <text x="70" y="560" class="vc-label purple">Carica oggi</text>
-              <text x="70" y="585" class="vc-kwh purple">{{ flowValue(site,'today_charge') }}</text>
-              <text x="70" y="610" class="vc-label purple">Scarica oggi</text>
-              <text x="70" y="635" class="vc-kwh purple">{{ flowValue(site,'today_discharge') }}</text>
+            <div class="viewcard-icon i-solar">
+              <svg viewBox="0 0 64 64" fill="none">
+                <path d="M10 40h28l-6 14H16l-6-14Z" stroke="currentColor" stroke-width="4" />
+                <path d="M46 12l8 8M46 28h12M42 16l6 6" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+                <path d="M38 10l-6 18h10l-6 22" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+              </svg>
+              <div>
+                <div class="icon-title">FV</div>
+                <div class="icon-cap">Produzione</div>
+              </div>
+            </div>
 
-              <!-- Grid box -->
-              <g class="vc-box grid-box" transform="translate(820 470)">
-                <rect width="200" height="62" rx="10" ry="10"/>
-                <text x="100" y="36" text-anchor="middle" class="vc-value grid-value">{{ flowValue(site,'grid') }}</text>
-              </g>
-              <g class="icon-grid" transform="translate(1040 500)">
-                <polygon points="40,0 0,70 80,70"/>
-                <rect x="28" y="20" width="24" height="50"/>
-                <line x1="12" y1="40" x2="68" y2="40"/>
-                <line x1="20" y1="55" x2="60" y2="55"/>
-              </g>
-              <text x="900" y="555" class="vc-label grid">Vendita Giornaliera</text>
-              <text x="900" y="575" class="vc-kwh grid">{{ flowValue(site,'today_export') }}</text>
-              <text x="900" y="600" class="vc-label grid">Consumo Giornaliero</text>
-              <text x="900" y="620" class="vc-kwh grid">{{ flowValue(site,'today_house') }}</text>
+            <div class="viewcard-icon i-house">
+              <svg viewBox="0 0 64 64" fill="none">
+                <path d="M10 30 32 12l22 18v22H10V30Z" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+                <path d="M26 52V38h12v14" stroke="currentColor" stroke-width="4" />
+              </svg>
+              <div>
+                <div class="icon-title">Casa</div>
+                <div class="icon-cap">Consumo</div>
+              </div>
+            </div>
 
-              <!-- Lines -->
-              <path class="vc-line pv-line" :class="flowActive(site,'pv_a')" d="M165 212 L230 212 L230 300" />
-              <path class="vc-line pv-line" :class="flowActive(site,'pv_b')" d="M375 212 L230 212 L230 300" />
-              <path class="vc-line pv-line" :class="flowActive(site,'pv_total')" d="M235 370 L235 400 L520 340" />
-              <path class="vc-line idle-line" d="M650 300 L780 300 L820 236" />
-              <path class="vc-line load-line" :class="flowActive(site,'load')" d="M650 340 L780 340 L820 326" />
-              <path class="vc-line vf-line" :class="flowActive(site,'voltage')" d="M650 360 L610 370" />
-              <path class="vc-line grid-line" :class="flowActive(site,'grid')" d="M695 370 L880 370 L880 500 L820 500" />
-              <path class="vc-line batt-line" :class="flowActive(site,'battery')" d="M520 360 L360 360 L240 500" />
+            <div class="viewcard-icon i-grid">
+              <svg viewBox="0 0 64 64" fill="none">
+                <path d="M20 54h24M24 54l8-36 8 36" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M22 30h20M20 40h24" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+              </svg>
+              <div>
+                <div class="icon-title">Rete</div>
+                <div class="icon-cap">Linea</div>
+              </div>
+            </div>
 
-              <!-- Dots -->
-              <circle class="vc-dot pv-dot" r="5">
-                <animateMotion :dur="flowDur(site,'pv_a')" repeatCount="indefinite" path="M165 212 L230 212 L230 300"/>
-              </circle>
-              <circle class="vc-dot pv-dot" r="5">
-                <animateMotion :dur="flowDur(site,'pv_b')" repeatCount="indefinite" path="M375 212 L230 212 L230 300"/>
-              </circle>
-              <circle class="vc-dot pv-dot" r="5">
-                <animateMotion :dur="flowDur(site,'pv_total')" repeatCount="indefinite" path="M235 370 L235 400 L520 340"/>
-              </circle>
-              <circle class="vc-dot load-dot" r="5">
-                <animateMotion :dur="flowDur(site,'load')" repeatCount="indefinite" path="M650 340 L780 340 L820 326"/>
-              </circle>
-              <circle class="vc-dot grid-dot" r="5">
-                <animateMotion :dur="flowDur(site,'grid')" repeatCount="indefinite" path="M695 370 L880 370 L880 500 L820 500"/>
-              </circle>
-              <circle class="vc-dot batt-dot" r="5">
-                <animateMotion :dur="flowDur(site,'battery')" repeatCount="indefinite" path="M520 360 L360 360 L240 500"/>
-              </circle>
+            <div class="viewcard-icon i-batt">
+              <svg viewBox="0 0 64 64" fill="none">
+                <rect x="14" y="18" width="36" height="30" rx="4" stroke="currentColor" stroke-width="4"/>
+                <path d="M50 28h4v10h-4" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+                <path d="M24 33h16" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+              </svg>
+              <div>
+                <div class="icon-title">Batteria</div>
+                <div class="icon-cap">Accumulo</div>
+              </div>
+            </div>
+
+            <svg class="viewcard-svg" viewBox="0 0 1200 675" preserveAspectRatio="none">
+              <path class="pipe" d="M 260 235 H 520 V 360 H 860" />
+              <path class="pipe" d="M 260 535 H 520" />
+              <path class="pipe" d="M 520 360 V 535 H 860" />
+              <path class="pipe" d="M 520 360 V 235" />
+
+              <path id="flow_solar_house" class="flow yellow" :class="flowClass(site,'pv')" d="M 260 235 H 520 V 360 H 860" />
+              <path id="flow_batt" class="flow purple" :class="flowClass(site,'battery')" d="M 260 535 H 520" />
+              <path id="flow_grid" class="flow red" :class="flowClass(site,'grid')" d="M 520 360 V 535 H 860" />
             </svg>
+
+            <div class="viewcard-footer">Dati da Home Assistant (sensor.xxx) via WebSocket</div>
           </div>
         </div>
       </section>
@@ -958,6 +898,12 @@ const flowNumber = (site, key) => {
   if (!src) return null
   const num = Number(String(src.state).replace(',', '.'))
   return Number.isFinite(num) ? num : null
+}
+const flowClass = (site, key) => {
+  const v = flowNumber(site, key)
+  if (!Number.isFinite(v)) return ''
+  if (Math.abs(v) < 0.05) return ''
+  return v >= 0 ? 'on fwd' : 'on rev'
 }
 const flowPercent = (site, key, totalKey) => {
   const v = flowNumber(site, key)
@@ -1740,133 +1686,122 @@ body{
   border:1px solid var(--line);
   border-radius:16px;
 }
-.viewcard-canvas{
-  padding:6px 0 12px;
-}
-.viewcard-svg{
-  width:100%;
-  height:auto;
-  background:#171717;
-  border:1px solid #2a2a2a;
-  border-radius:16px;
-}
-.viewcard-bg{
-  fill:#1b1b1b;
-  stroke:#2a2a2a;
-  stroke-width:1;
+.viewcard-panel{
+  width:min(1200px, 98vw);
+  aspect-ratio: 16 / 9;
+  background: radial-gradient(1200px 600px at 50% 40%, #161a1f 0%, #0e1012 55%, #0b0d0f 100%);
+  border-radius:18px;
+  box-shadow:0 30px 80px rgba(0,0,0,.45);
+  position:relative;
+  overflow:hidden;
+  margin:12px auto 0;
 }
 .viewcard-title{
-  fill:#8f8f8f;
-  font-size:26px;
-  font-weight:700;
-  letter-spacing:1px;
+  position:absolute;
+  left:0;
+  right:0;
+  top:22px;
+  text-align:center;
+  font-weight:600;
+  letter-spacing:.12em;
+  color:#8f97a0;
+  font-size:28px;
+  opacity:.9;
 }
-.vc-label{
-  fill:#9fb0c3;
+.viewcard-box{
+  position:absolute;
+  background:rgba(20,24,28,.75);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:10px;
+  padding:10px 12px;
+  backdrop-filter: blur(6px);
+  min-width:140px;
+}
+.viewcard-box .val{
+  font-size:22px;
+  font-weight:700;
+  line-height:1.1;
+}
+.viewcard-box .lab{
   font-size:12px;
+  color:#6b737b;
+  margin-top:4px;
+  letter-spacing:.04em;
+  text-transform:uppercase;
 }
-.vc-label.muted{ fill:#6f7a86; }
-.vc-kwh{
-  fill:#ffb000;
-  font-size:16px;
+.viewcard-box.yellow{ border-color:rgba(255,179,0,.35); }
+.viewcard-box.yellow .val{ color:#ffb300; }
+.viewcard-box.red{ border-color:rgba(255,59,48,.35); }
+.viewcard-box.red .val{ color:#ff3b30; }
+.viewcard-box.purple{ border-color:rgba(168,85,247,.35); }
+.viewcard-box.purple .val{ color:#a855f7; }
+.viewcard-today{ left:60px; top:80px; min-width:220px; }
+.viewcard-solar{ left:60px; top:140px; }
+.viewcard-house{ right:90px; top:210px; }
+.viewcard-grid{ right:90px; bottom:110px; }
+.viewcard-batt{ left:70px; bottom:120px; }
+.viewcard-soc{ left:270px; bottom:145px; min-width:120px; }
+.viewcard-vf{ right:360px; top:350px; min-width:160px; }
+.viewcard-icon{
+  position:absolute;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  color:#ffb300;
+  opacity:.95;
+  user-select:none;
+}
+.viewcard-icon svg{
+  position:static;
+  width:44px;
+  height:44px;
+}
+.viewcard-icon .icon-title{
   font-weight:700;
 }
-.vc-kwh.grid{ fill:#6f8cff; }
-.vc-kwh.purple{ fill:#b548ff; }
-.vc-label.grid{ fill:#6f8cff; }
-.vc-label.purple{ fill:#b548ff; }
-.vc-box rect{
-  fill:#22262b;
-  stroke:#3a3f44;
-  stroke-width:2;
-}
-.vc-box.pv-box rect{
-  stroke:#ffb000;
-}
-.vc-box.load-box rect{
-  stroke:#5b5f66;
-}
-.vc-box.load-box.active rect{
-  stroke:#ffb000;
-}
-.vc-box.grid-box rect{
-  stroke:#ff5757;
-}
-.vc-box.batt-box rect{
-  stroke:#b548ff;
-}
-.vc-box.vf-box rect{
-  stroke:#6f8cff;
-}
-.vc-value{
-  fill:#e8eef6;
-  font-size:18px;
-  font-weight:700;
-}
-.vc-value.load-muted{
-  fill:#9aa3ad;
-}
-.vc-value.grid-value{
-  fill:#ff5757;
-}
-.batt-value{
-  fill:#b548ff;
-}
-.vf-value{
-  fill:#6f8cff;
-  font-size:18px;
-  font-weight:700;
-}
-.vc-sub{
-  fill:#ffb000;
+.viewcard-icon .icon-cap{
   font-size:12px;
+  color:#6b737b;
+  margin-top:2px;
 }
-.inv-box rect{
-  fill:#15181c;
-  stroke:#2c3036;
+.viewcard-icon.i-solar{ left:70px; top:250px; }
+.viewcard-icon.i-house{ right:160px; top:280px; color:#ffb300; }
+.viewcard-icon.i-grid{ right:170px; bottom:170px; color:#ff3b30; }
+.viewcard-icon.i-batt{ left:95px; bottom:210px; color:#a855f7; }
+.viewcard-svg{
+  position:absolute;
+  inset:0;
 }
-.inv-value{
-  fill:#9aa3ad;
-  font-size:16px;
-}
-.vc-line{
+.pipe{
   fill:none;
-  stroke-width:4;
+  stroke:#2b3138;
+  stroke-width:6;
   stroke-linecap:round;
+  opacity:.9;
 }
-.vc-line.idle-line{
-  stroke:#575b61;
+.flow{
+  fill:none;
+  stroke-width:6;
+  stroke-linecap:round;
+  stroke-dasharray:14 14;
+  filter: drop-shadow(0 0 6px rgba(255,179,0,.25));
+  opacity:0;
 }
-.vc-line.pv-line{ stroke:url(#glow); }
-.vc-line.load-line{ stroke:#ffb000; }
-.vc-line.grid-line{ stroke:url(#gridGlow); }
-.vc-line.batt-line{ stroke:url(#purpleGlow); }
-.vc-line.vf-line{ stroke:#6f8cff; }
-.vc-line.active{ filter: drop-shadow(0 0 6px rgba(255,176,0,0.6)); }
-.vc-dot{ opacity:0.9; }
-.vc-dot.pv-dot{ fill:#ffb000; }
-.vc-dot.load-dot{ fill:#ffb000; }
-.vc-dot.grid-dot{ fill:#ff5757; }
-.vc-dot.batt-dot{ fill:#b548ff; }
-.icon-sun circle{ fill:#ffb000; }
-.icon-sun .sun-rays line{ stroke:#ffb000; stroke-width:2; }
-.icon-house polygon, .icon-house rect{
-  fill:#ffb000;
-}
-.icon-grid polygon, .icon-grid rect{
-  fill:#6f8cff;
-}
-.icon-grid line{
-  stroke:#2c3f7a;
-  stroke-width:4;
-}
-.icon-battery rect{
-  fill:#1b1b1b;
-  stroke:#b548ff;
-  stroke-width:3;
-}
-.icon-battery .battery-fill{
-  fill:#b548ff;
+.flow.on{ opacity:1; }
+.flow.yellow{ stroke:#ffb300; }
+.flow.red{ stroke:#ff3b30; }
+.flow.purple{ stroke:#a855f7; }
+.flow.fwd{ animation: dash 1.1s linear infinite; }
+.flow.rev{ animation: dashrev 1.1s linear infinite; }
+@keyframes dash{ to{ stroke-dashoffset:-28 } }
+@keyframes dashrev{ to{ stroke-dashoffset:28 } }
+.viewcard-footer{
+  position:absolute;
+  left:18px;
+  bottom:14px;
+  font-size:12px;
+  color:#707780;
+  opacity:.75;
 }
 .flow-line{
   stroke:#3a3f44;
