@@ -181,6 +181,14 @@
             <input type="number" min="500" step="500" v-model.number="sp.runtime.ui_poll_ms" @change="saveConfig"/>
             <div class="help">Intervallo aggiornamento UI.</div>
           </div>
+          <div v-if="sp" class="field">
+            <label>Segno rete (export positivo)</label>
+            <select v-model="sp.runtime.grid_export_positive" @change="saveConfig">
+              <option :value="true">Export positivo, Import negativo</option>
+              <option :value="false">Export negativo, Import positivo</option>
+            </select>
+            <div class="help">Imposta la convenzione di segno del sensore rete.</div>
+          </div>
         </div>
 
         <div class="form" v-if="ent">

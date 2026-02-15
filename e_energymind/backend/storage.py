@@ -28,6 +28,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "mode": "dry-run",
         "ui_poll_ms": 3000,
         "sites_count": 2,
+        "grid_export_positive": True,
         "ui_flags": {},
         "ui_history_flags": {},
     },
@@ -85,6 +86,8 @@ def normalize_config(raw: Dict[str, Any]) -> Dict[str, Any]:
         if "sites_count" in runtime:
             n = int(_float(runtime["sites_count"], cfg["runtime"]["sites_count"]))
             cfg["runtime"]["sites_count"] = max(1, min(3, n))
+        if "grid_export_positive" in runtime:
+            cfg["runtime"]["grid_export_positive"] = bool(runtime.get("grid_export_positive"))
         if isinstance(runtime.get("ui_flags"), dict):
             cfg["runtime"]["ui_flags"] = runtime.get("ui_flags", {})
         if isinstance(runtime.get("ui_history_flags"), dict):
@@ -151,6 +154,8 @@ def apply_config(cfg: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any]
         if "sites_count" in runtime:
             n = int(_float(runtime["sites_count"], cfg["runtime"]["sites_count"]))
             cfg["runtime"]["sites_count"] = max(1, min(3, n))
+        if "grid_export_positive" in runtime:
+            cfg["runtime"]["grid_export_positive"] = bool(runtime.get("grid_export_positive"))
         if isinstance(runtime.get("ui_flags"), dict):
             cfg["runtime"]["ui_flags"] = runtime.get("ui_flags", {})
         if isinstance(runtime.get("ui_history_flags"), dict):

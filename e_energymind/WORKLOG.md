@@ -254,3 +254,6 @@
 ## 2026-02-15
 - Insights: rilevazione carica parziale anche con segno rete invertito (export/import).
 
+## 2026-02-15
+- Runtime: aggiunta opzione segno rete (export positivo) usata in insights e report.
+

@@ -271,27 +271,16 @@ def _svg_chart(series_map: dict[str, list[tuple[int, float]]], title: str) -> st
     return "".join(parts)
 
 
-def _detect_grid_inversion(pv_series, load_series, batt_series, grid_series) -> bool:
-    checks = 0
-    normal = 0
-    inverted = 0
-    for ts, pv in pv_series[:: max(1, len(pv_series) // 120 or 1)]:
-        load = _nearest_value(load_series, ts)
-        batt = _nearest_value(batt_series, ts)
-        grid = _nearest_value(grid_series, ts)
-        if load is None or batt is None or grid is None:
-            continue
-        expected = pv - load - batt
-        if abs(expected) < 50:
-            continue
-        checks += 1
-        if expected * grid >= 0:
-            normal += 1
-        else:
-            inverted += 1
-    if checks < 5:
+def _grid_exporting(grid: float | None, export_positive: bool) -> bool:
+    if grid is None:
         return False
-    return inverted > normal
+    return grid > 50 if export_positive else grid < -50
+
+
+def _grid_importing(grid: float | None, export_positive: bool) -> bool:
+    if grid is None:
+        return False
+    return grid < -50 if export_positive else grid > 50
 
 
 def _load_history_raw_series(conn: sqlite3.Connection, entity_id: str, since_ts: int) -> list[tuple[int, str | None, float | None, str | None]]:
@@ -617,6 +606,7 @@ def _generate_report_for_day(date_str: str) -> None:
     end_ts = start_ts + 86400
     cfg = load_config()
     ent_cfg = cfg.get("entities", {}) or {}
+    export_positive = bool(cfg.get("runtime", {}).get("grid_export_positive", True))
 
     def _eid(site: int, key: str) -> str | None:
         return ent_cfg.get(f"s{site}_{key}")
@@ -665,14 +655,13 @@ def _generate_report_for_day(date_str: str) -> None:
             mode_series = _load_history_raw_series(conn, mode_id, start_ts) if mode_id else []
             exp_series = _load_history_raw_series(conn, exp_id, start_ts) if exp_id else []
 
-            invert_grid = _detect_grid_inversion(pv_series, load_series, batt_series, grid_series)
             report["summary"][f"site{site}_series_counts"] = {
                 "pv": len(pv_series),
                 "load": len(load_series),
                 "grid": len(grid_series),
                 "battery": len(batt_series),
             }
-            report["summary"][f"site{site}_grid_inverted"] = bool(invert_grid)
+            report["summary"][f"site{site}_grid_export_positive"] = export_positive
 
             events = []
             for ts, pv in pv_series:
@@ -683,13 +672,11 @@ def _generate_report_for_day(date_str: str) -> None:
                 batt = _nearest_value(batt_series, ts)
                 if load is None or grid is None or batt is None:
                     continue
-                if invert_grid:
-                    grid = -grid
                 surplus = pv - load
                 if surplus <= 500:
                     continue
                 charge = abs(batt) if batt < 0 else 0.0
-                if grid > 50 and charge < surplus * 0.8:
+                if _grid_exporting(grid, export_positive) and charge < surplus * 0.8:
                     soc = _nearest_raw(soc_series, ts)
                     temp = _nearest_raw(temp_series, ts)
                     mode = _nearest_raw(mode_series, ts)
@@ -754,10 +741,10 @@ def _generate_report_for_day(date_str: str) -> None:
     md_lines.append(f"- Utenza 2: {report['summary'].get('site2_partial_charge_events', 0)} episodi di carica parziale.")
     for site in (1, 2):
         counts = report["summary"].get(f"site{site}_series_counts", {})
-        inv = report["summary"].get(f"site{site}_grid_inverted", False)
+        inv = report["summary"].get(f"site{site}_grid_export_positive", True)
         if counts:
             md_lines.append(
-                f"- Utenza {site}: campioni PV {counts.get('pv',0)}, Load {counts.get('load',0)}, Grid {counts.get('grid',0)}, Batt {counts.get('battery',0)}; Grid invertita: {inv}"
+                f"- Utenza {site}: campioni PV {counts.get('pv',0)}, Load {counts.get('load',0)}, Grid {counts.get('grid',0)}, Batt {counts.get('battery',0)}; Export positivo: {inv}"
             )
     md_lines.append("")
 
@@ -962,6 +949,7 @@ async def get_history(entity_id: str = "", site: int = 1, hours: int = 24):
 async def insights():
     cfg = load_config()
     ent_cfg = cfg.get("entities", {}) or {}
+    export_positive = bool(cfg.get("runtime", {}).get("grid_export_positive", True))
 
     def _eid(site: int, key: str) -> str | None:
         return ent_cfg.get(f"s{site}_{key}")
@@ -986,9 +974,9 @@ async def insights():
         if pv is not None and load is not None and grid is not None and batt is not None:
             surplus = pv - load
             charge = abs(batt) if batt < 0 else 0.0
-            grid_exporting = grid < -50
-            grid_importing = grid > 50
-            if surplus > 500 and (grid_exporting or grid_importing) and charge < surplus * 0.8:
+            grid_exporting = _grid_exporting(grid, export_positive)
+            grid_importing = _grid_importing(grid, export_positive)
+            if surplus > 500 and grid_exporting and charge < surplus * 0.8:
                 status = "CARICA_PARZIALE"
                 confidence = "medium"
                 if soc is not None and soc >= 90:
@@ -1004,7 +992,7 @@ async def insights():
                 if inv and inv not in ("On-grid", "On grid", "OnGrid"):
                     reasons.append(f"Inverter: {inv}")
                 if surplus > 500 and grid_importing:
-                    reasons.append("Possibile segno rete invertito")
+                    reasons.append("Import da rete durante surplus")
                 if not reasons:
                     reasons.append("Limite interno BMS/inverter")
                 suggestions.append("Verifica limiti carica e temperatura")
