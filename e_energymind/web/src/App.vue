@@ -27,6 +27,20 @@
     <main class="main">
       <section v-if="tab==='user'" class="card">
         <h2>Stato (energia)</h2>
+        <div class="card inner">
+          <div class="row"><strong>Intelligenza (globale)</strong></div>
+          <div class="muted" v-if="!insights?.global">In attesa dati...</div>
+          <div v-else class="entity-list">
+            <div class="entity-row row-on">
+              <span class="entity-name">Stato</span>
+              <span class="entity-value">{{ insights.global.status }}</span>
+            </div>
+            <div class="entity-row">
+              <span class="entity-name">Note</span>
+              <span class="entity-value">{{ insights.global.notes }}</span>
+            </div>
+          </div>
+        </div>
         <div class="statusline">
           <span class="muted">v{{ status?.version || '-' }}</span>
           <span class="muted">mode: {{ status?.runtime_mode || '-' }}</span>
@@ -40,6 +54,31 @@
         <p v-if="status?.runtime_mode !== 'live'" class="muted">Dry-run: nessun comando agli attuatori. Analisi solo lettura.</p>
 
         <div v-if="ent" v-for="site in siteList" :key="`user-site-${site}`" class="card inner">
+          <div class="card inner">
+            <div class="row"><strong>Intelligenza Utenza {{ site }}</strong></div>
+            <div class="muted" v-if="!siteInsight(site)">In attesa dati...</div>
+            <div v-else class="entity-list">
+              <div class="entity-row row-on">
+                <span class="entity-name">Stato</span>
+                <span class="entity-value">{{ siteInsight(site).status }} ({{ siteInsight(site).confidence }})</span>
+              </div>
+              <div class="entity-row">
+                <span class="entity-name">Cause</span>
+                <span class="entity-value">{{ (siteInsight(site).reasons || []).join(' · ') }}</span>
+              </div>
+              <div class="entity-row">
+                <span class="entity-name">Suggerimenti</span>
+                <span class="entity-value">{{ (siteInsight(site).suggestions || []).join(' · ') }}</span>
+              </div>
+              <div class="entity-row">
+                <span class="entity-name">Previsione +60s</span>
+                <span class="entity-value">
+                  Batt {{ siteInsight(site).forecast?.t_plus_60s?.battery_power ?? 'n/d' }} W ·
+                  Grid {{ siteInsight(site).forecast?.t_plus_60s?.grid_power ?? 'n/d' }} W
+                </span>
+              </div>
+            </div>
+          </div>
           <div class="row">
             <strong>Utenza {{ site }}</strong>
             <span class="muted" v-if="deviceLabel(site)"> — {{ deviceLabel(site) }}</span>
@@ -268,6 +307,7 @@ const pollMs = ref(3000)
 const actions = ref([])
 const analysis = ref({ ok: false, events: [], missing: [] })
 const reportStatus = ref(null)
+const insights = ref({ global: null, sites: [] })
 let pollTimer = null
 const editingCount = ref(0)
 const dirtyEnt = ref({})
@@ -591,6 +631,8 @@ async function refresh(){
     try {
       const an = await fetch(`/api/analysis?site=1&hours=24`)
       analysis.value = await an.json()
+      const ins = await fetch('/api/insights')
+      insights.value = await ins.json()
     } catch {}
   }
   await loadEntities()
@@ -696,6 +738,10 @@ function pickSamples(items){
     { t: fmtTs(mid.ts), v: mid.value, unit: mid.unit },
     { t: fmtTs(last.ts), v: last.value, unit: last.unit },
   ]
+}
+
+function siteInsight(site){
+  return insights.value?.sites?.find(s => s.site === site)
 }
 
 async function exportConfig(){

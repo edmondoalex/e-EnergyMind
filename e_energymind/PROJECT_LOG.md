@@ -244,3 +244,6 @@ Data export: 2026-02-08 (Europe/Rome)
 - Report: map share:rw in add-on config + log generation action. Version 1.7.8.
 - Report: soglie più permissive per carica parziale + timezone Europe/Rome.
 - Versione add-on aggiornata a 1.7.9.
+- User: aggiunta sezione Intelligenza globale e per-utenza con cause, suggerimenti e previsione +60s.
+- Backend: endpoint /api/insights con logica realtime.
+- Versione add-on aggiornata a 1.8.0.

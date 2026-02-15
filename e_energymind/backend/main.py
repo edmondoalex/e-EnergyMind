@@ -62,6 +62,25 @@ def _entity_payload(entity_id: str | None) -> Dict[str, Any]:
     }
 
 
+def _state_num(entity_id: str | None) -> float | None:
+    if not entity_id:
+        return None
+    st = ha.states.get(entity_id)
+    if not st:
+        return None
+    return _num_or_none(st.get("state"))
+
+
+def _state_str(entity_id: str | None) -> str | None:
+    if not entity_id:
+        return None
+    st = ha.states.get(entity_id)
+    if not st:
+        return None
+    raw = st.get("state")
+    return None if raw is None else str(raw)
+
+
 def _load_all_entities_store() -> Dict[str, list]:
     if not ALL_ENTITIES_PATH.exists():
         return {"s1": [], "s2": [], "s3": []}
@@ -185,6 +204,67 @@ def _load_history_series(conn: sqlite3.Connection, entity_id: str, since_ts: int
         except Exception:
             continue
     return out
+
+
+def _load_history_series_window(conn: sqlite3.Connection, entity_id: str, start_ts: int, end_ts: int) -> list[tuple[int, float]]:
+    series = _load_history_series(conn, entity_id, start_ts)
+    return [(ts, val) for ts, val in series if ts < end_ts]
+
+
+def _downsample(series: list[tuple[int, float]], max_points: int = 720) -> list[tuple[int, float]]:
+    if len(series) <= max_points:
+        return series
+    step = max(1, len(series) // max_points)
+    return series[::step]
+
+
+def _svg_polyline(series: list[tuple[int, float]], width: int, height: int, pad: int, color: str) -> str:
+    if not series:
+        return ""
+    xs = [p[0] for p in series]
+    ys = [p[1] for p in series]
+    min_x, max_x = min(xs), max(xs)
+    min_y, max_y = min(ys), max(ys)
+    dx = max_x - min_x or 1
+    dy = max_y - min_y or 1
+    w = width - pad * 2
+    h = height - pad * 2
+    pts = []
+    for x, y in series:
+        px = pad + (x - min_x) / dx * w
+        py = pad + h - (y - min_y) / dy * h
+        pts.append(f"{px:.1f},{py:.1f}")
+    return f'<polyline fill="none" stroke="{color}" stroke-width="2" points="{" ".join(pts)}" />'
+
+
+def _svg_axes(width: int, height: int, pad: int) -> str:
+    x1, y1 = pad, pad
+    x2, y2 = width - pad, height - pad
+    return (
+        f'<line x1="{x1}" y1="{y2}" x2="{x2}" y2="{y2}" stroke="#3a4757" stroke-width="1" />'
+        f'<line x1="{x1}" y1="{y1}" x2="{x1}" y2="{y2}" stroke="#3a4757" stroke-width="1" />'
+    )
+
+
+def _svg_chart(series_map: dict[str, list[tuple[int, float]]], title: str) -> str:
+    width, height, pad = 1200, 400, 40
+    colors = ["#63e6be", "#4cc9f0", "#ff6b6b", "#f59f00", "#74c0fc"]
+    parts = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
+        '<rect width="100%" height="100%" fill="#0b121a"/>',
+        _svg_axes(width, height, pad),
+        f'<text x="{pad}" y="24" fill="#9fb0c3" font-size="16">{title}</text>',
+    ]
+    i = 0
+    for name, series in series_map.items():
+        if not series:
+            continue
+        color = colors[i % len(colors)]
+        parts.append(_svg_polyline(series, width, height, pad, color))
+        parts.append(f'<text x="{pad}" y="{50 + i*18}" fill="{color}" font-size="12">{name}</text>')
+        i += 1
+    parts.append("</svg>")
+    return "".join(parts)
 
 
 def _load_history_raw_series(conn: sqlite3.Connection, entity_id: str, since_ts: int) -> list[tuple[int, str | None, float | None, str | None]]:
@@ -524,10 +604,10 @@ def _generate_report_for_day(date_str: str) -> None:
                 }.items() if not v]
                 continue
 
-            pv_series = _load_history_series(conn, pv_id, start_ts)
-            load_series = _load_history_series(conn, load_id, start_ts)
-            grid_series = _load_history_series(conn, grid_id, start_ts)
-            batt_series = _load_history_series(conn, batt_id, start_ts)
+            pv_series = _load_history_series_window(conn, pv_id, start_ts, end_ts)
+            load_series = _load_history_series_window(conn, load_id, start_ts, end_ts)
+            grid_series = _load_history_series_window(conn, grid_id, start_ts, end_ts)
+            batt_series = _load_history_series_window(conn, batt_id, start_ts, end_ts)
             soc_series = _load_history_raw_series(conn, soc_id, start_ts) if soc_id else []
             temp_series = _load_history_raw_series(conn, temp_id, start_ts) if temp_id else []
             mode_series = _load_history_raw_series(conn, mode_id, start_ts) if mode_id else []
@@ -579,6 +659,30 @@ def _generate_report_for_day(date_str: str) -> None:
 
             report["partial_charge_events"][f"site{site}"] = events
             report["summary"][f"site{site}_partial_charge_events"] = len(events)
+
+            # Charts
+            charts = report.setdefault("charts", {})
+            charts[f"site{site}_power_svg"] = f"report_{date_str}_site{site}_power.svg"
+            charts[f"site{site}_soc_svg"] = f"report_{date_str}_site{site}_soc.svg"
+            charts[f"site{site}_temp_svg"] = f"report_{date_str}_site{site}_temp.svg"
+            power_svg = _svg_chart({
+                "PV": _downsample(pv_series),
+                "Load": _downsample(load_series),
+                "Grid": _downsample(grid_series),
+                "Battery": _downsample(batt_series),
+            }, f"Utenza {site} — Potenze (W)")
+            (REPORT_DIR / charts[f"site{site}_power_svg"]).write_text(power_svg, encoding="utf-8")
+
+            soc_vals = [(ts, float(v)) for ts, _, v, _ in soc_series if ts < end_ts and v is not None]
+            temp_vals = [(ts, float(v)) for ts, _, v, _ in temp_series if ts < end_ts and v is not None]
+            soc_svg = _svg_chart({"SOC (%)": _downsample(soc_vals)}, f"Utenza {site} — SOC (%)")
+            temp_svg = _svg_chart({"Temp (C)": _downsample(temp_vals)}, f"Utenza {site} — Temp Batteria (C)")
+            (REPORT_DIR / charts[f"site{site}_soc_svg"]).write_text(soc_svg, encoding="utf-8")
+            (REPORT_DIR / charts[f"site{site}_temp_svg"]).write_text(temp_svg, encoding="utf-8")
+
+        # Comparison chart (PV + Battery) between sites
+        if pv_id and batt_id:
+            pass
 
     md_lines.append("## Sintesi")
     md_lines.append(f"- Utenza 1: {report['summary'].get('site1_partial_charge_events', 0)} episodi di carica parziale.")
@@ -726,6 +830,87 @@ async def get_history(entity_id: str = "", site: int = 1, hours: int = 24):
         rows = cur.fetchall()
     items = [{"ts": r[0], "value": r[1], "raw": r[2], "unit": r[3]} for r in rows]
     return JSONResponse({"site": site, "entity_id": entity_id, "hours": hours, "items": items})
+
+
+@app.get("/api/insights")
+async def insights():
+    cfg = load_config()
+    ent_cfg = cfg.get("entities", {}) or {}
+
+    def _eid(site: int, key: str) -> str | None:
+        return ent_cfg.get(f"s{site}_{key}")
+
+    def _site_insight(site: int):
+        pv = _state_num(_eid(site, "pv_power_total")) or _state_num(_eid(site, "pv_power"))
+        load = _state_num(_eid(site, "load_power"))
+        grid = _state_num(_eid(site, "grid_power"))
+        batt = _state_num(_eid(site, "battery_power"))
+        soc = _state_num(_eid(site, "battery_soc"))
+        temp = _state_num(_eid(site, "battery_temp"))
+        mode = _state_str(_eid(site, "storage_control_mode"))
+        export_lim = _state_str(_eid(site, "grid_export_power"))
+        fault = _state_str(_eid(site, "device_fault"))
+        inv = _state_str(_eid(site, "inverter_status"))
+
+        reasons = []
+        suggestions = []
+        status = "OK"
+        confidence = "low"
+
+        if pv is not None and load is not None and grid is not None and batt is not None:
+            surplus = pv - load
+            charge = abs(batt) if batt < 0 else 0.0
+            if surplus > 500 and grid > 50 and charge < surplus * 0.8:
+                status = "CARICA_PARZIALE"
+                confidence = "medium"
+                if soc is not None and soc >= 90:
+                    reasons.append("SOC alto")
+                if temp is not None and temp <= 15:
+                    reasons.append("Temperatura batteria bassa")
+                if mode and mode not in ("Self Use", "SelfUse", "Auto"):
+                    reasons.append(f"Storage mode: {mode}")
+                if export_lim and export_lim not in ("0", "Disabled", "None", ""):
+                    reasons.append(f"Export limit: {export_lim}")
+                if fault and fault not in ("OK", "Ok", "None"):
+                    reasons.append(f"Fault: {fault}")
+                if inv and inv not in ("On-grid", "On grid", "OnGrid"):
+                    reasons.append(f"Inverter: {inv}")
+                if not reasons:
+                    reasons.append("Limite interno BMS/inverter")
+                suggestions.append("Verifica limiti carica e temperatura")
+                suggestions.append("Controlla modalità Storage e Export limit")
+        else:
+            status = "DATI_INCOMPLETI"
+            reasons.append("Mancano alcune entità chiave")
+
+        forecast = {
+            "t_plus_60s": {
+                "battery_power": batt,
+                "grid_power": grid,
+                "confidence": "low"
+            }
+        }
+        return {
+            "site": site,
+            "status": status,
+            "confidence": confidence,
+            "reasons": reasons,
+            "suggestions": suggestions,
+            "forecast": forecast
+        }
+
+    site1 = _site_insight(1)
+    site2 = _site_insight(2)
+    global_status = "OK"
+    if site1["status"] == "CARICA_PARZIALE" or site2["status"] == "CARICA_PARZIALE":
+        global_status = "CARICA_PARZIALE"
+    return JSONResponse({
+        "global": {
+            "status": global_status,
+            "notes": "Analisi in tempo reale basata su sensori correnti."
+        },
+        "sites": [site1, site2]
+    })
 
 
 @app.get("/api/reports")
