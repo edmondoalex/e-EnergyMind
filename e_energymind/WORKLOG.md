@@ -276,3 +276,6 @@
 - Fix: corretto indentazione report (crash).
 - Learning: finestra 48h, update ogni 2h.
 
+## 2026-02-15
+- Report: aggiunti nomi reali utenze in header e sezioni.
+

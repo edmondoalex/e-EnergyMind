@@ -696,6 +696,10 @@ def _generate_report_for_day(date_str: str) -> None:
     cfg = load_config()
     ent_cfg = cfg.get("entities", {}) or {}
     export_positive = bool(cfg.get("runtime", {}).get("grid_export_positive", True))
+    devices = cfg.get("devices", {}) or {}
+    def _site_name(site: int) -> str:
+        name = devices.get(f"s{site}", {}).get("name") if isinstance(devices, dict) else None
+        return str(name).strip() if name else f"Utenza {site}"
 
     def _eid(site: int, key: str) -> str | None:
         return ent_cfg.get(f"s{site}_{key}")
@@ -703,7 +707,10 @@ def _generate_report_for_day(date_str: str) -> None:
     report = {
         "date": date_str,
         "period": {"from": "00:00", "to": "23:59", "timezone": "Europe/Rome"},
-        "sites": [{"id": 1, "inverters_parallel": 3}, {"id": 2, "inverters_parallel": 2}],
+        "sites": [
+            {"id": 1, "name": _site_name(1), "inverters_parallel": 3},
+            {"id": 2, "name": _site_name(2), "inverters_parallel": 2},
+        ],
         "summary": {},
         "comparison": {},
         "partial_charge_events": {"criteria": {"surplus_gt_w": 0, "grid_export_gt_w": PARTIAL_EXPORT_MIN_W, "min_duration_s": PARTIAL_MIN_DURATION_S}},
@@ -714,7 +721,7 @@ def _generate_report_for_day(date_str: str) -> None:
     md_lines = [
         f"# Report BMS Giornaliero — {date_str}",
         "Periodo: 00:00–23:59 (Europe/Rome)",
-        "Utenze: 1 (3 inverter in parallelo), 2 (2 inverter in parallelo)",
+        f"Utenze: 1 (3 inverter in parallelo) — {_site_name(1)}, 2 (2 inverter in parallelo) — {_site_name(2)}",
         "",
     ]
 
@@ -851,7 +858,7 @@ def _generate_report_for_day(date_str: str) -> None:
     md_lines.append("")
 
     for site in (1, 2):
-        md_lines.append(f"## Eventi carica parziale — Utenza {site}")
+        md_lines.append(f"## Eventi carica parziale — Utenza {site} — {_site_name(site)}")
         events = report["partial_charge_events"].get(f"site{site}", [])
         if not events:
             md_lines.append("Nessun evento.")

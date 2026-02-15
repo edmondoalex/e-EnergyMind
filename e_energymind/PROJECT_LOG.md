@@ -308,3 +308,4 @@ Data export: 2026-02-08 (Europe/Rome)
 ## 2026-02-15\n- Insights: soglie basate su export>300W per >=10s con PV>Load.\n
 ## 2026-02-15\n- Learning: regole apprese dallo storico esposte in UI.\n
 ## 2026-02-15\n- Fix crash: indentazione report.\n- Learning: finestra 48h, update ogni 2h.\n
+## 2026-02-15\n- Report: nomi reali utenze inclusi.\n
