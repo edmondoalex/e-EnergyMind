@@ -784,10 +784,10 @@ def _generate_report_for_day(date_str: str) -> None:
                     in_event = False
                     continue
                 charge = abs(batt) if batt < 0 else 0.0
-                    soc = _nearest_raw(soc_series, ts, 300)
-                    temp = _nearest_raw(temp_series, ts, 300)
-                    mode = _nearest_raw(mode_series, ts, 300)
-                    exp = _nearest_raw(exp_series, ts, 300)
+                soc = _nearest_raw(soc_series, ts, 300)
+                temp = _nearest_raw(temp_series, ts, 300)
+                mode = _nearest_raw(mode_series, ts, 300)
+                exp = _nearest_raw(exp_series, ts, 300)
                 tags = []
                 soc_val = _raw_or_value_num(soc)
                 temp_val = _raw_or_value_num(temp)

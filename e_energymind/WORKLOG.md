@@ -288,3 +288,6 @@
 ## 2026-02-15
 - Report: finestra nearest per SOC/Temp/Mode/Export aumentata a 300s.
 
+## 2026-02-15
+- Fix: indentazione report (soc/temp) corretta.
+
