@@ -245,3 +245,6 @@
 ## 2026-02-15
 - Admin: aggiunta verifica logging DB per entità mappate (mancanti/presenti).
 
+## 2026-02-15
+- Report BMS: SOC/Temp ora derivati anche da raw quando value è null.
+

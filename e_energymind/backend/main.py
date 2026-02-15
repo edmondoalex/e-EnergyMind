@@ -307,6 +307,18 @@ def _nearest_raw(series: list[tuple[int, str | None, float | None, str | None]],
     return {"ts": best[0], "raw": best[1], "value": best[2], "unit": best[3]}
 
 
+def _raw_or_value_num(item: dict | None) -> float | None:
+    if not item:
+        return None
+    if item.get("value") is not None:
+        try:
+            return float(item["value"])
+        except Exception:
+            return None
+    raw = item.get("raw")
+    return _num_or_none(raw)
+
+
 def _nearest_value(series: list[tuple[int, float]], ts: int, max_delta_s: int = 90) -> float | None:
     if not series:
         return None
@@ -649,9 +661,11 @@ def _generate_report_for_day(date_str: str) -> None:
                     mode = _nearest_raw(mode_series, ts)
                     exp = _nearest_raw(exp_series, ts)
                     tags = []
-                    if soc and soc.get("value") is not None and float(soc["value"]) >= 90:
+                    soc_val = _raw_or_value_num(soc)
+                    temp_val = _raw_or_value_num(temp)
+                    if soc_val is not None and soc_val >= 90:
                         tags.append("LIMIT_SOC")
-                    if temp and temp.get("value") is not None and float(temp["value"]) <= 15:
+                    if temp_val is not None and temp_val <= 15:
                         tags.append("LIMIT_TEMP")
                     if mode and (mode.get("raw") or "").strip() not in ("Self Use", "SelfUse", "Auto"):
                         tags.append("LIMIT_MODE")
@@ -667,8 +681,8 @@ def _generate_report_for_day(date_str: str) -> None:
                         "battery_w": batt,
                         "grid_w": grid,
                         "surplus_w": surplus,
-                        "soc": soc.get("value") if soc else None,
-                        "temp": temp.get("value") if temp else None,
+                        "soc": soc_val,
+                        "temp": temp_val,
                         "mode": mode.get("raw") if mode else None,
                         "export_limit": exp.get("raw") if exp else None,
                         "tags": tags,
