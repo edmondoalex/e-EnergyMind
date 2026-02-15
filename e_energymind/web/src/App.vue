@@ -254,6 +254,29 @@
           </div>
         </details>
 
+        <div class="form" v-if="sp">
+          <h3 class="section">Datalogging extra</h3>
+          <div class="help">Aggiungi entità extra da registrare nel database storico.</div>
+          <div v-for="site in siteList" :key="`datalog-admin-${site}`" class="set-section">
+            <div class="section-title">Utenza {{ site }}</div>
+            <div class="field">
+              <label>Nuova entità da datalog</label>
+              <div class="input-row">
+                <input type="text" v-model="newDatalog[site]" placeholder="sensor.xxx" />
+                <button class="ghost" @click="addDatalogEntity(site)">Aggiungi</button>
+              </div>
+              <div class="help">Inserisci l'`entity_id` completo.</div>
+            </div>
+            <div class="entity-list" v-if="extraDatalogList(site).length">
+              <div class="entity-row" v-for="eid in extraDatalogList(site)" :key="`datalog-admin-${site}-${eid}`">
+                <span class="entity-name">{{ eid }}</span>
+                <button class="ghost danger" @click="removeDatalogEntity(site, eid)">Rimuovi</button>
+              </div>
+            </div>
+            <div class="muted" v-else>Nessuna entità extra.</div>
+          </div>
+        </div>
+
         <div class="actions">
           <button class="ghost" @click="loadAll">Ricarica</button>
         </div>
@@ -310,28 +333,14 @@
               <label>Export oggi (kWh)</label>
               <input type="text" v-model="sp.automation.flow_entities[`s${site}`].today_export" placeholder="sensor.xxx" @change="saveConfig"/>
             </div>
-          </div>
-        </div>
-        <div class="form" v-if="sp">
-          <h3 class="section">Datalogging extra</h3>
-          <div class="help">Aggiungi entità extra da registrare nel database storico.</div>
-          <div v-for="site in siteList" :key="`datalog-${site}`" class="set-section">
-            <div class="section-title">Utenza {{ site }}</div>
             <div class="field">
-              <label>Nuova entità da datalog</label>
-              <div class="input-row">
-                <input type="text" v-model="newDatalog[site]" placeholder="sensor.xxx" />
-                <button class="ghost" @click="addDatalogEntity(site)">Aggiungi</button>
-              </div>
-              <div class="help">Inserisci l'`entity_id` completo.</div>
+              <label>Carica batteria oggi (kWh)</label>
+              <input type="text" v-model="sp.automation.flow_entities[`s${site}`].today_charge" placeholder="sensor.xxx" @change="saveConfig"/>
             </div>
-            <div class="entity-list" v-if="extraDatalogList(site).length">
-              <div class="entity-row" v-for="eid in extraDatalogList(site)" :key="`datalog-${site}-${eid}`">
-                <span class="entity-name">{{ eid }}</span>
-                <button class="ghost danger" @click="removeDatalogEntity(site, eid)">Rimuovi</button>
-              </div>
+            <div class="field">
+              <label>Scarica batteria oggi (kWh)</label>
+              <input type="text" v-model="sp.automation.flow_entities[`s${site}`].today_discharge" placeholder="sensor.xxx" @change="saveConfig"/>
             </div>
-            <div class="muted" v-else>Nessuna entità extra.</div>
           </div>
         </div>
       </section>
@@ -384,6 +393,14 @@
             <div class="flow-card">
               <div class="k">Export oggi</div>
               <div class="v">{{ flowValue(site, 'today_export') }}</div>
+            </div>
+            <div class="flow-card">
+              <div class="k">Carica oggi</div>
+              <div class="v">{{ flowValue(site, 'today_charge') }}</div>
+            </div>
+            <div class="flow-card">
+              <div class="k">Scarica oggi</div>
+              <div class="v">{{ flowValue(site, 'today_discharge') }}</div>
             </div>
           </div>
         </div>
@@ -721,7 +738,7 @@ async function loadConfig(){
   for (const key of ['s1','s2','s3']) {
     if (!sp.value.automation.flow_entities[key]) sp.value.automation.flow_entities[key] = {}
     const flow = sp.value.automation.flow_entities[key]
-    for (const k of ['pv','load','battery','grid','soc','battery_v','battery_a','today_prod','today_load','today_export']) {
+    for (const k of ['pv','load','battery','grid','soc','battery_v','battery_a','today_prod','today_load','today_export','today_charge','today_discharge']) {
       if (typeof flow[k] !== 'string') flow[k] = ''
     }
   }
@@ -852,7 +869,7 @@ async function refreshFlowStates(){
   const ids = []
   for (const site of siteList.value || []) {
     const flow = sp.value?.automation?.flow_entities?.[`s${site}`] || {}
-    for (const k of ['pv','load','battery','grid','soc','battery_v','battery_a','today_prod','today_load','today_export']) {
+    for (const k of ['pv','load','battery','grid','soc','battery_v','battery_a','today_prod','today_load','today_export','today_charge','today_discharge']) {
       const eid = String(flow[k] || '').trim()
       if (eid) ids.push(eid)
     }

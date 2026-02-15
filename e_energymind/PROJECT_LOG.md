@@ -264,3 +264,9 @@ Data export: 2026-02-08 (Europe/Rome)
 - Fix refresh Automazioni interface (polling stati flow via /api/entity_states).
 ## 2026-02-15
 - Bump versione 1.8.3 per aggiornamento add-on.
+## 2026-02-15
+- UI Automation setting/interface: carica/scarica batteria oggi.
+## 2026-02-15
+- UI: Datalogging extra ora in Admin (rimosso da Automation setting).
+## 2026-02-15
+- Bump versione 1.8.5 per aggiornamento add-on.

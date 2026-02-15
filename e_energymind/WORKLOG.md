@@ -198,3 +198,9 @@
 - Backend: aggiunto endpoint /api/entity_states per recupero stati multipli.
 ## 2026-02-15
 - Versione add-on aggiornata a 1.8.3.
+## 2026-02-15
+- Automation setting/interface: aggiunti campi carica e scarica batteria oggi.
+## 2026-02-15
+- Datalogging extra spostato da Automation setting a pagina Admin.
+## 2026-02-15
+- Versione add-on aggiornata a 1.8.5.
