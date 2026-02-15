@@ -177,3 +177,7 @@
 - Versione add-on aggiornata a 1.5.0.
 - UI Admin: contatore entità e lista scrollabile per mostrare tutte le entità.
 - Versione add-on aggiornata a 1.5.1.
+- Admin: tutte le entità ora nello stesso elenco con flag ON/OFF per ogni riga.
+- Versione add-on aggiornata a 1.5.3.
+- UI: aggiunte tab 'Automation setting' e 'Automazioni interface' con pagine placeholder.
+- Versione add-on aggiornata a 1.8.1.

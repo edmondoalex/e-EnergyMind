@@ -247,3 +247,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - User: aggiunta sezione Intelligenza globale e per-utenza con cause, suggerimenti e previsione +60s.
 - Backend: endpoint /api/insights con logica realtime.
 - Versione add-on aggiornata a 1.8.0.
+- UI: aggiunte tab 'Automation setting' e 'Automazioni interface' con pagine placeholder.
+- Versione add-on aggiornata a 1.8.1.

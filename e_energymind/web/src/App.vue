@@ -19,6 +19,8 @@
           <nav class="tabs">
             <button :class="{active: tab==='user'}" @click="tab='user'">User</button>
             <button :class="{active: tab==='admin'}" @click="tab='admin'">Admin</button>
+            <button :class="{active: tab==='automation_settings'}" @click="tab='automation_settings'">Automation setting</button>
+            <button :class="{active: tab==='automation_interface'}" @click="tab='automation_interface'">Automazioni interface</button>
           </nav>
         </div>
       </div>
@@ -131,7 +133,7 @@
         </div>
       </section>
 
-      <section v-else class="card">
+      <section v-else-if="tab==='admin'" class="card">
         <h2>Admin (energia)</h2>
         <p class="muted">Configurazione e mapping sensori energia (read-only).</p>
         <div class="statusline">
@@ -254,6 +256,28 @@
 
         <div class="actions">
           <button class="ghost" @click="loadAll">Ricarica</button>
+        </div>
+      </section>
+
+      <section v-else-if="tab==='automation_settings'" class="card">
+        <h2>Automation setting</h2>
+        <p class="muted">Configurazione automazioni (placeholder). Qui inseriremo regole, soglie e priorità.</p>
+        <div class="form">
+          <h3 class="section">Regole</h3>
+          <div class="muted">In arrivo: editor regole e condizioni.</div>
+        </div>
+        <div class="form">
+          <h3 class="section">Stato</h3>
+          <div class="muted">In arrivo: attivo/inattivo + override manuali.</div>
+        </div>
+      </section>
+
+      <section v-else class="card">
+        <h2>Automazioni interface</h2>
+        <p class="muted">Visualizzazione grafica automazioni (placeholder).</p>
+        <div class="form">
+          <h3 class="section">Grafici</h3>
+          <div class="muted">In arrivo: timeline e grafici eventi automazione.</div>
         </div>
       </section>
     </main>
