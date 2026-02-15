@@ -187,3 +187,5 @@
 - Automation interface: vista istantanea con valori basati sui campi flow.
 - Backend: history logging include extra entita da datalog.
 - Versione add-on aggiornata a 1.8.2.
+## 2026-02-15
+- Aggiunta automazione locale pre-push: blocca il push se WORKLOG.md e PROJECT_LOG.md non sono aggiornati.

@@ -254,3 +254,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Vista Automazioni interface aggiornata per mostrare i valori configurati.
 - Logging storico include entita extra definite dall'utente.
 - Versione 1.8.2.
+## 2026-02-15
+- Aggiunto hook pre-push per obbligare aggiornamento WORKLOG.md e PROJECT_LOG.md prima del push.
