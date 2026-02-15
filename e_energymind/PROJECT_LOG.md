@@ -270,3 +270,6 @@ Data export: 2026-02-08 (Europe/Rome)
 - UI: Datalogging extra ora in Admin (rimosso da Automation setting).
 ## 2026-02-15
 - Bump versione 1.8.5 per aggiornamento add-on.
+## 2026-02-15
+- UI: tensione e frequenza nella vista automazioni.
+- Bump versione 1.8.6.

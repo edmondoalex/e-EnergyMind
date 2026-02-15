@@ -341,6 +341,14 @@
               <label>Scarica batteria oggi (kWh)</label>
               <input type="text" v-model="sp.automation.flow_entities[`s${site}`].today_discharge" placeholder="sensor.xxx" @change="saveConfig"/>
             </div>
+            <div class="field">
+              <label>Tensione (V)</label>
+              <input type="text" v-model="sp.automation.flow_entities[`s${site}`].voltage" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>Frequenza (Hz)</label>
+              <input type="text" v-model="sp.automation.flow_entities[`s${site}`].frequency" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
           </div>
         </div>
       </section>
@@ -401,6 +409,14 @@
             <div class="flow-card">
               <div class="k">Scarica oggi</div>
               <div class="v">{{ flowValue(site, 'today_discharge') }}</div>
+            </div>
+            <div class="flow-card">
+              <div class="k">Tensione</div>
+              <div class="v">{{ flowValue(site, 'voltage') }}</div>
+            </div>
+            <div class="flow-card">
+              <div class="k">Frequenza</div>
+              <div class="v">{{ flowValue(site, 'frequency') }}</div>
             </div>
           </div>
         </div>
@@ -738,7 +754,7 @@ async function loadConfig(){
   for (const key of ['s1','s2','s3']) {
     if (!sp.value.automation.flow_entities[key]) sp.value.automation.flow_entities[key] = {}
     const flow = sp.value.automation.flow_entities[key]
-    for (const k of ['pv','load','battery','grid','soc','battery_v','battery_a','today_prod','today_load','today_export','today_charge','today_discharge']) {
+    for (const k of ['pv','load','battery','grid','soc','battery_v','battery_a','today_prod','today_load','today_export','today_charge','today_discharge','voltage','frequency']) {
       if (typeof flow[k] !== 'string') flow[k] = ''
     }
   }

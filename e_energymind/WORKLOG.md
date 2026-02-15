@@ -204,3 +204,6 @@
 - Datalogging extra spostato da Automation setting a pagina Admin.
 ## 2026-02-15
 - Versione add-on aggiornata a 1.8.5.
+## 2026-02-15
+- Automation setting/interface: aggiunti campi tensione e frequenza.
+- Versione add-on aggiornata a 1.8.6.
