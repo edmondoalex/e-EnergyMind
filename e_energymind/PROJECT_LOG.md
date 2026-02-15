@@ -309,3 +309,5 @@ Data export: 2026-02-08 (Europe/Rome)
 ## 2026-02-15\n- Learning: regole apprese dallo storico esposte in UI.\n
 ## 2026-02-15\n- Fix crash: indentazione report.\n- Learning: finestra 48h, update ogni 2h.\n
 ## 2026-02-15\n- Report: nomi reali utenze inclusi.\n
+## 2026-02-15\n- Report: stampa tutti gli eventi senza limite.\n
+## 2026-02-15\n- Report: prefisso e-energymind nei file.\n

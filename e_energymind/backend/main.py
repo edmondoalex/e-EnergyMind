@@ -685,8 +685,8 @@ def _local_time_str(ts: int) -> str:
 
 def _report_paths(date_str: str) -> tuple[Path, Path]:
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    md = REPORT_DIR / f"report_{date_str}.md"
-    js = REPORT_DIR / f"report_{date_str}.json"
+    md = REPORT_DIR / f"report_e-energymind_{date_str}.md"
+    js = REPORT_DIR / f"report_e-energymind_{date_str}.json"
     return md, js
 
 
@@ -863,7 +863,7 @@ def _generate_report_for_day(date_str: str) -> None:
         if not events:
             md_lines.append("Nessun evento.")
         else:
-            for e in events[:20]:
+            for e in events:
                 md_lines.append(
                     f"- {e['time']} PV {e['pv_w']}W, Load {e['load_w']}W, Batt {e['battery_w']}W, Grid {e['grid_w']}W, "
                     f"Surplus {e.get('surplus_w')}W, Carica {e.get('charge_w')}W ({e.get('charge_pct')}%), "
@@ -1168,7 +1168,7 @@ async def insights():
 async def list_reports():
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     items = []
-    for p in sorted(REPORT_DIR.glob("report_*.md")):
+    for p in sorted(REPORT_DIR.glob("report_e-energymind_*.md")):
         items.append(p.name)
     return JSONResponse({"items": items, "dir": str(REPORT_DIR)})
 

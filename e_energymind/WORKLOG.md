@@ -279,3 +279,9 @@
 ## 2026-02-15
 - Report: aggiunti nomi reali utenze in header e sezioni.
 
+## 2026-02-15
+- Report: rimossa limitazione 20 eventi (stampa tutti).
+
+## 2026-02-15
+- Report: file rinominati con prefisso report_e-energymind_.
+
