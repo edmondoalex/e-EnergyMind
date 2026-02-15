@@ -356,7 +356,7 @@
         </div>
       </section>
 
-      <section v-else class="card">
+      <section v-else-if="tab==='automation_interface'" class="card">
         <h2>Automazioni interface</h2>
         <p class="muted">Vista istantanea per utenza basata sui campi configurati in “Automation setting”.</p>
         <div v-for="site in siteList" :key="`auto-ui-${site}`" class="card inner">
@@ -505,6 +505,10 @@
             </svg>
           </div>
         </div>
+      </section>
+      <section v-else class="card">
+        <h2>Pagina</h2>
+        <p class="muted">Seleziona una tab.</p>
       </section>
     </main>
 

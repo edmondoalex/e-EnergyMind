@@ -224,3 +224,7 @@
 - Versione add-on aggiornata a 1.9.0.
 ## 2026-02-15
 - Aggiunta pagina View-Card con flow grafico animato e responsive.
+## 2026-02-15
+- Fix build: corretta chain v-if/v-else-if per tab view_card.
+## 2026-02-15
+- Versione add-on aggiornata a 1.9.2.

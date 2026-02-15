@@ -289,3 +289,7 @@ Data export: 2026-02-08 (Europe/Rome)
 - Bump versione 1.9.0.
 ## 2026-02-15
 - UI: nuova pagina View-Card (flow animato).
+## 2026-02-15
+- Fix: v-else/v-else-if chain in App.vue (tab view_card).
+## 2026-02-15
+- Bump versione 1.9.2.
