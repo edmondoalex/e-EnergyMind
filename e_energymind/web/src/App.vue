@@ -582,32 +582,33 @@
               <text x="900" y="620" class="vc-kwh grid">{{ flowValue(site,'today_house') }}</text>
 
               <!-- Lines -->
-              <path class="vc-line pv-line" :class="flowActive(site,'pv_a')" d="M165 212 L165 290 L235 290" />
-              <path class="vc-line pv-line" :class="flowActive(site,'pv_b')" d="M375 212 L375 290 L235 290" />
-              <path class="vc-line pv-line" :class="flowActive(site,'pv_total')" d="M235 370 L235 370 L510 340" />
-              <path class="vc-line load-line" :class="flowActive(site,'load')" d="M650 340 L760 340 L820 326" />
-              <path class="vc-line grid-line" :class="flowActive(site,'grid')" d="M650 360 L760 360 L820 500" />
-              <path class="vc-line batt-line" :class="flowActive(site,'battery')" d="M520 370 L420 420 L240 500" />
-              <path class="vc-line vf-line" :class="flowActive(site,'voltage')" d="M650 360 L650 360 L610 370" />
+              <path class="vc-line pv-line" :class="flowActive(site,'pv_a')" d="M165 212 L230 212 L230 300" />
+              <path class="vc-line pv-line" :class="flowActive(site,'pv_b')" d="M375 212 L230 212 L230 300" />
+              <path class="vc-line pv-line" :class="flowActive(site,'pv_total')" d="M235 370 L235 400 L520 340" />
+              <path class="vc-line idle-line" d="M650 300 L780 300 L820 236" />
+              <path class="vc-line load-line" :class="flowActive(site,'load')" d="M650 340 L780 340 L820 326" />
+              <path class="vc-line vf-line" :class="flowActive(site,'voltage')" d="M650 360 L610 370" />
+              <path class="vc-line grid-line" :class="flowActive(site,'grid')" d="M695 370 L880 370 L880 500 L820 500" />
+              <path class="vc-line batt-line" :class="flowActive(site,'battery')" d="M520 360 L360 360 L240 500" />
 
               <!-- Dots -->
               <circle class="vc-dot pv-dot" r="5">
-                <animateMotion :dur="flowDur(site,'pv_a')" repeatCount="indefinite" path="M165 212 L165 290 L235 290"/>
+                <animateMotion :dur="flowDur(site,'pv_a')" repeatCount="indefinite" path="M165 212 L230 212 L230 300"/>
               </circle>
               <circle class="vc-dot pv-dot" r="5">
-                <animateMotion :dur="flowDur(site,'pv_b')" repeatCount="indefinite" path="M375 212 L375 290 L235 290"/>
+                <animateMotion :dur="flowDur(site,'pv_b')" repeatCount="indefinite" path="M375 212 L230 212 L230 300"/>
               </circle>
               <circle class="vc-dot pv-dot" r="5">
-                <animateMotion :dur="flowDur(site,'pv_total')" repeatCount="indefinite" path="M235 370 L510 340"/>
+                <animateMotion :dur="flowDur(site,'pv_total')" repeatCount="indefinite" path="M235 370 L235 400 L520 340"/>
               </circle>
               <circle class="vc-dot load-dot" r="5">
-                <animateMotion :dur="flowDur(site,'load')" repeatCount="indefinite" path="M650 340 L760 340 L820 326"/>
+                <animateMotion :dur="flowDur(site,'load')" repeatCount="indefinite" path="M650 340 L780 340 L820 326"/>
               </circle>
               <circle class="vc-dot grid-dot" r="5">
-                <animateMotion :dur="flowDur(site,'grid')" repeatCount="indefinite" path="M650 360 L760 360 L820 500"/>
+                <animateMotion :dur="flowDur(site,'grid')" repeatCount="indefinite" path="M695 370 L880 370 L880 500 L820 500"/>
               </circle>
               <circle class="vc-dot batt-dot" r="5">
-                <animateMotion :dur="flowDur(site,'battery')" repeatCount="indefinite" path="M520 370 L420 420 L240 500"/>
+                <animateMotion :dur="flowDur(site,'battery')" repeatCount="indefinite" path="M520 360 L360 360 L240 500"/>
               </circle>
             </svg>
           </div>
@@ -1832,6 +1833,9 @@ body{
   fill:none;
   stroke-width:4;
   stroke-linecap:round;
+}
+.vc-line.idle-line{
+  stroke:#575b61;
 }
 .vc-line.pv-line{ stroke:url(#glow); }
 .vc-line.load-line{ stroke:#ffb000; }

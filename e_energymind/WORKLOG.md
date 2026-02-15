@@ -236,3 +236,6 @@
 ## 2026-02-15
 - View-Card: linee ridisegnate con percorsi ortogonali.
 
+## 2026-02-15
+- View-Card: linee riallineate per layout identico (tratti e angoli).
+
