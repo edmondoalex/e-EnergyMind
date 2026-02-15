@@ -311,3 +311,4 @@ Data export: 2026-02-08 (Europe/Rome)
 ## 2026-02-15\n- Report: nomi reali utenze inclusi.\n
 ## 2026-02-15\n- Report: stampa tutti gli eventi senza limite.\n
 ## 2026-02-15\n- Report: prefisso e-energymind nei file.\n
+## 2026-02-15\n- Report: nearest window 300s per SOC/Temp/Mode/Export.\n

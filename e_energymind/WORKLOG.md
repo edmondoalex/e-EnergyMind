@@ -285,3 +285,6 @@
 ## 2026-02-15
 - Report: file rinominati con prefisso report_e-energymind_.
 
+## 2026-02-15
+- Report: finestra nearest per SOC/Temp/Mode/Export aumentata a 300s.
+
