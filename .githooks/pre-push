@@ -1,14 +1,14 @@
-#!/usr/bin/env pwsh
-$ErrorActionPreference = 'Stop'
-$repoRoot = Split-Path -Parent $PSScriptRoot
-$worklog = Join-Path $repoRoot 'e_energymind/WORKLOG.md'
-$projectlog = Join-Path $repoRoot 'e_energymind/PROJECT_LOG.md'
-$diff = git diff --name-only --cached
-$staged = @($diff -split "`n" | Where-Object { $_ -ne '' })
-if ($staged.Count -eq 0) { exit 0 }
-$logTouched = $staged -contains 'e_energymind/WORKLOG.md' -and $staged -contains 'e_energymind/PROJECT_LOG.md'
-if (-not $logTouched) {
-  Write-Host "Pre-push check: aggiorna WORKLOG.md e PROJECT_LOG.md prima del push." -ForegroundColor Yellow
+#!/bin/sh
+# Block push if WORKLOG.md and PROJECT_LOG.md are not staged
+set -e
+STAGED=$(git diff --name-only --cached)
+if [ -z "$STAGED" ]; then
+  exit 0
+fi
+HAS_WORKLOG=$(printf "%s\n" "$STAGED" | grep -F -c "e_energymind/WORKLOG.md" || true)
+HAS_PROJECT=$(printf "%s\n" "$STAGED" | grep -F -c "e_energymind/PROJECT_LOG.md" || true)
+if [ "$HAS_WORKLOG" -eq 0 ] || [ "$HAS_PROJECT" -eq 0 ]; then
+  echo "Pre-push check: aggiorna WORKLOG.md e PROJECT_LOG.md prima del push." >&2
   exit 1
-}
+fi
 exit 0
