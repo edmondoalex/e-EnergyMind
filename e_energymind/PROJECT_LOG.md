@@ -262,3 +262,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - UI Automation setting: etichetta utenza include nome device.
 ## 2026-02-15
 - Fix refresh Automazioni interface (polling stati flow via /api/entity_states).
+## 2026-02-15
+- Bump versione 1.8.3 per aggiornamento add-on.

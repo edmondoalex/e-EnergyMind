@@ -196,3 +196,5 @@
 ## 2026-02-15
 - Automazioni interface: refresh dedicato delle entita flow via endpoint batch /api/entity_states.
 - Backend: aggiunto endpoint /api/entity_states per recupero stati multipli.
+## 2026-02-15
+- Versione add-on aggiornata a 1.8.3.
