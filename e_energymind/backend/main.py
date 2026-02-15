@@ -338,6 +338,7 @@ def _collect_history_rows() -> list[tuple]:
     now_ts = int(time.time())
     rows: list[tuple] = []
     store = _load_all_entities_store()
+    extra = (cfg.get("automation") or {}).get("extra_datalog_entities", []) or []
     seen: set[str] = set()
 
     def add_entity(site: int, entity_id: str):
@@ -366,6 +367,18 @@ def _collect_history_rows() -> list[tuple]:
         for e in items:
             entity_id = e.get("entity_id")
             if entity_id:
+                add_entity(site, entity_id)
+    # Extra user-defined entities for datalogging
+    if isinstance(extra, list):
+        for item in extra:
+            if not isinstance(item, dict):
+                continue
+            try:
+                site = int(item.get("site") or 0)
+            except Exception:
+                site = 0
+            entity_id = str(item.get("entity_id") or "").strip()
+            if site in (1, 2, 3) and entity_id:
                 add_entity(site, entity_id)
 
     return rows

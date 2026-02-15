@@ -249,3 +249,8 @@ Data export: 2026-02-08 (Europe/Rome)
 - Versione add-on aggiornata a 1.8.0.
 - UI: aggiunte tab 'Automation setting' e 'Automazioni interface' con pagine placeholder.
 - Versione add-on aggiornata a 1.8.1.
+## 2026-02-15
+- Aggiunti campi dedicati per vista istantanea automazioni (flow) e gestione entita extra datalog in Automation setting.
+- Vista Automazioni interface aggiornata per mostrare i valori configurati.
+- Logging storico include entita extra definite dall'utente.
+- Versione 1.8.2.

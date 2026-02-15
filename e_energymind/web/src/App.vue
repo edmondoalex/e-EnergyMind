@@ -261,23 +261,128 @@
 
       <section v-else-if="tab==='automation_settings'" class="card">
         <h2>Automation setting</h2>
-        <p class="muted">Configurazione automazioni (placeholder). Qui inseriremo regole, soglie e priorità.</p>
-        <div class="form">
-          <h3 class="section">Regole</h3>
-          <div class="muted">In arrivo: editor regole e condizioni.</div>
+        <p class="muted">Configurazione automazioni e campi dedicati per la vista istantanea.</p>
+        <div class="form" v-if="sp">
+          <h3 class="section">Campi dedicati (diagramma istantaneo)</h3>
+          <div class="help">Inserisci le entità da usare nella vista “Automazioni interface”.</div>
+          <div v-for="site in siteList" :key="`flow-${site}`" class="set-section">
+            <div class="section-title">Utenza {{ site }}</div>
+            <div class="field">
+              <label>PV Power (W)</label>
+              <input type="text" v-model="sp.automation.flow_entities[`s${site}`].pv" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>Consumo casa (W)</label>
+              <input type="text" v-model="sp.automation.flow_entities[`s${site}`].load" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>Batteria Power (W)</label>
+              <input type="text" v-model="sp.automation.flow_entities[`s${site}`].battery" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>Rete / PCC (W)</label>
+              <input type="text" v-model="sp.automation.flow_entities[`s${site}`].grid" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>SOC Batteria (%)</label>
+              <input type="text" v-model="sp.automation.flow_entities[`s${site}`].soc" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>Batteria V</label>
+              <input type="text" v-model="sp.automation.flow_entities[`s${site}`].battery_v" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>Batteria A</label>
+              <input type="text" v-model="sp.automation.flow_entities[`s${site}`].battery_a" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>Produzione oggi (kWh)</label>
+              <input type="text" v-model="sp.automation.flow_entities[`s${site}`].today_prod" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>Consumo oggi (kWh)</label>
+              <input type="text" v-model="sp.automation.flow_entities[`s${site}`].today_load" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>Export oggi (kWh)</label>
+              <input type="text" v-model="sp.automation.flow_entities[`s${site}`].today_export" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
+          </div>
         </div>
-        <div class="form">
-          <h3 class="section">Stato</h3>
-          <div class="muted">In arrivo: attivo/inattivo + override manuali.</div>
+        <div class="form" v-if="sp">
+          <h3 class="section">Datalogging extra</h3>
+          <div class="help">Aggiungi entità extra da registrare nel database storico.</div>
+          <div v-for="site in siteList" :key="`datalog-${site}`" class="set-section">
+            <div class="section-title">Utenza {{ site }}</div>
+            <div class="field">
+              <label>Nuova entità da datalog</label>
+              <div class="input-row">
+                <input type="text" v-model="newDatalog[site]" placeholder="sensor.xxx" />
+                <button class="ghost" @click="addDatalogEntity(site)">Aggiungi</button>
+              </div>
+              <div class="help">Inserisci l'`entity_id` completo.</div>
+            </div>
+            <div class="entity-list" v-if="extraDatalogList(site).length">
+              <div class="entity-row" v-for="eid in extraDatalogList(site)" :key="`datalog-${site}-${eid}`">
+                <span class="entity-name">{{ eid }}</span>
+                <button class="ghost danger" @click="removeDatalogEntity(site, eid)">Rimuovi</button>
+              </div>
+            </div>
+            <div class="muted" v-else>Nessuna entità extra.</div>
+          </div>
         </div>
       </section>
 
       <section v-else class="card">
         <h2>Automazioni interface</h2>
-        <p class="muted">Visualizzazione grafica automazioni (placeholder).</p>
-        <div class="form">
-          <h3 class="section">Grafici</h3>
-          <div class="muted">In arrivo: timeline e grafici eventi automazione.</div>
+        <p class="muted">Vista istantanea per utenza basata sui campi configurati in “Automation setting”.</p>
+        <div v-for="site in siteList" :key="`auto-ui-${site}`" class="card inner">
+          <div class="row">
+            <strong>Utenza {{ site }}</strong>
+            <span class="muted" v-if="deviceLabel(site)"> — {{ deviceLabel(site) }}</span>
+          </div>
+          <div class="flow-grid">
+            <div class="flow-card">
+              <div class="k">PV</div>
+              <div class="v">{{ flowValue(site, 'pv') }}</div>
+            </div>
+            <div class="flow-card">
+              <div class="k">Consumo</div>
+              <div class="v">{{ flowValue(site, 'load') }}</div>
+            </div>
+            <div class="flow-card">
+              <div class="k">Batteria</div>
+              <div class="v">{{ flowValue(site, 'battery') }}</div>
+            </div>
+            <div class="flow-card">
+              <div class="k">Rete</div>
+              <div class="v">{{ flowValue(site, 'grid') }}</div>
+            </div>
+            <div class="flow-card">
+              <div class="k">SOC</div>
+              <div class="v">{{ flowValue(site, 'soc') }}</div>
+            </div>
+            <div class="flow-card">
+              <div class="k">Batteria V</div>
+              <div class="v">{{ flowValue(site, 'battery_v') }}</div>
+            </div>
+            <div class="flow-card">
+              <div class="k">Batteria A</div>
+              <div class="v">{{ flowValue(site, 'battery_a') }}</div>
+            </div>
+            <div class="flow-card">
+              <div class="k">Prod. oggi</div>
+              <div class="v">{{ flowValue(site, 'today_prod') }}</div>
+            </div>
+            <div class="flow-card">
+              <div class="k">Cons. oggi</div>
+              <div class="v">{{ flowValue(site, 'today_load') }}</div>
+            </div>
+            <div class="flow-card">
+              <div class="k">Export oggi</div>
+              <div class="v">{{ flowValue(site, 'today_export') }}</div>
+            </div>
+          </div>
         </div>
       </section>
     </main>
@@ -340,6 +445,7 @@ const overwriteMap = ref({ 1: false, 2: false, 3: false })
 const manualFlags = ref({})
 const historyModal = ref({ open: false, title: '', series: [], unit: '', samples: [] })
 const allEntitiesState = ref({ 1: [], 2: [], 3: [] })
+const newDatalog = ref({ 1: '', 2: '', 3: '' })
 
 const energyEntityDefs = [
   { key: 'pv_power', label: 'PV Power (W)', placeholder: 'sensor.zcs_pv_power' },
@@ -472,6 +578,27 @@ const allEntities = (site) => {
   if (list.length > 0) return list
   return sp.value?.all_entities?.[`s${site}`] || []
 }
+const extraDatalogList = (site) => {
+  const list = sp.value?.automation?.extra_datalog_entities || []
+  return list.filter((e) => e.site === site).map((e) => e.entity_id)
+}
+const addDatalogEntity = async (site) => {
+  const raw = String(newDatalog.value?.[site] || '').trim()
+  if (!raw) return
+  const list = sp.value?.automation?.extra_datalog_entities || []
+  const exists = list.some((e) => e.site === site && e.entity_id === raw)
+  if (!exists) {
+    list.push({ site, entity_id: raw })
+    sp.value.automation.extra_datalog_entities = list
+    await saveConfig()
+  }
+  newDatalog.value = { ...newDatalog.value, [site]: '' }
+}
+const removeDatalogEntity = async (site, entity_id) => {
+  const list = sp.value?.automation?.extra_datalog_entities || []
+  sp.value.automation.extra_datalog_entities = list.filter((e) => !(e.site === site && e.entity_id === entity_id))
+  await saveConfig()
+}
 const visibleEntityDefs = (site) => {
   if (showAll.value) return energyEntityDefs
   return energyEntityDefs.filter((item) => {
@@ -511,6 +638,34 @@ const selectedEntities = (site) => {
   return out
 }
 
+const entityById = (site, entity_id) => {
+  if (!entity_id) return null
+  const list = allEntities(site)
+  const found = list.find((e) => e.entity_id === entity_id)
+  if (found) return found
+  for (const item of energyEntityDefs) {
+    const e = getEnt(site, item.key)
+    if (e?.entity_id === entity_id) {
+      return {
+        entity_id: e.entity_id,
+        name: e.attributes?.friendly_name,
+        original_name: e.attributes?.friendly_name,
+        state: e.state,
+        attributes: e.attributes,
+        icon: e.icon,
+      }
+    }
+  }
+  return null
+}
+const flowValue = (site, key) => {
+  const eid = sp.value?.automation?.flow_entities?.[`s${site}`]?.[key] || ''
+  if (!eid) return 'n/d'
+  const e = entityById(site, eid)
+  if (!e) return 'n/d'
+  return fmtEntityRaw(e.state, e.attributes)
+}
+
 async function openHistory(item, site){
   if (!item?.entity_id) return
   const r = await fetch(`/api/history?site=${site}&hours=24&entity_id=${encodeURIComponent(item.entity_id)}`)
@@ -546,6 +701,25 @@ function onBlur(){
 async function loadConfig(){
   const r = await fetch('/api/config')
   sp.value = await r.json()
+  if (!sp.value.automation) {
+    sp.value.automation = {
+      flow_entities: { s1: {}, s2: {}, s3: {} },
+      extra_datalog_entities: []
+    }
+  }
+  if (!sp.value.automation.flow_entities) {
+    sp.value.automation.flow_entities = { s1: {}, s2: {}, s3: {} }
+  }
+  for (const key of ['s1','s2','s3']) {
+    if (!sp.value.automation.flow_entities[key]) sp.value.automation.flow_entities[key] = {}
+    const flow = sp.value.automation.flow_entities[key]
+    for (const k of ['pv','load','battery','grid','soc','battery_v','battery_a','today_prod','today_load','today_export']) {
+      if (typeof flow[k] !== 'string') flow[k] = ''
+    }
+  }
+  if (!Array.isArray(sp.value.automation.extra_datalog_entities)) {
+    sp.value.automation.extra_datalog_entities = []
+  }
   if (!sp.value.devices) {
     sp.value.devices = { s1: { name: '', id: '' }, s2: { name: '', id: '' }, s3: { name: '', id: '' } }
   } else {
@@ -1140,6 +1314,18 @@ body{
 .entity-row.clickable{
   cursor:pointer;
 }
+.flow-grid{
+  margin-top:10px;
+  display:grid;
+  grid-template-columns:repeat(5, minmax(140px,1fr));
+  gap:10px;
+}
+.flow-card{
+  background:#0b121a;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px 12px;
+}
 .modal-backdrop{
   position:fixed;
   inset:0;
@@ -1190,6 +1376,7 @@ body{
 @media (max-width: 1100px){
   .grid{ grid-template-columns:repeat(2, minmax(140px,1fr)); }
   .row3{ grid-template-columns:repeat(2, minmax(160px,1fr)); }
+  .flow-grid{ grid-template-columns:repeat(2, minmax(160px,1fr)); }
 }
 @media (max-width: 900px){
   .top-inner{ grid-template-columns:1fr; justify-items:start; }
@@ -1199,6 +1386,7 @@ body{
 @media (max-width: 640px){
   .grid{ grid-template-columns:1fr; }
   .row3{ grid-template-columns:1fr; }
+  .flow-grid{ grid-template-columns:1fr; }
   .top{ position:static; }
 }
 </style>

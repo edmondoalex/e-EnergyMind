@@ -31,6 +31,14 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "ui_flags": {},
         "ui_history_flags": {},
     },
+    "automation": {
+        "flow_entities": {
+            "s1": {"pv": "", "load": "", "battery": "", "grid": "", "soc": "", "battery_v": "", "battery_a": "", "today_prod": "", "today_load": "", "today_export": ""},
+            "s2": {"pv": "", "load": "", "battery": "", "grid": "", "soc": "", "battery_v": "", "battery_a": "", "today_prod": "", "today_load": "", "today_export": ""},
+            "s3": {"pv": "", "load": "", "battery": "", "grid": "", "soc": "", "battery_v": "", "battery_a": "", "today_prod": "", "today_load": "", "today_export": ""},
+        },
+        "extra_datalog_entities": []
+    },
     "devices": {
         "s1": {"name": "", "id": ""},
         "s2": {"name": "", "id": ""},
@@ -100,6 +108,31 @@ def normalize_config(raw: Dict[str, Any]) -> Dict[str, Any]:
     if isinstance(security, dict) and isinstance(security.get("user_pin"), str):
         cfg["security"]["user_pin"] = security.get("user_pin", "")
 
+    automation = raw.get("automation", {})
+    if isinstance(automation, dict):
+        raw_extra = automation.get("extra_datalog_entities", [])
+        extra_list = []
+        if isinstance(raw_extra, list):
+            for item in raw_extra:
+                if not isinstance(item, dict):
+                    continue
+                try:
+                    site = int(item.get("site") or 0)
+                except Exception:
+                    site = 0
+                entity_id = str(item.get("entity_id") or "").strip()
+                if site in (1, 2, 3) and entity_id:
+                    extra_list.append({"site": site, "entity_id": entity_id})
+        cfg["automation"]["extra_datalog_entities"] = extra_list
+        flow = automation.get("flow_entities", {})
+        if isinstance(flow, dict):
+            for key in ("s1", "s2", "s3"):
+                src = flow.get(key, {})
+                if isinstance(src, dict):
+                    for k in cfg["automation"]["flow_entities"][key].keys():
+                        v = src.get(k, "")
+                        cfg["automation"]["flow_entities"][key][k] = str(v or "")
+
     return cfg
 
 
@@ -141,6 +174,31 @@ def apply_config(cfg: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any]
     security = payload.get("security", {})
     if isinstance(security, dict) and isinstance(security.get("user_pin"), str):
         cfg["security"]["user_pin"] = security.get("user_pin", "")
+
+    automation = payload.get("automation", {})
+    if isinstance(automation, dict):
+        if isinstance(automation.get("extra_datalog_entities"), list):
+            raw_extra = automation.get("extra_datalog_entities") or []
+            extra_list = []
+            for item in raw_extra:
+                if not isinstance(item, dict):
+                    continue
+                try:
+                    site = int(item.get("site") or 0)
+                except Exception:
+                    site = 0
+                entity_id = str(item.get("entity_id") or "").strip()
+                if site in (1, 2, 3) and entity_id:
+                    extra_list.append({"site": site, "entity_id": entity_id})
+            cfg["automation"]["extra_datalog_entities"] = extra_list
+        flow = automation.get("flow_entities", {})
+        if isinstance(flow, dict):
+            for key in ("s1", "s2", "s3"):
+                src = flow.get(key, {})
+                if isinstance(src, dict):
+                    for k in cfg["automation"]["flow_entities"][key].keys():
+                        if k in src:
+                            cfg["automation"]["flow_entities"][key][k] = str(src.get(k) or "")
 
     return cfg
 

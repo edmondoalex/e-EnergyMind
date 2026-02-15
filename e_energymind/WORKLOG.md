@@ -181,3 +181,9 @@
 - Versione add-on aggiornata a 1.5.3.
 - UI: aggiunte tab 'Automation setting' e 'Automazioni interface' con pagine placeholder.
 - Versione add-on aggiornata a 1.8.1.
+## 2026-02-15
+- Automation setting: campi dedicati per vista istantanea (flow) per utenza.
+- Automation setting: lista entita extra da datalog per utenza (persistente in config).
+- Automation interface: vista istantanea con valori basati sui campi flow.
+- Backend: history logging include extra entita da datalog.
+- Versione add-on aggiornata a 1.8.2.
