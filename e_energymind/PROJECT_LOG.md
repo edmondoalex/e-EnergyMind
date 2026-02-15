@@ -302,3 +302,4 @@ Data export: 2026-02-08 (Europe/Rome)
 ## 2026-02-15\n- Report BMS: auto-detect segno rete e conteggio campioni per utenza.\n
 ## 2026-02-15\n- Insights: carica parziale rilevata anche se segno rete invertito.\n
 ## 2026-02-15\n- Config: segno rete configurabile (export positivo/import negativo).\n
+## 2026-02-15\n- User: comparazione Intelligenza utenze affiancata sotto Intelligenza globale.\n

@@ -44,20 +44,8 @@
             </div>
           </div>
         </div>
-        <div class="statusline">
-          <span class="muted">v{{ status?.version || '-' }}</span>
-          <span class="muted">mode: {{ status?.runtime_mode || '-' }}</span>
-          <span class="badge" :class="status?.ha_connected ? 'ok' : 'off'">
-            {{ status?.ha_connected ? 'Online' : 'Offline' }}
-          </span>
-          <span class="muted">HA</span>
-          <span class="muted">Ultimo aggiornamento: {{ lastUpdate ? lastUpdate.toLocaleTimeString() : '-' }}</span>
-          <span class="muted" v-if="dbInfo?.size_human">DB: {{ dbInfo.size_human }}</span>
-        </div>
-        <p v-if="status?.runtime_mode !== 'live'" class="muted">Dry-run: nessun comando agli attuatori. Analisi solo lettura.</p>
-
-        <div v-if="ent" v-for="site in siteList" :key="`user-site-${site}`" class="card inner">
-          <div class="card inner">
+        <div class="insights-compare" v-if="ent">
+          <div v-for="site in siteList" :key="`ins-${site}`" class="card inner">
             <div class="row"><strong>Intelligenza {{ siteTitle(site) }}</strong></div>
             <div class="muted" v-if="!siteInsight(site)">In attesa dati...</div>
             <div v-else class="entity-list">
@@ -82,6 +70,20 @@
               </div>
             </div>
           </div>
+        </div>
+        <div class="statusline">
+          <span class="muted">v{{ status?.version || '-' }}</span>
+          <span class="muted">mode: {{ status?.runtime_mode || '-' }}</span>
+          <span class="badge" :class="status?.ha_connected ? 'ok' : 'off'">
+            {{ status?.ha_connected ? 'Online' : 'Offline' }}
+          </span>
+          <span class="muted">HA</span>
+          <span class="muted">Ultimo aggiornamento: {{ lastUpdate ? lastUpdate.toLocaleTimeString() : '-' }}</span>
+          <span class="muted" v-if="dbInfo?.size_human">DB: {{ dbInfo.size_human }}</span>
+        </div>
+        <p v-if="status?.runtime_mode !== 'live'" class="muted">Dry-run: nessun comando agli attuatori. Analisi solo lettura.</p>
+
+        <div v-if="ent" v-for="site in siteList" :key="`user-site-${site}`" class="card inner">
           <div class="row">
             <strong>{{ siteTitle(site) }}</strong>
           </div>
@@ -1556,6 +1558,12 @@ body{
   border-radius:8px;
   background:#0b121a;
 }
+.insights-compare{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(260px, 1fr));
+  gap:10px;
+  margin-top:12px;
+}
 .row-on{
   background:rgba(45,212,191,0.12);
   border-color:rgba(45,212,191,0.6);
@@ -1928,6 +1936,7 @@ body{
   .grid{ grid-template-columns:repeat(2, minmax(140px,1fr)); }
   .row3{ grid-template-columns:repeat(2, minmax(160px,1fr)); }
   .flow-grid{ grid-template-columns:repeat(2, minmax(160px,1fr)); }
+  .insights-compare{ grid-template-columns:1fr; }
 }
 @media (max-width: 900px){
   .top-inner{ grid-template-columns:1fr; justify-items:start; }

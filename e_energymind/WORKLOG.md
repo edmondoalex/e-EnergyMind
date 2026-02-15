@@ -257,3 +257,6 @@
 ## 2026-02-15
 - Runtime: aggiunta opzione segno rete (export positivo) usata in insights e report.
 
+## 2026-02-15
+- User: tabelle Intelligenza utenze spostate sotto Intelligenza globale (comparazione affiancata).
+
