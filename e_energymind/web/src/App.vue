@@ -180,11 +180,11 @@
             </div>
             <div class="help">Di default mostra solo le entità importate. Attiva “Mostra tutte” per aggiungere manualmente.</div>
           </div>
-          <div v-for="site in siteList" :key="`site-${site}`" class="set-section">
-            <div class="section-title">
+          <details v-for="site in siteList" :key="`site-${site}`" class="set-section" open>
+            <summary class="section-title">
               Utenza {{ site }}
               <span class="muted" v-if="deviceLabel(site)"> — {{ deviceLabel(site) }}</span>
-            </div>
+            </summary>
             <div class="field">
               <label>Device name (HA)</label>
               <input type="text"
@@ -247,7 +247,7 @@
                 <input type="text" :class="[isOnKey(`all_s${site}_${e.entity_id}`) ? 'input-on' : '']" :value="e.entity_id" readonly />
               </div>
             </div>
-          </div>
+          </details>
           <div class="actions">
             <button class="ghost" @click="saveEntities">Salva sensori</button>
             <button class="ghost danger" @click="resetEntities">Reset entità</button>
@@ -257,8 +257,8 @@
         <div class="form" v-if="sp">
           <h3 class="section">Datalogging extra</h3>
           <div class="help">Aggiungi entità extra da registrare nel database storico.</div>
-          <div v-for="site in siteList" :key="`datalog-admin-${site}`" class="set-section">
-            <div class="section-title">Utenza {{ site }}</div>
+          <details v-for="site in siteList" :key="`datalog-admin-${site}`" class="set-section" open>
+            <summary class="section-title">Utenza {{ site }}</summary>
             <div class="field">
               <label>Nuova entità da datalog</label>
               <div class="input-row">
@@ -268,13 +268,18 @@
               <div class="help">Inserisci l'`entity_id` completo.</div>
             </div>
             <div class="entity-list" v-if="extraDatalogList(site).length">
-              <div class="entity-row" v-for="eid in extraDatalogList(site)" :key="`datalog-admin-${site}-${eid}`">
-                <span class="entity-name">{{ eid }}</span>
-                <button class="ghost danger" @click="removeDatalogEntity(site, eid)">Rimuovi</button>
+              <div class="entity-row" v-for="item in extraDatalogItems(site)" :key="`datalog-admin-${site}-${item.entity_id}`">
+                <span class="entity-name">{{ item.entity_id }}</span>
+                <span class="state-flag" :class="item.enabled ? 'state-on' : 'state-off'">
+                  <input class="flag-checkbox" type="checkbox" :checked="item.enabled"
+                         @change="toggleExtraEnabled(site, item.entity_id)"/>
+                  <span>{{ item.enabled ? 'ON' : 'OFF' }}</span>
+                </span>
+                <button class="ghost danger" @click="removeDatalogEntity(site, item.entity_id)">Rimuovi</button>
               </div>
             </div>
             <div class="muted" v-else>Nessuna entità extra.</div>
-          </div>
+          </details>
         </div>
 
         <div class="actions">
@@ -288,11 +293,11 @@
         <div class="form" v-if="sp">
           <h3 class="section">Campi dedicati (diagramma istantaneo)</h3>
           <div class="help">Inserisci le entità da usare nella vista “Automazioni interface”.</div>
-          <div v-for="site in siteList" :key="`flow-${site}`" class="set-section">
-            <div class="section-title">
+          <details v-for="site in siteList" :key="`flow-${site}`" class="set-section" open>
+            <summary class="section-title">
               Utenza {{ site }}
               <span class="muted" v-if="deviceLabel(site)"> — {{ deviceLabel(site) }}</span>
-            </div>
+            </summary>
             <div class="field">
               <label>PV Power (W)</label>
               <input type="text" v-model="sp.automation.flow_entities[`s${site}`].pv" placeholder="sensor.xxx" @change="saveConfig"/>
@@ -349,7 +354,7 @@
               <label>Frequenza (Hz)</label>
               <input type="text" v-model="sp.automation.flow_entities[`s${site}`].frequency" placeholder="sensor.xxx" @change="saveConfig"/>
             </div>
-          </div>
+          </details>
         </div>
       </section>
 
@@ -483,6 +488,7 @@ const historyModal = ref({ open: false, title: '', series: [], unit: '', samples
 const allEntitiesState = ref({ 1: [], 2: [], 3: [] })
 const newDatalog = ref({ 1: '', 2: '', 3: '' })
 const flowStates = ref({})
+const extraStates = ref({})
 
 const energyEntityDefs = [
   { key: 'pv_power', label: 'PV Power (W)', placeholder: 'sensor.zcs_pv_power' },
@@ -615,17 +621,22 @@ const allEntities = (site) => {
   if (list.length > 0) return list
   return sp.value?.all_entities?.[`s${site}`] || []
 }
-const extraDatalogList = (site) => {
+const extraDatalogItems = (site) => {
   const list = sp.value?.automation?.extra_datalog_entities || []
-  return list.filter((e) => e.site === site).map((e) => e.entity_id)
+  return list.filter((e) => e.site === site).map((e) => ({
+    site: e.site,
+    entity_id: e.entity_id,
+    enabled: e.enabled !== false
+  }))
 }
+const extraDatalogList = (site) => extraDatalogItems(site).map((e) => e.entity_id)
 const addDatalogEntity = async (site) => {
   const raw = String(newDatalog.value?.[site] || '').trim()
   if (!raw) return
   const list = sp.value?.automation?.extra_datalog_entities || []
   const exists = list.some((e) => e.site === site && e.entity_id === raw)
   if (!exists) {
-    list.push({ site, entity_id: raw })
+    list.push({ site, entity_id: raw, enabled: true })
     sp.value.automation.extra_datalog_entities = list
     await saveConfig()
   }
@@ -634,6 +645,17 @@ const addDatalogEntity = async (site) => {
 const removeDatalogEntity = async (site, entity_id) => {
   const list = sp.value?.automation?.extra_datalog_entities || []
   sp.value.automation.extra_datalog_entities = list.filter((e) => !(e.site === site && e.entity_id === entity_id))
+  await saveConfig()
+}
+const toggleExtraEnabled = async (site, entity_id) => {
+  const list = sp.value?.automation?.extra_datalog_entities || []
+  const next = list.map((e) => {
+    if (e.site === site && e.entity_id === entity_id) {
+      return { ...e, enabled: !(e.enabled !== false) }
+    }
+    return e
+  })
+  sp.value.automation.extra_datalog_entities = next
   await saveConfig()
 }
 const visibleEntityDefs = (site) => {
@@ -668,6 +690,17 @@ const selectedEntities = (site) => {
       key,
       label: e.name || e.original_name || e.entity_id,
       value: fmtEntityRaw(e.state, e.attributes),
+      entity_id: e.entity_id,
+      history: true,
+    })
+  }
+  for (const e of extraDatalogItems(site)) {
+    if (!e.enabled) continue
+    const payload = extraStates.value?.[e.entity_id]
+    out.push({
+      key: `extra_s${site}_${e.entity_id}`,
+      label: e.entity_id,
+      value: payload ? fmtEntityRaw(payload.state, payload.attributes) : 'n/d',
       entity_id: e.entity_id,
       history: true,
     })
@@ -873,6 +906,7 @@ async function refresh(){
       const ins = await fetch('/api/insights')
       insights.value = await ins.json()
     } catch {}
+    await refreshExtraStates()
   }
   if (tab.value === 'automation_interface') {
     await refreshFlowStates()
@@ -900,6 +934,25 @@ async function refreshFlowStates(){
   if (!r.ok) return
   const data = await r.json()
   flowStates.value = data.items || {}
+}
+
+async function refreshExtraStates(){
+  const ids = []
+  for (const site of siteList.value || []) {
+    for (const item of extraDatalogItems(site)) {
+      if (item.enabled) ids.push(item.entity_id)
+    }
+  }
+  if (ids.length === 0) return
+  const uniq = Array.from(new Set(ids))
+  const r = await fetch('/api/entity_states', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ entity_ids: uniq })
+  })
+  if (!r.ok) return
+  const data = await r.json()
+  extraStates.value = data.items || {}
 }
 
 async function generateReport(){
@@ -1331,6 +1384,13 @@ body{
 .section-title{
   font-weight:700;
   margin-bottom:6px;
+}
+.set-section > summary.section-title{
+  cursor:pointer;
+  list-style:none;
+}
+.set-section > summary.section-title::-webkit-details-marker{
+  display:none;
 }
 .input-row{
   display:flex;

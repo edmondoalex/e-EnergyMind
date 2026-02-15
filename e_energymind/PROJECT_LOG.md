@@ -273,3 +273,5 @@ Data export: 2026-02-08 (Europe/Rome)
 ## 2026-02-15
 - UI: tensione e frequenza nella vista automazioni.
 - Bump versione 1.8.6.
+## 2026-02-15
+- UI: flag per entita extra + sezioni utenza collassabili (Admin/Automation setting).

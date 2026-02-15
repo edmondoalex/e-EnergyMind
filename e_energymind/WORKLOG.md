@@ -207,3 +207,6 @@
 ## 2026-02-15
 - Automation setting/interface: aggiunti campi tensione e frequenza.
 - Versione add-on aggiornata a 1.8.6.
+## 2026-02-15
+- Datalogging extra: aggiunto flag ON/OFF per mostrare in User e storico al click.
+- Admin/Automation setting: sezioni utenza collassabili.

@@ -122,7 +122,8 @@ def normalize_config(raw: Dict[str, Any]) -> Dict[str, Any]:
                     site = 0
                 entity_id = str(item.get("entity_id") or "").strip()
                 if site in (1, 2, 3) and entity_id:
-                    extra_list.append({"site": site, "entity_id": entity_id})
+                    enabled = bool(item.get("enabled", True))
+                    extra_list.append({"site": site, "entity_id": entity_id, "enabled": enabled})
         cfg["automation"]["extra_datalog_entities"] = extra_list
         flow = automation.get("flow_entities", {})
         if isinstance(flow, dict):
@@ -189,7 +190,8 @@ def apply_config(cfg: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any]
                     site = 0
                 entity_id = str(item.get("entity_id") or "").strip()
                 if site in (1, 2, 3) and entity_id:
-                    extra_list.append({"site": site, "entity_id": entity_id})
+                    enabled = bool(item.get("enabled", True))
+                    extra_list.append({"site": site, "entity_id": entity_id, "enabled": enabled})
             cfg["automation"]["extra_datalog_entities"] = extra_list
         flow = automation.get("flow_entities", {})
         if isinstance(flow, dict):
