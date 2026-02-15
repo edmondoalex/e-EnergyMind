@@ -57,7 +57,7 @@
 
         <div v-if="ent" v-for="site in siteList" :key="`user-site-${site}`" class="card inner">
           <div class="card inner">
-            <div class="row"><strong>Intelligenza Utenza {{ site }}</strong></div>
+            <div class="row"><strong>Intelligenza {{ siteTitle(site) }}</strong></div>
             <div class="muted" v-if="!siteInsight(site)">In attesa dati...</div>
             <div v-else class="entity-list">
               <div class="entity-row row-on">
@@ -82,8 +82,7 @@
             </div>
           </div>
           <div class="row">
-            <strong>Utenza {{ site }}</strong>
-            <span class="muted" v-if="deviceLabel(site)"> — {{ deviceLabel(site) }}</span>
+            <strong>{{ siteTitle(site) }}</strong>
           </div>
           <div class="grid">
             <div v-for="item in userKpiDefs.filter(i => isMapped(site, i.key))" :key="`u1-${site}-${item.key}`" class="kpi"
@@ -181,10 +180,7 @@
             <div class="help">Di default mostra solo le entità importate. Attiva “Mostra tutte” per aggiungere manualmente.</div>
           </div>
           <details v-for="site in siteList" :key="`site-${site}`" class="set-section" open>
-            <summary class="section-title">
-              Utenza {{ site }}
-              <span class="muted" v-if="deviceLabel(site)"> — {{ deviceLabel(site) }}</span>
-            </summary>
+            <summary class="section-title">{{ siteTitle(site) }}</summary>
             <div class="field">
               <label>Device name (HA)</label>
               <input type="text"
@@ -258,7 +254,7 @@
           <h3 class="section">Datalogging extra</h3>
           <div class="help">Aggiungi entità extra da registrare nel database storico.</div>
           <details v-for="site in siteList" :key="`datalog-admin-${site}`" class="set-section" open>
-            <summary class="section-title">Utenza {{ site }}</summary>
+            <summary class="section-title">{{ siteTitle(site) }}</summary>
             <div class="field">
               <label>Nuova entità da datalog</label>
               <div class="input-row">
@@ -294,10 +290,7 @@
           <h3 class="section">Campi dedicati (diagramma istantaneo)</h3>
           <div class="help">Inserisci le entità da usare nella vista “Automazioni interface”.</div>
           <details v-for="site in siteList" :key="`flow-${site}`" class="set-section" open>
-            <summary class="section-title">
-              Utenza {{ site }}
-              <span class="muted" v-if="deviceLabel(site)"> — {{ deviceLabel(site) }}</span>
-            </summary>
+            <summary class="section-title">{{ siteTitle(site) }}</summary>
             <div class="field">
               <label>PV Power (W)</label>
               <input type="text" v-model="sp.automation.flow_entities[`s${site}`].pv" placeholder="sensor.xxx" @change="saveConfig"/>
@@ -363,8 +356,7 @@
         <p class="muted">Vista istantanea per utenza basata sui campi configurati in “Automation setting”.</p>
         <div v-for="site in siteList" :key="`auto-ui-${site}`" class="card inner">
           <div class="row">
-            <strong>Utenza {{ site }}</strong>
-            <span class="muted" v-if="deviceLabel(site)"> — {{ deviceLabel(site) }}</span>
+            <strong>{{ siteTitle(site) }}</strong>
           </div>
           <div class="flow-grid">
             <div class="flow-card">
@@ -615,6 +607,10 @@ const deviceLabel = (site) => {
   const name = String(dev.name || '').trim()
   const id = String(dev.id || '').trim()
   return name || (id ? `ID ${id}` : '')
+}
+const siteTitle = (site) => {
+  const label = deviceLabel(site)
+  return label ? `Utenza ${site} — ${label}` : `Utenza ${site}`
 }
 const allEntities = (site) => {
   const list = allEntitiesState.value?.[site] || []

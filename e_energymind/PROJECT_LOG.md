@@ -275,3 +275,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Bump versione 1.8.6.
 ## 2026-02-15
 - UI: flag per entita extra + sezioni utenza collassabili (Admin/Automation setting).
+## 2026-02-15
+- UI: titolo utenza include nome reale in tutte le pagine.

@@ -210,3 +210,5 @@
 ## 2026-02-15
 - Datalogging extra: aggiunto flag ON/OFF per mostrare in User e storico al click.
 - Admin/Automation setting: sezioni utenza collassabili.
+## 2026-02-15
+- UI: ovunque “Utenza X” ora mostra anche il nome reale (Utenza X — Nome).
