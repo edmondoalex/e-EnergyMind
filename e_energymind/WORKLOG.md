@@ -212,3 +212,7 @@
 - Admin/Automation setting: sezioni utenza collassabili.
 ## 2026-02-15
 - UI: ovunque “Utenza X” ora mostra anche il nome reale (Utenza X — Nome).
+## 2026-02-15
+- Admin: rimosso collapse globale; collasso separato per utenza.
+## 2026-02-15
+- Versione add-on aggiornata a 1.8.9.

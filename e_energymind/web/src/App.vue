@@ -168,8 +168,8 @@
           </div>
         </div>
 
-        <details class="form" open v-if="ent">
-          <summary class="section">Sensori energia (read-only)</summary>
+        <div class="form" v-if="ent">
+          <div class="section">Sensori energia (read-only)</div>
           <div class="field">
             <label>Visualizzazione entità</label>
             <div class="actions">
@@ -248,7 +248,7 @@
             <button class="ghost" @click="saveEntities">Salva sensori</button>
             <button class="ghost danger" @click="resetEntities">Reset entità</button>
           </div>
-        </details>
+        </div>
 
         <div class="form" v-if="sp">
           <h3 class="section">Datalogging extra</h3>

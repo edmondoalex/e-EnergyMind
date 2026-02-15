@@ -277,3 +277,7 @@ Data export: 2026-02-08 (Europe/Rome)
 - UI: flag per entita extra + sezioni utenza collassabili (Admin/Automation setting).
 ## 2026-02-15
 - UI: titolo utenza include nome reale in tutte le pagine.
+## 2026-02-15
+- Admin: collapse per utenza separato (niente collapse globale).
+## 2026-02-15
+- Bump versione 1.8.9.
