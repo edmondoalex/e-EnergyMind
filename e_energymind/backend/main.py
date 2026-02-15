@@ -44,7 +44,7 @@ HISTORY_INTERVAL_S = 30
 RETENTION_DAYS = 90
 PARTIAL_EXPORT_MIN_W = 300
 PARTIAL_MIN_DURATION_S = 10
-LEARN_UPDATE_S = 3600
+LEARN_UPDATE_S = 7200
 
 
 def _log_action(msg: str) -> None:
@@ -312,7 +312,7 @@ def _learn_rules_for_site(conn: sqlite3.Connection, site: int, ent_cfg: dict, ex
         return {}
 
     now = int(time.time())
-    since_ts = now - 24 * 3600
+    since_ts = now - 48 * 3600
     pv_series = _load_history_series(conn, pv_id, since_ts)
     load_series = _load_history_series(conn, load_id, since_ts)
     grid_series = _load_history_series(conn, grid_id, since_ts)
@@ -777,39 +777,39 @@ def _generate_report_for_day(date_str: str) -> None:
                     in_event = False
                     continue
                 charge = abs(batt) if batt < 0 else 0.0
-                    soc = _nearest_raw(soc_series, ts)
-                    temp = _nearest_raw(temp_series, ts)
-                    mode = _nearest_raw(mode_series, ts)
-                    exp = _nearest_raw(exp_series, ts)
-                    tags = []
-                    soc_val = _raw_or_value_num(soc)
-                    temp_val = _raw_or_value_num(temp)
-                    if soc_val is not None and soc_val >= 90:
-                        tags.append("LIMIT_SOC")
-                    if temp_val is not None and temp_val <= 15:
-                        tags.append("LIMIT_TEMP")
-                    if mode and (mode.get("raw") or "").strip() not in ("Self Use", "SelfUse", "Auto"):
-                        tags.append("LIMIT_MODE")
-                    if exp and (exp.get("raw") or "").strip() not in ("0", "", None):
-                        tags.append("LIMIT_EXPORT")
-                    if not tags:
-                        tags.append("LIMIT_UNKNOWN")
-                    events.append({
-                        "time": _local_time_str(ts),
-                        "ts": ts,
-                        "pv_w": pv,
-                        "load_w": load,
-                        "battery_w": batt,
-                        "grid_w": grid,
-                        "surplus_w": surplus,
-                        "charge_w": charge,
-                        "charge_pct": round(charge / surplus * 100, 1) if surplus > 0 else None,
-                        "soc": soc_val,
-                        "temp": temp_val,
-                        "mode": mode.get("raw") if mode else None,
-                        "export_limit": exp.get("raw") if exp else None,
-                        "tags": tags,
-                    })
+                soc = _nearest_raw(soc_series, ts)
+                temp = _nearest_raw(temp_series, ts)
+                mode = _nearest_raw(mode_series, ts)
+                exp = _nearest_raw(exp_series, ts)
+                tags = []
+                soc_val = _raw_or_value_num(soc)
+                temp_val = _raw_or_value_num(temp)
+                if soc_val is not None and soc_val >= 90:
+                    tags.append("LIMIT_SOC")
+                if temp_val is not None and temp_val <= 15:
+                    tags.append("LIMIT_TEMP")
+                if mode and (mode.get("raw") or "").strip() not in ("Self Use", "SelfUse", "Auto"):
+                    tags.append("LIMIT_MODE")
+                if exp and (exp.get("raw") or "").strip() not in ("0", "", None):
+                    tags.append("LIMIT_EXPORT")
+                if not tags:
+                    tags.append("LIMIT_UNKNOWN")
+                events.append({
+                    "time": _local_time_str(ts),
+                    "ts": ts,
+                    "pv_w": pv,
+                    "load_w": load,
+                    "battery_w": batt,
+                    "grid_w": grid,
+                    "surplus_w": surplus,
+                    "charge_w": charge,
+                    "charge_pct": round(charge / surplus * 100, 1) if surplus > 0 else None,
+                    "soc": soc_val,
+                    "temp": temp_val,
+                    "mode": mode.get("raw") if mode else None,
+                    "export_limit": exp.get("raw") if exp else None,
+                    "tags": tags,
+                })
 
             report["partial_charge_events"][f"site{site}"] = events
             report["summary"][f"site{site}_partial_charge_events"] = len(events)

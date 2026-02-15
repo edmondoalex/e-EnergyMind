@@ -272,3 +272,7 @@
 ## 2026-02-15
 - Learning: regole apprese da storico (export/surplus/durata) e mostrate in User.
 
+## 2026-02-15
+- Fix: corretto indentazione report (crash).
+- Learning: finestra 48h, update ogni 2h.
+
