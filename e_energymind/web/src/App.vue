@@ -658,7 +658,7 @@ const loggingHours = ref(24)
 let pollTimer = null
 const editingCount = ref(0)
 const dirtyEnt = ref({})
-const showAll = ref(false)
+const showAll = ref(true)
 const overwriteMap = ref({ 1: false, 2: false, 3: false })
 const manualFlags = ref({})
 const historyModal = ref({ open: false, title: '', series: [], unit: '', samples: [] })
@@ -840,11 +840,7 @@ const toggleExtraEnabled = async (site, entity_id) => {
   await saveConfig()
 }
 const visibleEntityDefs = (site) => {
-  if (showAll.value) return energyEntityDefs
-  return energyEntityDefs.filter((item) => {
-    const eid = ent.value?.[`s${site}_${item.key}`]?.entity_id || ''
-    return String(eid).trim().length > 0
-  })
+  return energyEntityDefs
 }
 const mappedEntries = (site) => {
   return energyEntityDefs.filter((item) => isMapped(site, item.key))

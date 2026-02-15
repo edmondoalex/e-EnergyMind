@@ -291,3 +291,6 @@
 ## 2026-02-15
 - Fix: indentazione report (soc/temp) corretta.
 
+## 2026-02-15
+- Admin: campi mappatura sempre visibili (incluso Batteria SOC%).
+
