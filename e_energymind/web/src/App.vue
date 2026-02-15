@@ -152,6 +152,20 @@
           <div class="actions">
             <button class="ghost" @click="generateReport">Genera report ora</button>
           </div>
+          <div class="actions">
+            <label class="muted">Verifica logging (ore):</label>
+            <input type="number" min="1" max="168" v-model.number="loggingHours" style="width:90px" />
+            <button class="ghost" @click="runLoggingCheck()">Verifica logging</button>
+          </div>
+          <div v-if="loggingCheck?.ok" class="muted">
+            Mappate: {{ loggingCheck.total_mapped }} · Presenti: {{ loggingCheck.total_present }} · Mancanti: {{ loggingCheck.total_missing }}
+          </div>
+          <div v-if="loggingCheck?.ok && loggingCheck.total_missing > 0" class="entity-list">
+            <div class="entity-row" v-for="item in loggingCheck.missing" :key="`miss-${item.site}-${item.key}`">
+              <span class="entity-name">Utenza {{ item.site }} · {{ item.key }}</span>
+              <span class="entity-value">{{ item.entity_id }}</span>
+            </div>
+          </div>
           <div v-if="reportStatus?.ok" class="muted">Report generato: {{ reportStatus.date }} in {{ reportStatus.dir }}</div>
           <div v-if="sp" class="field">
             <label>Numero utenze</label>
@@ -610,6 +624,8 @@ const actions = ref([])
 const analysis = ref({ ok: false, events: [], missing: [] })
 const reportStatus = ref(null)
 const insights = ref({ global: null, sites: [] })
+const loggingCheck = ref(null)
+const loggingHours = ref(24)
 let pollTimer = null
 const editingCount = ref(0)
 const dirtyEnt = ref({})
@@ -1173,6 +1189,16 @@ async function generateReport(){
     const r = await fetch('/api/reports/generate', { method: 'POST' })
     if (!r.ok) return
     reportStatus.value = await r.json()
+  } catch {}
+}
+async function runLoggingCheck(site = null){
+  try {
+    const qs = new URLSearchParams()
+    if (site) qs.set('site', String(site))
+    qs.set('hours', String(loggingHours.value || 24))
+    const r = await fetch(`/api/logging_check?${qs.toString()}`)
+    if (!r.ok) return
+    loggingCheck.value = await r.json()
   } catch {}
 }
 async function loadAll(){

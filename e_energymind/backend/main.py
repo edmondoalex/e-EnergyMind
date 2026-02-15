@@ -169,7 +169,11 @@ def _db_prune(cutoff_ts: int) -> int:
     with sqlite3.connect(DB_PATH) as conn:
         cur = conn.execute("DELETE FROM history WHERE ts < ?", (cutoff_ts,))
         conn.commit()
-        return cur.rowcount or 0
+    return cur.rowcount or 0
+
+
+def _chunked(items: list, size: int = 200) -> list[list]:
+    return [items[i : i + size] for i in range(0, len(items), size)]
 
 
 def _parse_site_key(cfg_key: str) -> tuple[int, str] | None:
@@ -750,6 +754,60 @@ async def generate_report(date: str | None = None):
 async def db_info():
     size = DB_PATH.stat().st_size if DB_PATH.exists() else 0
     return {"size_bytes": size, "size_human": _fmt_bytes(size)}
+
+
+@app.get("/api/logging_check")
+async def logging_check(site: int | None = None, hours: int = 24):
+    if site is not None and site not in (1, 2, 3):
+        raise HTTPException(status_code=400, detail="Invalid site")
+    hours = max(1, min(168, int(hours)))
+    since_ts = int(time.time()) - hours * 3600
+    cfg = load_config()
+    ent_cfg = cfg.get("entities", {}) or {}
+
+    mapped = []
+    for cfg_key, entity_id in ent_cfg.items():
+        if not entity_id:
+            continue
+        parsed = _parse_site_key(cfg_key)
+        if not parsed:
+            continue
+        s, key = parsed
+        if site is not None and s != site:
+            continue
+        mapped.append({"site": s, "key": key, "entity_id": entity_id})
+
+    by_entity = {m["entity_id"]: m for m in mapped}
+    results = {}
+    with sqlite3.connect(DB_PATH) as conn:
+        for batch in _chunked(list(by_entity.keys()), 200):
+            qmarks = ",".join(["?"] * len(batch))
+            cur = conn.execute(
+                f"SELECT entity_id, COUNT(*) AS cnt, MAX(ts) AS last_ts FROM history WHERE ts >= ? AND entity_id IN ({qmarks}) GROUP BY entity_id",
+                (since_ts, *batch),
+            )
+            for entity_id, cnt, last_ts in cur.fetchall():
+                results[entity_id] = {"count": int(cnt or 0), "last_ts": int(last_ts or 0)}
+
+    present = []
+    missing = []
+    for entity_id, meta in by_entity.items():
+        row = results.get(entity_id)
+        if not row or row.get("count", 0) <= 0:
+            missing.append({**meta})
+        else:
+            present.append({**meta, **row})
+
+    return JSONResponse({
+        "ok": True,
+        "site": site,
+        "since_hours": hours,
+        "total_mapped": len(mapped),
+        "total_present": len(present),
+        "total_missing": len(missing),
+        "missing": missing,
+        "present": present,
+    })
 
 
 @app.get("/api/analysis")

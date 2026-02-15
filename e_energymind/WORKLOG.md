@@ -242,3 +242,6 @@
 ## 2026-02-15
 - View-Card: layout e linee ricostruiti con HTML+SVG e dash animation (stile reference).
 
+## 2026-02-15
+- Admin: aggiunta verifica logging DB per entità mappate (mancanti/presenti).
+

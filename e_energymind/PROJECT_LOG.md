@@ -297,3 +297,4 @@ Data export: 2026-02-08 (Europe/Rome)
 ## 2026-02-15\n- View-Card: linee rese ortogonali per layout pulito.\n
 ## 2026-02-15\n- View-Card: tracciati linee allineati allo schema di riferimento.\n
 ## 2026-02-15\n- View-Card: sostituito SVG con layout HTML+SVG (dash flow) in stile reference.\n
+## 2026-02-15\n- Admin: verifica logging DB per entità mappate.\n
