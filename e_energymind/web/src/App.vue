@@ -449,6 +449,7 @@ const manualFlags = ref({})
 const historyModal = ref({ open: false, title: '', series: [], unit: '', samples: [] })
 const allEntitiesState = ref({ 1: [], 2: [], 3: [] })
 const newDatalog = ref({ 1: '', 2: '', 3: '' })
+const flowStates = ref({})
 
 const energyEntityDefs = [
   { key: 'pv_power', label: 'PV Power (W)', placeholder: 'sensor.zcs_pv_power' },
@@ -664,6 +665,10 @@ const entityById = (site, entity_id) => {
 const flowValue = (site, key) => {
   const eid = sp.value?.automation?.flow_entities?.[`s${site}`]?.[key] || ''
   if (!eid) return 'n/d'
+  const cached = flowStates.value?.[eid]
+  if (cached) {
+    return fmtEntityRaw(cached.state, cached.attributes)
+  }
   const e = entityById(site, eid)
   if (!e) return 'n/d'
   return fmtEntityRaw(e.state, e.attributes)
@@ -836,8 +841,32 @@ async function refresh(){
       insights.value = await ins.json()
     } catch {}
   }
+  if (tab.value === 'automation_interface') {
+    await refreshFlowStates()
+  }
   await loadEntities()
   lastUpdate.value = new Date()
+}
+
+async function refreshFlowStates(){
+  const ids = []
+  for (const site of siteList.value || []) {
+    const flow = sp.value?.automation?.flow_entities?.[`s${site}`] || {}
+    for (const k of ['pv','load','battery','grid','soc','battery_v','battery_a','today_prod','today_load','today_export']) {
+      const eid = String(flow[k] || '').trim()
+      if (eid) ids.push(eid)
+    }
+  }
+  if (ids.length === 0) return
+  const uniq = Array.from(new Set(ids))
+  const r = await fetch('/api/entity_states', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ entity_ids: uniq })
+  })
+  if (!r.ok) return
+  const data = await r.json()
+  flowStates.value = data.items || {}
 }
 
 async function generateReport(){

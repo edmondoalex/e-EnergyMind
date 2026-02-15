@@ -260,3 +260,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Fix hook pre-push: usa /bin/sh per compatibilita durante il push.
 ## 2026-02-15
 - UI Automation setting: etichetta utenza include nome device.
+## 2026-02-15
+- Fix refresh Automazioni interface (polling stati flow via /api/entity_states).

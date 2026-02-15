@@ -959,6 +959,22 @@ async def get_entities():
     return JSONResponse(out)
 
 
+@app.post("/api/entity_states")
+async def entity_states(payload: Dict[str, Any]):
+    entity_ids = payload.get("entity_ids", []) if isinstance(payload, dict) else []
+    if not isinstance(entity_ids, list):
+        raise HTTPException(status_code=400, detail="Invalid entity_ids")
+    out = {}
+    for eid in entity_ids:
+        if not isinstance(eid, str):
+            continue
+        eid = eid.strip()
+        if not eid:
+            continue
+        out[eid] = _entity_payload(eid)
+    return JSONResponse({"items": out})
+
+
 @app.get("/api/entities_all")
 async def get_entities_all(site: int = 1):
     if site not in (1, 2, 3):

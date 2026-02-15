@@ -193,3 +193,6 @@
 - Fix hook pre-push: script ora compatibile /bin/sh (niente pwsh).
 ## 2026-02-15
 - Automation setting: mostrato nome reale device accanto a ogni utenza.
+## 2026-02-15
+- Automazioni interface: refresh dedicato delle entita flow via endpoint batch /api/entity_states.
+- Backend: aggiunto endpoint /api/entity_states per recupero stati multipli.
