@@ -33,6 +33,7 @@ log_task: asyncio.Task | None = None
 action_log: list[str] = []
 last_history_state: dict[str, tuple[str | None, int]] = {}
 last_report_date: str | None = None
+insight_condition_since: dict[int, float] = {}
 
 DB_PATH = Path("/data/energymind.db")
 ALL_ENTITIES_PATH = Path("/data/energymind_all_entities.json")
@@ -40,6 +41,8 @@ REPORT_DIR = Path("/share/reports")
 LOG_INTERVAL_S = 10
 HISTORY_INTERVAL_S = 30
 RETENTION_DAYS = 90
+PARTIAL_EXPORT_MIN_W = 300
+PARTIAL_MIN_DURATION_S = 10
 
 
 def _log_action(msg: str) -> None:
@@ -617,7 +620,7 @@ def _generate_report_for_day(date_str: str) -> None:
         "sites": [{"id": 1, "inverters_parallel": 3}, {"id": 2, "inverters_parallel": 2}],
         "summary": {},
         "comparison": {},
-        "partial_charge_events": {"criteria": {"surplus_gt_w": 500, "battery_charge_lt_surplus_pct": 80, "grid_export_gt_w": 50}},
+        "partial_charge_events": {"criteria": {"surplus_gt_w": 0, "grid_export_gt_w": PARTIAL_EXPORT_MIN_W, "min_duration_s": PARTIAL_MIN_DURATION_S}},
         "hypotheses": [],
         "actions": [],
     }
@@ -664,6 +667,8 @@ def _generate_report_for_day(date_str: str) -> None:
             report["summary"][f"site{site}_grid_export_positive"] = export_positive
 
             events = []
+            cond_since = None
+            in_event = False
             for ts, pv in pv_series:
                 if ts >= end_ts:
                     break
@@ -673,10 +678,19 @@ def _generate_report_for_day(date_str: str) -> None:
                 if load is None or grid is None or batt is None:
                     continue
                 surplus = pv - load
-                if surplus <= 500:
+                cond_true = surplus > 0 and _grid_exporting(grid, export_positive) and abs(grid) > PARTIAL_EXPORT_MIN_W
+                if cond_true:
+                    if cond_since is None:
+                        cond_since = ts
+                    if not in_event and ts - cond_since >= PARTIAL_MIN_DURATION_S:
+                        in_event = True
+                    if not in_event:
+                        continue
+                else:
+                    cond_since = None
+                    in_event = False
                     continue
                 charge = abs(batt) if batt < 0 else 0.0
-                if _grid_exporting(grid, export_positive) and charge < surplus * 0.8:
                     soc = _nearest_raw(soc_series, ts)
                     temp = _nearest_raw(temp_series, ts)
                     mode = _nearest_raw(mode_series, ts)
@@ -976,18 +990,28 @@ async def insights():
 
         if pv is not None and load is not None and grid is not None and batt is not None:
             surplus = pv - load
-            charge = abs(batt) if batt < 0 else 0.0
             grid_exporting = _grid_exporting(grid, export_positive)
             grid_importing = _grid_importing(grid, export_positive)
-            if surplus > 500 and grid_exporting and charge < surplus * 0.8:
+            cond = surplus > 0 and grid_exporting and abs(grid) > PARTIAL_EXPORT_MIN_W
+            if cond:
+                since = insight_condition_since.get(site)
+                if since is None:
+                    insight_condition_since[site] = time.time()
+                elif (time.time() - since) < PARTIAL_MIN_DURATION_S:
+                    cond = False
+            else:
+                insight_condition_since.pop(site, None)
+
+            if cond:
                 status = "CARICA_PARZIALE"
                 confidence = "medium"
-                reasons.append(f"Surplus {int(surplus)}W, carica {int(charge)}W ({int(charge / surplus * 100)}%)")
+                charge = abs(batt) if batt < 0 else 0.0
+                reasons.append(f"Surplus {int(surplus)}W · Export {int(grid)}W")
                 reasons.append(f"Rete: {'export' if grid_exporting else 'import'} {int(grid)}W")
                 _log_action(
                     f"{time.strftime('%Y-%m-%d %H:%M:%S')} INSIGHT s{site} CARICA_PARZIALE "
                     f"PV {int(pv)}W Load {int(load)}W Batt {int(batt)}W Grid {int(grid)}W "
-                    f"Surplus {int(surplus)}W Charge {int(charge)}W"
+                    f"Surplus {int(surplus)}W"
                 )
                 if soc is not None and soc >= 90:
                     reasons.append("SOC alto")
@@ -1001,7 +1025,7 @@ async def insights():
                     reasons.append(f"Fault: {fault}")
                 if inv and inv not in ("On-grid", "On grid", "OnGrid"):
                     reasons.append(f"Inverter: {inv}")
-                if surplus > 500 and grid_importing:
+                if surplus > 0 and grid_importing:
                     reasons.append("Import da rete durante surplus")
                 if not reasons:
                     reasons.append("Limite interno BMS/inverter")

@@ -266,3 +266,6 @@
 ## 2026-02-15
 - Report: aggiunti dettagli surplus/carica per eventi e log INSIGHT in azioni.
 
+## 2026-02-15
+- Insights: regola carica parziale basata solo su PV>Load ed export>300 per >=10s (senza soglie SOC/percentuali).
+
