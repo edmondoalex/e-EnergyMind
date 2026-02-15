@@ -294,3 +294,6 @@
 ## 2026-02-15
 - Admin: campi mappatura sempre visibili (incluso Batteria SOC%).
 
+## 2026-02-15
+- Report: aggiunta relazione tecnica giornaliera con statistiche per utenza.
+

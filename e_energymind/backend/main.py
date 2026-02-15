@@ -716,6 +716,7 @@ def _generate_report_for_day(date_str: str) -> None:
         "partial_charge_events": {"criteria": {"surplus_gt_w": 0, "grid_export_gt_w": PARTIAL_EXPORT_MIN_W, "min_duration_s": PARTIAL_MIN_DURATION_S}},
         "hypotheses": [],
         "actions": [],
+        "technical_summary": {},
     }
 
     md_lines = [
@@ -870,6 +871,63 @@ def _generate_report_for_day(date_str: str) -> None:
                     f"SOC {e.get('soc')}, Temp {e.get('temp')}, Mode {e.get('mode')}, Tags {','.join(e.get('tags', []))}"
                 )
         md_lines.append("")
+
+    # Technical narrative summary
+    def _site_stats(site: int, events: list[dict]) -> dict:
+        if not events:
+            return {"events": 0}
+        tag_counts: dict[str, int] = {}
+        export_vals = []
+        surplus_vals = []
+        charge_pct_vals = []
+        temp_vals = []
+        soc_vals = []
+        for e in events:
+            for t in e.get("tags", []):
+                tag_counts[t] = tag_counts.get(t, 0) + 1
+            if e.get("grid_w") is not None:
+                export_vals.append(abs(float(e["grid_w"])))
+            if e.get("surplus_w") is not None:
+                surplus_vals.append(float(e["surplus_w"]))
+            if e.get("charge_pct") is not None:
+                charge_pct_vals.append(float(e["charge_pct"]))
+            if e.get("temp") is not None:
+                try:
+                    temp_vals.append(float(e["temp"]))
+                except Exception:
+                    pass
+            if e.get("soc") is not None:
+                try:
+                    soc_vals.append(float(e["soc"]))
+                except Exception:
+                    pass
+        return {
+            "events": len(events),
+            "tag_counts": tag_counts,
+            "export_avg": round(sum(export_vals) / len(export_vals), 1) if export_vals else None,
+            "surplus_avg": round(sum(surplus_vals) / len(surplus_vals), 1) if surplus_vals else None,
+            "charge_pct_avg": round(sum(charge_pct_vals) / len(charge_pct_vals), 1) if charge_pct_vals else None,
+            "temp_avg": round(sum(temp_vals) / len(temp_vals), 1) if temp_vals else None,
+            "soc_avg": round(sum(soc_vals) / len(soc_vals), 1) if soc_vals else None,
+        }
+
+    md_lines.append("## Relazione tecnica giornaliera")
+    for site in (1, 2):
+        events = report["partial_charge_events"].get(f"site{site}", [])
+        st = _site_stats(site, events)
+        report["technical_summary"][f"site{site}"] = st
+        if st.get("events", 0) == 0:
+            md_lines.append(f"- Utenza {site} — {_site_name(site)}: nessun evento di carica parziale rilevato.")
+            continue
+        tags = st.get("tag_counts", {})
+        main_tag = max(tags, key=tags.get) if tags else "n/d"
+        md_lines.append(
+            f"- Utenza {site} — {_site_name(site)}: "
+            f"{st['events']} eventi. Export medio {st.get('export_avg')} W, "
+            f"surplus medio {st.get('surplus_avg')} W, carica media {st.get('charge_pct_avg')}%. "
+            f"Temperatura media {st.get('temp_avg')} °C, SOC medio {st.get('soc_avg')}%. "
+            f"Tag dominante: {main_tag}."
+        )
 
     md_path, js_path = _report_paths(date_str)
     md_path.write_text("\n".join(md_lines), encoding="utf-8")

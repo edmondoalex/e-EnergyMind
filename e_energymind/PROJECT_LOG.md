@@ -314,3 +314,4 @@ Data export: 2026-02-08 (Europe/Rome)
 ## 2026-02-15\n- Report: nearest window 300s per SOC/Temp/Mode/Export.\n
 ## 2026-02-15\n- Fix: indentazione report (soc/temp) corretta.\n
 ## 2026-02-15\n- Admin: campi mappatura sempre visibili (SOC incluso).\n
+## 2026-02-15\n- Report: relazione tecnica giornaliera dettagliata per utenza.\n
