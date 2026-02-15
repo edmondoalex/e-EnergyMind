@@ -306,3 +306,4 @@ Data export: 2026-02-08 (Europe/Rome)
 ## 2026-02-15\n- Insights: aggiunti dettagli numerici per carica parziale.\n
 ## 2026-02-15\n- Report/log: dettagli numerici carica parziale inclusi.\n
 ## 2026-02-15\n- Insights: soglie basate su export>300W per >=10s con PV>Load.\n
+## 2026-02-15\n- Learning: regole apprese dallo storico esposte in UI.\n

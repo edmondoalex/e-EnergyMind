@@ -269,3 +269,6 @@
 ## 2026-02-15
 - Insights: regola carica parziale basata solo su PV>Load ed export>300 per >=10s (senza soglie SOC/percentuali).
 
+## 2026-02-15
+- Learning: regole apprese da storico (export/surplus/durata) e mostrate in User.
+

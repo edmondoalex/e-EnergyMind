@@ -44,6 +44,25 @@
             </div>
           </div>
         </div>
+        <div class="card inner" v-if="insights?.learned_rules">
+          <div class="row"><strong>Regole apprese</strong></div>
+          <div class="muted" v-if="!insights.learned_rules.updated_at">In attesa aggiornamento...</div>
+          <div class="entity-list" v-else>
+            <div class="entity-row">
+              <span class="entity-name">Aggiornate</span>
+              <span class="entity-value">{{ new Date(insights.learned_rules.updated_at * 1000).toLocaleString() }}</span>
+            </div>
+            <div class="entity-row" v-for="site in siteList" :key="`lr-${site}`">
+              <span class="entity-name">{{ siteTitle(site) }}</span>
+              <span class="entity-value">
+                Export> {{ insights.learned_rules[`site${site}`]?.export_threshold_w ?? 'n/d' }}W ·
+                Surplus> {{ insights.learned_rules[`site${site}`]?.min_surplus_w ?? 'n/d' }}W ·
+                Durata {{ insights.learned_rules[`site${site}`]?.min_duration_s ?? 'n/d' }}s ·
+                Carica tipica {{ insights.learned_rules[`site${site}`]?.typical_charge_pct ?? 'n/d' }}%
+              </span>
+            </div>
+          </div>
+        </div>
         <div class="insights-compare" v-if="ent">
           <div v-for="site in siteList" :key="`ins-${site}`" class="card inner">
             <div class="row"><strong>Intelligenza {{ siteTitle(site) }}</strong></div>

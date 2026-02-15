@@ -34,6 +34,7 @@ action_log: list[str] = []
 last_history_state: dict[str, tuple[str | None, int]] = {}
 last_report_date: str | None = None
 insight_condition_since: dict[int, float] = {}
+last_rules_update: float | None = None
 
 DB_PATH = Path("/data/energymind.db")
 ALL_ENTITIES_PATH = Path("/data/energymind_all_entities.json")
@@ -43,6 +44,7 @@ HISTORY_INTERVAL_S = 30
 RETENTION_DAYS = 90
 PARTIAL_EXPORT_MIN_W = 300
 PARTIAL_MIN_DURATION_S = 10
+LEARN_UPDATE_S = 3600
 
 
 def _log_action(msg: str) -> None:
@@ -286,6 +288,86 @@ def _grid_importing(grid: float | None, export_positive: bool) -> bool:
     return grid < -50 if export_positive else grid > 50
 
 
+def _percentile(vals: list[float], p: float) -> float | None:
+    if not vals:
+        return None
+    v = sorted(vals)
+    k = (len(v) - 1) * p
+    f = int(k)
+    c = min(f + 1, len(v) - 1)
+    if f == c:
+        return v[f]
+    return v[f] + (v[c] - v[f]) * (k - f)
+
+
+def _learn_rules_for_site(conn: sqlite3.Connection, site: int, ent_cfg: dict, export_positive: bool) -> dict:
+    def _eid(k: str) -> str | None:
+        return ent_cfg.get(f"s{site}_{k}")
+
+    pv_id = _eid("pv_power_total") or _eid("pv_power")
+    load_id = _eid("load_power")
+    grid_id = _eid("grid_power")
+    batt_id = _eid("battery_power")
+    if not all([pv_id, load_id, grid_id, batt_id]):
+        return {}
+
+    now = int(time.time())
+    since_ts = now - 24 * 3600
+    pv_series = _load_history_series(conn, pv_id, since_ts)
+    load_series = _load_history_series(conn, load_id, since_ts)
+    grid_series = _load_history_series(conn, grid_id, since_ts)
+    batt_series = _load_history_series(conn, batt_id, since_ts)
+
+    export_vals = []
+    surplus_vals = []
+    charge_frac = []
+    for ts, pv in pv_series[:: max(1, len(pv_series) // 300 or 1)]:
+        load = _nearest_value(load_series, ts)
+        grid = _nearest_value(grid_series, ts)
+        batt = _nearest_value(batt_series, ts)
+        if load is None or grid is None or batt is None:
+            continue
+        surplus = pv - load
+        if surplus <= 0:
+            continue
+        surplus_vals.append(surplus)
+        if _grid_exporting(grid, export_positive):
+            export_vals.append(abs(grid))
+        if batt < 0:
+            charge_frac.append(abs(batt) / surplus if surplus > 0 else 0)
+
+    export_thr = _percentile(export_vals, 0.6) or PARTIAL_EXPORT_MIN_W
+    export_thr = max(PARTIAL_EXPORT_MIN_W, float(export_thr))
+    surplus_thr = _percentile(surplus_vals, 0.3) or 0.0
+    charge_pct = _percentile(charge_frac, 0.5)
+
+    return {
+        "export_threshold_w": int(round(export_thr)),
+        "min_surplus_w": int(round(surplus_thr)),
+        "min_duration_s": PARTIAL_MIN_DURATION_S,
+        "typical_charge_pct": round(charge_pct * 100, 1) if charge_pct is not None else None,
+        "samples": {
+            "pv": len(pv_series),
+            "load": len(load_series),
+            "grid": len(grid_series),
+            "battery": len(batt_series),
+        },
+    }
+
+
+def _learn_rules() -> None:
+    cfg = load_config()
+    ent_cfg = cfg.get("entities", {}) or {}
+    export_positive = bool(cfg.get("runtime", {}).get("grid_export_positive", True))
+    rules = {"updated_at": int(time.time()), "export_positive": export_positive}
+    with sqlite3.connect(DB_PATH) as conn:
+        for site in (1, 2, 3):
+            rules[f"site{site}"] = _learn_rules_for_site(conn, site, ent_cfg, export_positive)
+    cfg.setdefault("runtime", {})["learned_rules"] = rules
+    save_config(cfg)
+    _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} LEARN rules updated")
+
+
 def _load_history_raw_series(conn: sqlite3.Connection, entity_id: str, since_ts: int) -> list[tuple[int, str | None, float | None, str | None]]:
     cur = conn.execute(
         "SELECT ts, raw, value, unit FROM history WHERE entity_id = ? AND ts >= ? ORDER BY ts ASC",
@@ -523,6 +605,10 @@ async def _logging_loop():
                     _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} LOG history={inserted_h}")
                 last_history = now
             await asyncio.to_thread(_maybe_generate_daily_report)
+            global last_rules_update
+            if last_rules_update is None or (now - last_rules_update) > LEARN_UPDATE_S:
+                await asyncio.to_thread(_learn_rules)
+                last_rules_update = now
             if now - last_prune > 3600:
                 cutoff = int(now - (RETENTION_DAYS * 86400))
                 deleted = await asyncio.to_thread(_db_prune, cutoff)
@@ -967,6 +1053,7 @@ async def insights():
     cfg = load_config()
     ent_cfg = cfg.get("entities", {}) or {}
     export_positive = bool(cfg.get("runtime", {}).get("grid_export_positive", True))
+    learned = cfg.get("runtime", {}).get("learned_rules", {}) if isinstance(cfg.get("runtime", {}), dict) else {}
 
     def _eid(site: int, key: str) -> str | None:
         return ent_cfg.get(f"s{site}_{key}")
@@ -988,11 +1075,14 @@ async def insights():
         status = "OK"
         confidence = "low"
 
+        site_rules = learned.get(f"site{site}", {}) if isinstance(learned, dict) else {}
+        export_thr = float(site_rules.get("export_threshold_w", PARTIAL_EXPORT_MIN_W))
+        min_surplus = float(site_rules.get("min_surplus_w", 0))
         if pv is not None and load is not None and grid is not None and batt is not None:
             surplus = pv - load
             grid_exporting = _grid_exporting(grid, export_positive)
             grid_importing = _grid_importing(grid, export_positive)
-            cond = surplus > 0 and grid_exporting and abs(grid) > PARTIAL_EXPORT_MIN_W
+            cond = surplus > min_surplus and grid_exporting and abs(grid) > export_thr
             if cond:
                 since = insight_condition_since.get(site)
                 if since is None:
@@ -1062,7 +1152,8 @@ async def insights():
             "status": global_status,
             "notes": "Analisi in tempo reale basata su sensori correnti."
         },
-        "sites": [site1, site2]
+        "sites": [site1, site2],
+        "learned_rules": learned
     })
 
 
