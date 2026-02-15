@@ -233,3 +233,6 @@
 - Flow entities: aggiunti Solar SAS, Pannelli portoni, FV totale, Consumo totale, SOC target.
 - Automation setting: nuovi campi per View-Card.
 
+## 2026-02-15
+- View-Card: linee ridisegnate con percorsi ortogonali.
+
