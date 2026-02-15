@@ -248,3 +248,9 @@
 ## 2026-02-15
 - Report BMS: SOC/Temp ora derivati anche da raw quando value è null.
 
+## 2026-02-15
+- Report BMS: rilevazione automatica inversione segno rete + diagnostica campioni per utenza.
+
+## 2026-02-15
+- Insights: rilevazione carica parziale anche con segno rete invertito (export/import).
+

@@ -271,6 +271,29 @@ def _svg_chart(series_map: dict[str, list[tuple[int, float]]], title: str) -> st
     return "".join(parts)
 
 
+def _detect_grid_inversion(pv_series, load_series, batt_series, grid_series) -> bool:
+    checks = 0
+    normal = 0
+    inverted = 0
+    for ts, pv in pv_series[:: max(1, len(pv_series) // 120 or 1)]:
+        load = _nearest_value(load_series, ts)
+        batt = _nearest_value(batt_series, ts)
+        grid = _nearest_value(grid_series, ts)
+        if load is None or batt is None or grid is None:
+            continue
+        expected = pv - load - batt
+        if abs(expected) < 50:
+            continue
+        checks += 1
+        if expected * grid >= 0:
+            normal += 1
+        else:
+            inverted += 1
+    if checks < 5:
+        return False
+    return inverted > normal
+
+
 def _load_history_raw_series(conn: sqlite3.Connection, entity_id: str, since_ts: int) -> list[tuple[int, str | None, float | None, str | None]]:
     cur = conn.execute(
         "SELECT ts, raw, value, unit FROM history WHERE entity_id = ? AND ts >= ? ORDER BY ts ASC",
@@ -642,6 +665,15 @@ def _generate_report_for_day(date_str: str) -> None:
             mode_series = _load_history_raw_series(conn, mode_id, start_ts) if mode_id else []
             exp_series = _load_history_raw_series(conn, exp_id, start_ts) if exp_id else []
 
+            invert_grid = _detect_grid_inversion(pv_series, load_series, batt_series, grid_series)
+            report["summary"][f"site{site}_series_counts"] = {
+                "pv": len(pv_series),
+                "load": len(load_series),
+                "grid": len(grid_series),
+                "battery": len(batt_series),
+            }
+            report["summary"][f"site{site}_grid_inverted"] = bool(invert_grid)
+
             events = []
             for ts, pv in pv_series:
                 if ts >= end_ts:
@@ -651,6 +683,8 @@ def _generate_report_for_day(date_str: str) -> None:
                 batt = _nearest_value(batt_series, ts)
                 if load is None or grid is None or batt is None:
                     continue
+                if invert_grid:
+                    grid = -grid
                 surplus = pv - load
                 if surplus <= 500:
                     continue
@@ -718,6 +752,13 @@ def _generate_report_for_day(date_str: str) -> None:
     md_lines.append("## Sintesi")
     md_lines.append(f"- Utenza 1: {report['summary'].get('site1_partial_charge_events', 0)} episodi di carica parziale.")
     md_lines.append(f"- Utenza 2: {report['summary'].get('site2_partial_charge_events', 0)} episodi di carica parziale.")
+    for site in (1, 2):
+        counts = report["summary"].get(f"site{site}_series_counts", {})
+        inv = report["summary"].get(f"site{site}_grid_inverted", False)
+        if counts:
+            md_lines.append(
+                f"- Utenza {site}: campioni PV {counts.get('pv',0)}, Load {counts.get('load',0)}, Grid {counts.get('grid',0)}, Batt {counts.get('battery',0)}; Grid invertita: {inv}"
+            )
     md_lines.append("")
 
     for site in (1, 2):
@@ -945,7 +986,9 @@ async def insights():
         if pv is not None and load is not None and grid is not None and batt is not None:
             surplus = pv - load
             charge = abs(batt) if batt < 0 else 0.0
-            if surplus > 500 and grid > 50 and charge < surplus * 0.8:
+            grid_exporting = grid < -50
+            grid_importing = grid > 50
+            if surplus > 500 and (grid_exporting or grid_importing) and charge < surplus * 0.8:
                 status = "CARICA_PARZIALE"
                 confidence = "medium"
                 if soc is not None and soc >= 90:
@@ -960,6 +1003,8 @@ async def insights():
                     reasons.append(f"Fault: {fault}")
                 if inv and inv not in ("On-grid", "On grid", "OnGrid"):
                     reasons.append(f"Inverter: {inv}")
+                if surplus > 500 and grid_importing:
+                    reasons.append("Possibile segno rete invertito")
                 if not reasons:
                     reasons.append("Limite interno BMS/inverter")
                 suggestions.append("Verifica limiti carica e temperatura")
