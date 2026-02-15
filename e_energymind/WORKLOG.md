@@ -191,3 +191,5 @@
 - Aggiunta automazione locale pre-push: blocca il push se WORKLOG.md e PROJECT_LOG.md non sono aggiornati.
 ## 2026-02-15
 - Fix hook pre-push: script ora compatibile /bin/sh (niente pwsh).
+## 2026-02-15
+- Automation setting: mostrato nome reale device accanto a ogni utenza.

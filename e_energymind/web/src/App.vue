@@ -266,7 +266,10 @@
           <h3 class="section">Campi dedicati (diagramma istantaneo)</h3>
           <div class="help">Inserisci le entità da usare nella vista “Automazioni interface”.</div>
           <div v-for="site in siteList" :key="`flow-${site}`" class="set-section">
-            <div class="section-title">Utenza {{ site }}</div>
+            <div class="section-title">
+              Utenza {{ site }}
+              <span class="muted" v-if="deviceLabel(site)"> — {{ deviceLabel(site) }}</span>
+            </div>
             <div class="field">
               <label>PV Power (W)</label>
               <input type="text" v-model="sp.automation.flow_entities[`s${site}`].pv" placeholder="sensor.xxx" @change="saveConfig"/>

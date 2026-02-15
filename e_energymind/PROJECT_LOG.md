@@ -258,3 +258,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Aggiunto hook pre-push per obbligare aggiornamento WORKLOG.md e PROJECT_LOG.md prima del push.
 ## 2026-02-15
 - Fix hook pre-push: usa /bin/sh per compatibilita durante il push.
+## 2026-02-15
+- UI Automation setting: etichetta utenza include nome device.
