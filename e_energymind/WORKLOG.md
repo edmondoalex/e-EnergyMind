@@ -322,4 +322,7 @@
 ## 2026-02-16
 - Profilo orario: surplus negativo ora clampato a 0 (solo output).
 - Versione add-on aggiornata a 2.1.16.
+## 2026-02-16
+- Forecast: ignorato load_daily quando punta a today_load_kwh (parziale) per evitare profilo load sottostimato.
+- Versione add-on aggiornata a 2.1.17.
 
