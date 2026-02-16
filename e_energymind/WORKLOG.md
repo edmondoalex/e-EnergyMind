@@ -352,4 +352,10 @@
 ## 2026-02-16
 - UI: Regole apprese con campioni usati per ogni utenza.
 - Versione add-on aggiornata a 2.1.26.
+## 2026-02-16
+- UI forecast: collassabili anche le sezioni profilo orario (oggi/domani).
+- Versione add-on aggiornata a 2.1.27.
+## 2026-02-16
+- UI: campioni usati per regole apprese con etichetta per utenza.
+- Versione add-on aggiornata a 2.1.28.
 

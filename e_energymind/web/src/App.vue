@@ -53,23 +53,25 @@
               <span class="entity-name">Aggiornate</span>
               <span class="entity-value">{{ new Date(insights.learned_rules.updated_at * 1000).toLocaleString() }}</span>
             </div>
-            <div class="entity-row" v-for="site in siteList" :key="`lr-${site}`">
-              <span class="entity-name">{{ siteTitle(site) }}</span>
-              <span class="entity-value">
-                Export> {{ insights.learned_rules[`site${site}`]?.export_threshold_w ?? 'n/d' }}W ·
-                Surplus> {{ insights.learned_rules[`site${site}`]?.min_surplus_w ?? 'n/d' }}W ·
-                Durata {{ insights.learned_rules[`site${site}`]?.min_duration_s ?? 'n/d' }}s ·
-                Carica tipica {{ insights.learned_rules[`site${site}`]?.typical_charge_pct ?? 'n/d' }}%
-              </span>
-            </div>
-            <div class="entity-row learned-samples" v-for="site in siteList" :key="`lr-s-${site}`">
-              <span class="entity-name">Campioni usati</span>
-              <span class="entity-value">
-                PV {{ insights.learned_rules[`site${site}`]?.samples?.pv ?? 'n/d' }},
-                Load {{ insights.learned_rules[`site${site}`]?.samples?.load ?? 'n/d' }},
-                Grid {{ insights.learned_rules[`site${site}`]?.samples?.grid ?? 'n/d' }},
-                Batt {{ insights.learned_rules[`site${site}`]?.samples?.battery ?? 'n/d' }}
-              </span>
+            <div v-for="site in siteList" :key="`lr-${site}`">
+              <div class="entity-row">
+                <span class="entity-name">{{ siteTitle(site) }}</span>
+                <span class="entity-value">
+                  Export> {{ insights.learned_rules[`site${site}`]?.export_threshold_w ?? 'n/d' }}W ·
+                  Surplus> {{ insights.learned_rules[`site${site}`]?.min_surplus_w ?? 'n/d' }}W ·
+                  Durata {{ insights.learned_rules[`site${site}`]?.min_duration_s ?? 'n/d' }}s ·
+                  Carica tipica {{ insights.learned_rules[`site${site}`]?.typical_charge_pct ?? 'n/d' }}%
+                </span>
+              </div>
+              <div class="entity-row learned-samples">
+                <span class="entity-name">Campioni usati ({{ siteTitle(site) }})</span>
+                <span class="entity-value">
+                  PV {{ insights.learned_rules[`site${site}`]?.samples?.pv ?? 'n/d' }},
+                  Load {{ insights.learned_rules[`site${site}`]?.samples?.load ?? 'n/d' }},
+                  Grid {{ insights.learned_rules[`site${site}`]?.samples?.grid ?? 'n/d' }},
+                  Batt {{ insights.learned_rules[`site${site}`]?.samples?.battery ?? 'n/d' }}
+                </span>
+              </div>
             </div>
             <div class="muted learned-note">
               Export/Surplus sono soglie oltre le quali il sistema si aspetta che la batteria carichi.
@@ -110,8 +112,11 @@
           </div>
           <div class="muted forecast-note">Se un campo è vuoto, viene stimato automaticamente dai dati storici.</div>
         </div>
-        <div class="card inner" v-if="forecast?.sites?.length">
-          <div class="row"><strong>Profilo Orario (oggi)</strong></div>
+        <details class="card inner" v-if="forecast?.sites?.length" open>
+          <summary class="forecast-summary">
+            <strong>Profilo Orario (oggi)</strong>
+            <span class="forecast-summary-meta">Mostra/Nascondi</span>
+          </summary>
           <div class="muted" v-if="!forecast.updated_at">In attesa dati...</div>
           <div v-else class="hourly-wrap">
             <details class="hourly-block" v-for="row in forecast.sites" :key="`hourly-${row.site}`" open>
@@ -141,9 +146,12 @@
               </div>
             </details>
           </div>
-        </div>
-        <div class="card inner" v-if="forecast?.sites?.length">
-          <div class="row"><strong>Profilo Orario (domani)</strong></div>
+        </details>
+        <details class="card inner" v-if="forecast?.sites?.length" open>
+          <summary class="forecast-summary">
+            <strong>Profilo Orario (domani)</strong>
+            <span class="forecast-summary-meta">Mostra/Nascondi</span>
+          </summary>
           <div class="muted" v-if="!forecast.updated_at">In attesa dati...</div>
           <div v-else class="hourly-wrap">
             <details class="hourly-block" v-for="row in forecast.sites" :key="`hourly-tom-${row.site}`" open>
@@ -173,7 +181,7 @@
               </div>
             </details>
           </div>
-        </div>
+        </details>
         <div class="insights-compare" v-if="ent">
           <div v-for="site in siteList" :key="`ins-${site}`" class="card inner">
             <div class="row"><strong>Intelligenza {{ siteTitle(site) }}</strong></div>
