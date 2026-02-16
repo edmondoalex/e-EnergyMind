@@ -1562,6 +1562,7 @@ async def forecast():
             import_sim_kwh_tom = 0.0
             charge_sim_kwh_tom = 0.0
             discharge_sim_kwh_tom = 0.0
+            extra_now_w = None
             if pv_id and load_id:
                 pv_profile = _hourly_from_forecast_entity(pv_fc_today_hourly_id, today_start) or _hourly_profile(conn, pv_id, 7)
                 load_profile = _hourly_profile(conn, load_id, 7)
@@ -1612,6 +1613,7 @@ async def forecast():
                     import_sim_kwh += grid_import_w / 1000.0
                     charge_sim_kwh += batt_charge_w / 1000.0
                     discharge_sim_kwh += batt_discharge_w / 1000.0
+                    extra_w = grid_export_w
                     hourly.append({
                         "h": h,
                         "pv_w": round(pv_w, 1),
@@ -1622,7 +1624,12 @@ async def forecast():
                         "batt_discharge_w": round(batt_discharge_w, 1),
                         "grid_export_w": round(grid_export_w, 1),
                         "grid_import_w": round(grid_import_w, 1),
+                        "extra_w": round(extra_w, 1),
                     })
+                if hourly:
+                    hour_now = time.localtime(now_ts).tm_hour
+                    if 0 <= hour_now < len(hourly):
+                        extra_now_w = hourly[hour_now].get("extra_w")
                 end_soc_sim = soc_sim
             if pv_id and load_id:
                 tomorrow_start = today_start + 86400
@@ -1675,6 +1682,7 @@ async def forecast():
                     import_sim_kwh_tom += grid_import_w / 1000.0
                     charge_sim_kwh_tom += batt_charge_w / 1000.0
                     discharge_sim_kwh_tom += batt_discharge_w / 1000.0
+                    extra_w = grid_export_w
                     hourly_tomorrow.append({
                         "h": h,
                         "pv_w": round(pv_w, 1),
@@ -1685,6 +1693,7 @@ async def forecast():
                         "batt_discharge_w": round(batt_discharge_w, 1),
                         "grid_export_w": round(grid_export_w, 1),
                         "grid_import_w": round(grid_import_w, 1),
+                        "extra_w": round(extra_w, 1),
                     })
 
             results.append({
@@ -1699,6 +1708,7 @@ async def forecast():
                 "end_soc": round(end_soc_sim, 1) if end_soc_sim is not None else end_soc,
                 "charge_complete_hour": charge_complete_h,
                 "charge_complete_hour_tomorrow": charge_complete_h_tom,
+                "extra_now_w": extra_now_w,
                 "export_sim_today_kwh": round(export_sim_kwh, 2),
                 "import_sim_today_kwh": round(import_sim_kwh, 2),
                 "charge_sim_today_kwh": round(charge_sim_kwh, 2),

@@ -78,6 +78,7 @@
                 <div class="f-label">Surplus Oggi</div><div class="f-val">{{ fmtKwh(row.surplus_today_kwh) }}</div>
                 <div class="f-label">Export Oggi</div><div class="f-val">{{ fmtKwh(row.export_today_kwh) }}</div>
                 <div class="f-label">Export (sim)</div><div class="f-val">{{ fmtKwh(row.export_sim_today_kwh) }}</div>
+                <div class="f-label">Extra Ora</div><div class="f-val">{{ fmtW(row.extra_now_w) }}</div>
                 <div class="f-label">Fine Carica Oggi</div><div class="f-val">{{ fmtHour(row.charge_complete_hour) }}</div>
                 <div class="f-label">Fine Carica Domani</div><div class="f-val">{{ fmtHour(row.charge_complete_hour_tomorrow) }}</div>
                 <div class="f-label">SOC Fine</div><div class="f-val">{{ fmtPct(row.end_soc) }}</div>
@@ -103,6 +104,7 @@
                   <div>Surplus (W)</div>
                   <div>SOC (%)</div>
                   <div>Export (W)</div>
+                  <div>Extra (W)</div>
                 </div>
                 <div class="hourly-row" v-for="h in row.hourly || []" :key="`h-${row.site}-${h.h}`">
                   <div>{{ String(h.h).padStart(2,'0') }}:00</div>
@@ -111,6 +113,7 @@
                   <div>{{ fmtW(h.surplus_w) }}</div>
                   <div>{{ fmtPct(h.soc) }}</div>
                   <div>{{ fmtW(h.grid_export_w) }}</div>
+                  <div>{{ fmtW(h.extra_w) }}</div>
                 </div>
               </div>
             </div>
@@ -130,6 +133,7 @@
                   <div>Surplus (W)</div>
                   <div>SOC (%)</div>
                   <div>Export (W)</div>
+                  <div>Extra (W)</div>
                 </div>
                 <div class="hourly-row" v-for="h in row.hourly_tomorrow || []" :key="`ht-${row.site}-${h.h}`">
                   <div>{{ String(h.h).padStart(2,'0') }}:00</div>
@@ -138,6 +142,7 @@
                   <div>{{ fmtW(h.surplus_w) }}</div>
                   <div>{{ fmtPct(h.soc) }}</div>
                   <div>{{ fmtW(h.grid_export_w) }}</div>
+                  <div>{{ fmtW(h.extra_w) }}</div>
                 </div>
               </div>
             </div>
@@ -1844,7 +1849,7 @@ body{
 }
 .hourly-row{
   display:grid;
-  grid-template-columns: 90px repeat(5, minmax(100px, 1fr));
+  grid-template-columns: 90px repeat(6, minmax(100px, 1fr));
   gap:8px;
   padding:6px 8px;
   border:1px solid var(--line);

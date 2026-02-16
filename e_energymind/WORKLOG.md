@@ -334,4 +334,7 @@
 ## 2026-02-16
 - Forecast: simulazione batteria oraria (SOC, export/import, fine carica) + nuovi campi UI.
 - Versione add-on aggiornata a 2.1.20.
+## 2026-02-16
+- Forecast: aggiunta potenza extra disponibile (instant) per utenza + colonne orarie.
+- Versione add-on aggiornata a 2.1.21.
 
