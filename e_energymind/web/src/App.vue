@@ -77,6 +77,9 @@
                 <div class="f-label">Consumo Domani</div><div class="f-val">{{ fmtKwh(row.load_tomorrow_kwh) }}</div>
                 <div class="f-label">Surplus Oggi</div><div class="f-val">{{ fmtKwh(row.surplus_today_kwh) }}</div>
                 <div class="f-label">Export Oggi</div><div class="f-val">{{ fmtKwh(row.export_today_kwh) }}</div>
+                <div class="f-label">Export (sim)</div><div class="f-val">{{ fmtKwh(row.export_sim_today_kwh) }}</div>
+                <div class="f-label">Fine Carica Oggi</div><div class="f-val">{{ fmtHour(row.charge_complete_hour) }}</div>
+                <div class="f-label">Fine Carica Domani</div><div class="f-val">{{ fmtHour(row.charge_complete_hour_tomorrow) }}</div>
                 <div class="f-label">SOC Fine</div><div class="f-val">{{ fmtPct(row.end_soc) }}</div>
                 <div class="f-label">Cap. kWh</div><div class="f-val">{{ fmtNum(row.capacity_kwh) }}</div>
                 <div class="f-label">Max C/D W</div><div class="f-val">{{ fmtChargeDischarge(row.max_charge_w, row.max_discharge_w) }}</div>
@@ -98,12 +101,16 @@
                   <div>PV (W)</div>
                   <div>Load (W)</div>
                   <div>Surplus (W)</div>
+                  <div>SOC (%)</div>
+                  <div>Export (W)</div>
                 </div>
                 <div class="hourly-row" v-for="h in row.hourly || []" :key="`h-${row.site}-${h.h}`">
                   <div>{{ String(h.h).padStart(2,'0') }}:00</div>
                   <div>{{ fmtW(h.pv_w) }}</div>
                   <div>{{ fmtW(h.load_w) }}</div>
                   <div>{{ fmtW(h.surplus_w) }}</div>
+                  <div>{{ fmtPct(h.soc) }}</div>
+                  <div>{{ fmtW(h.grid_export_w) }}</div>
                 </div>
               </div>
             </div>
@@ -121,12 +128,16 @@
                   <div>PV (W)</div>
                   <div>Load (W)</div>
                   <div>Surplus (W)</div>
+                  <div>SOC (%)</div>
+                  <div>Export (W)</div>
                 </div>
                 <div class="hourly-row" v-for="h in row.hourly_tomorrow || []" :key="`ht-${row.site}-${h.h}`">
                   <div>{{ String(h.h).padStart(2,'0') }}:00</div>
                   <div>{{ fmtW(h.pv_w) }}</div>
                   <div>{{ fmtW(h.load_w) }}</div>
                   <div>{{ fmtW(h.surplus_w) }}</div>
+                  <div>{{ fmtPct(h.soc) }}</div>
+                  <div>{{ fmtW(h.grid_export_w) }}</div>
                 </div>
               </div>
             </div>
@@ -894,6 +905,11 @@ const fmtKwh = (v) => {
 const fmtPct = (v) => {
   if (v === null || v === undefined || Number.isNaN(Number(v))) return 'n/d'
   return `${Number(v).toFixed(1)} %`
+}
+const fmtHour = (v) => {
+  if (v === null || v === undefined || Number.isNaN(Number(v))) return 'n/d'
+  const h = Math.max(0, Math.min(23, Math.round(Number(v))))
+  return `${String(h).padStart(2,'0')}:00`
 }
 const fmtNum = (v) => {
   if (v === null || v === undefined || Number.isNaN(Number(v))) return 'n/d'
@@ -1828,7 +1844,7 @@ body{
 }
 .hourly-row{
   display:grid;
-  grid-template-columns: 90px repeat(3, minmax(100px, 1fr));
+  grid-template-columns: 90px repeat(5, minmax(100px, 1fr));
   gap:8px;
   padding:6px 8px;
   border:1px solid var(--line);

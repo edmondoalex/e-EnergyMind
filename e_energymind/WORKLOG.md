@@ -331,4 +331,7 @@
 ## 2026-02-16
 - UI forecast: layout a card per utenza per evitare sovrapposizioni.
 - Versione add-on aggiornata a 2.1.19.
+## 2026-02-16
+- Forecast: simulazione batteria oraria (SOC, export/import, fine carica) + nuovi campi UI.
+- Versione add-on aggiornata a 2.1.20.
 

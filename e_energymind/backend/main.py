@@ -1551,6 +1551,17 @@ async def forecast():
 
             hourly = []
             hourly_tomorrow = []
+            charge_complete_h = None
+            charge_complete_h_tom = None
+            end_soc_sim = None
+            export_sim_kwh = 0.0
+            import_sim_kwh = 0.0
+            charge_sim_kwh = 0.0
+            discharge_sim_kwh = 0.0
+            export_sim_kwh_tom = 0.0
+            import_sim_kwh_tom = 0.0
+            charge_sim_kwh_tom = 0.0
+            discharge_sim_kwh_tom = 0.0
             if pv_id and load_id:
                 pv_profile = _hourly_from_forecast_entity(pv_fc_today_hourly_id, today_start) or _hourly_profile(conn, pv_id, 7)
                 load_profile = _hourly_profile(conn, load_id, 7)
@@ -1563,16 +1574,56 @@ async def forecast():
                 # Only scale the load profile if the user explicitly provides a daily load target.
                 if (load_daily_id and not load_daily_is_today) and load_today_kwh is not None and load_sum > 0:
                     load_scale = (load_today_kwh * 1000.0) / load_sum
+                soc_sim = soc_now if (cap_kwh and soc_now is not None) else None
+                max_soc_eff = max_soc if max_soc is not None else 100.0
+                min_soc_eff = min_soc if min_soc is not None else 0.0
+                max_charge_eff = float(max_charge_w) if max_charge_w is not None else 1e9
+                max_discharge_eff = float(max_discharge_w) if max_discharge_w is not None else 1e9
                 for h in range(24):
                     pv_w = pv_profile[h] * pv_scale
                     load_w = load_profile[h] * load_scale
                     surplus_w = pv_w - load_w
+                    batt_charge_w = 0.0
+                    batt_discharge_w = 0.0
+                    grid_export_w = 0.0
+                    grid_import_w = 0.0
+                    if soc_sim is not None and cap_kwh:
+                        headroom_kwh = cap_kwh * max(0.0, (max_soc_eff - soc_sim) / 100.0)
+                        avail_kwh = cap_kwh * max(0.0, (soc_sim - min_soc_eff) / 100.0)
+                        if surplus_w >= 0:
+                            batt_charge_w = min(surplus_w, max_charge_eff, headroom_kwh * 1000.0)
+                            grid_export_w = max(0.0, surplus_w - batt_charge_w)
+                            soc_sim += (batt_charge_w / 1000.0) / cap_kwh * 100.0
+                            soc_sim = max(min_soc_eff, min(max_soc_eff, soc_sim))
+                            if charge_complete_h is None and soc_sim >= max_soc_eff - 0.01:
+                                charge_complete_h = h
+                        else:
+                            deficit_w = -surplus_w
+                            batt_discharge_w = min(deficit_w, max_discharge_eff, avail_kwh * 1000.0)
+                            grid_import_w = max(0.0, deficit_w - batt_discharge_w)
+                            soc_sim -= (batt_discharge_w / 1000.0) / cap_kwh * 100.0
+                            soc_sim = max(min_soc_eff, min(max_soc_eff, soc_sim))
+                    else:
+                        if surplus_w >= 0:
+                            grid_export_w = surplus_w
+                        else:
+                            grid_import_w = -surplus_w
+                    export_sim_kwh += grid_export_w / 1000.0
+                    import_sim_kwh += grid_import_w / 1000.0
+                    charge_sim_kwh += batt_charge_w / 1000.0
+                    discharge_sim_kwh += batt_discharge_w / 1000.0
                     hourly.append({
                         "h": h,
                         "pv_w": round(pv_w, 1),
                         "load_w": round(load_w, 1),
                         "surplus_w": round(max(0.0, surplus_w), 1),
+                        "soc": round(soc_sim, 1) if soc_sim is not None else None,
+                        "batt_charge_w": round(batt_charge_w, 1),
+                        "batt_discharge_w": round(batt_discharge_w, 1),
+                        "grid_export_w": round(grid_export_w, 1),
+                        "grid_import_w": round(grid_import_w, 1),
                     })
+                end_soc_sim = soc_sim
             if pv_id and load_id:
                 tomorrow_start = today_start + 86400
                 pv_profile_tom = _hourly_from_forecast_entity(pv_fc_tom_hourly_id, tomorrow_start) or _hourly_profile(conn, pv_id, 7)
@@ -1586,15 +1637,54 @@ async def forecast():
                 # Only scale the load profile if the user explicitly provides a daily load target.
                 if (load_daily_id and not load_daily_is_today) and load_tom_kwh is not None and load_sum_tom > 0:
                     load_scale_tom = (load_tom_kwh * 1000.0) / load_sum_tom
+                soc_sim_tom = end_soc_sim if (cap_kwh and end_soc_sim is not None) else (soc_now if (cap_kwh and soc_now is not None) else None)
+                max_soc_eff = max_soc if max_soc is not None else 100.0
+                min_soc_eff = min_soc if min_soc is not None else 0.0
+                max_charge_eff = float(max_charge_w) if max_charge_w is not None else 1e9
+                max_discharge_eff = float(max_discharge_w) if max_discharge_w is not None else 1e9
                 for h in range(24):
                     pv_w = pv_profile_tom[h] * pv_scale_tom
                     load_w = load_profile_tom[h] * load_scale_tom
                     surplus_w = pv_w - load_w
+                    batt_charge_w = 0.0
+                    batt_discharge_w = 0.0
+                    grid_export_w = 0.0
+                    grid_import_w = 0.0
+                    if soc_sim_tom is not None and cap_kwh:
+                        headroom_kwh = cap_kwh * max(0.0, (max_soc_eff - soc_sim_tom) / 100.0)
+                        avail_kwh = cap_kwh * max(0.0, (soc_sim_tom - min_soc_eff) / 100.0)
+                        if surplus_w >= 0:
+                            batt_charge_w = min(surplus_w, max_charge_eff, headroom_kwh * 1000.0)
+                            grid_export_w = max(0.0, surplus_w - batt_charge_w)
+                            soc_sim_tom += (batt_charge_w / 1000.0) / cap_kwh * 100.0
+                            soc_sim_tom = max(min_soc_eff, min(max_soc_eff, soc_sim_tom))
+                            if charge_complete_h_tom is None and soc_sim_tom >= max_soc_eff - 0.01:
+                                charge_complete_h_tom = h
+                        else:
+                            deficit_w = -surplus_w
+                            batt_discharge_w = min(deficit_w, max_discharge_eff, avail_kwh * 1000.0)
+                            grid_import_w = max(0.0, deficit_w - batt_discharge_w)
+                            soc_sim_tom -= (batt_discharge_w / 1000.0) / cap_kwh * 100.0
+                            soc_sim_tom = max(min_soc_eff, min(max_soc_eff, soc_sim_tom))
+                    else:
+                        if surplus_w >= 0:
+                            grid_export_w = surplus_w
+                        else:
+                            grid_import_w = -surplus_w
+                    export_sim_kwh_tom += grid_export_w / 1000.0
+                    import_sim_kwh_tom += grid_import_w / 1000.0
+                    charge_sim_kwh_tom += batt_charge_w / 1000.0
+                    discharge_sim_kwh_tom += batt_discharge_w / 1000.0
                     hourly_tomorrow.append({
                         "h": h,
                         "pv_w": round(pv_w, 1),
                         "load_w": round(load_w, 1),
                         "surplus_w": round(max(0.0, surplus_w), 1),
+                        "soc": round(soc_sim_tom, 1) if soc_sim_tom is not None else None,
+                        "batt_charge_w": round(batt_charge_w, 1),
+                        "batt_discharge_w": round(batt_discharge_w, 1),
+                        "grid_export_w": round(grid_export_w, 1),
+                        "grid_import_w": round(grid_import_w, 1),
                     })
 
             results.append({
@@ -1606,7 +1696,17 @@ async def forecast():
                 "load_tomorrow_kwh": round(load_tom_kwh, 2) if load_tom_kwh is not None else None,
                 "surplus_today_kwh": surplus_today,
                 "export_today_kwh": export_today,
-                "end_soc": end_soc,
+                "end_soc": round(end_soc_sim, 1) if end_soc_sim is not None else end_soc,
+                "charge_complete_hour": charge_complete_h,
+                "charge_complete_hour_tomorrow": charge_complete_h_tom,
+                "export_sim_today_kwh": round(export_sim_kwh, 2),
+                "import_sim_today_kwh": round(import_sim_kwh, 2),
+                "charge_sim_today_kwh": round(charge_sim_kwh, 2),
+                "discharge_sim_today_kwh": round(discharge_sim_kwh, 2),
+                "export_sim_tomorrow_kwh": round(export_sim_kwh_tom, 2),
+                "import_sim_tomorrow_kwh": round(import_sim_kwh_tom, 2),
+                "charge_sim_tomorrow_kwh": round(charge_sim_kwh_tom, 2),
+                "discharge_sim_tomorrow_kwh": round(discharge_sim_kwh_tom, 2),
                 "capacity_kwh": cap_kwh,
                 "max_charge_w": max_charge_w,
                 "max_discharge_w": max_discharge_w,
