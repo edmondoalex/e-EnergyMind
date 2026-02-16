@@ -1565,11 +1565,12 @@ async def forecast():
                 for h in range(24):
                     pv_w = pv_profile[h] * pv_scale
                     load_w = load_profile[h] * load_scale
+                    surplus_w = pv_w - load_w
                     hourly.append({
                         "h": h,
                         "pv_w": round(pv_w, 1),
                         "load_w": round(load_w, 1),
-                        "surplus_w": round(pv_w - load_w, 1),
+                        "surplus_w": round(max(0.0, surplus_w), 1),
                     })
             if pv_id and load_id:
                 tomorrow_start = today_start + 86400
@@ -1587,11 +1588,12 @@ async def forecast():
                 for h in range(24):
                     pv_w = pv_profile_tom[h] * pv_scale_tom
                     load_w = load_profile_tom[h] * load_scale_tom
+                    surplus_w = pv_w - load_w
                     hourly_tomorrow.append({
                         "h": h,
                         "pv_w": round(pv_w, 1),
                         "load_w": round(load_w, 1),
-                        "surplus_w": round(pv_w - load_w, 1),
+                        "surplus_w": round(max(0.0, surplus_w), 1),
                     })
 
             results.append({

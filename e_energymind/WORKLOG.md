@@ -319,4 +319,7 @@
 ## 2026-02-16
 - Forecast: profilo load orario non viene più scalato automaticamente (solo se l’utente imposta un consumo giornaliero).
 - Versione add-on aggiornata a 2.1.15.
+## 2026-02-16
+- Profilo orario: surplus negativo ora clampato a 0 (solo output).
+- Versione add-on aggiornata a 2.1.16.
 
