@@ -327,3 +327,7 @@ Data export: 2026-02-08 (Europe/Rome)
 ## 2026-02-15
 - Forecast: lettura sensori orari PV (attributi watts) per profilo orario e calibrazione.
 
+
+## 2026-02-15
+- Admin: filtro ricerca per entità nelle utenze (mappate e complete).
+

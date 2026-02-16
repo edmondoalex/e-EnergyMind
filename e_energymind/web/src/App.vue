@@ -119,6 +119,29 @@
             </div>
           </div>
         </div>
+        <div class="card inner" v-if="forecast?.sites?.length">
+          <div class="row"><strong>Profilo Orario (domani)</strong></div>
+          <div class="muted" v-if="!forecast.updated_at">In attesa dati...</div>
+          <div v-else class="hourly-wrap">
+            <div class="hourly-block" v-for="row in forecast.sites" :key="`hourly-tom-${row.site}`">
+              <div class="row"><strong>{{ row.name || siteTitle(row.site) }}</strong></div>
+              <div class="hourly-table">
+                <div class="hourly-row hourly-head">
+                  <div>Ora</div>
+                  <div>PV (W)</div>
+                  <div>Load (W)</div>
+                  <div>Surplus (W)</div>
+                </div>
+                <div class="hourly-row" v-for="h in row.hourly_tomorrow || []" :key="`ht-${row.site}-${h.h}`">
+                  <div>{{ String(h.h).padStart(2,'0') }}:00</div>
+                  <div>{{ fmtW(h.pv_w) }}</div>
+                  <div>{{ fmtW(h.load_w) }}</div>
+                  <div>{{ fmtW(h.surplus_w) }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="insights-compare" v-if="ent">
           <div v-for="site in siteList" :key="`ins-${site}`" class="card inner">
             <div class="row"><strong>Intelligenza {{ siteTitle(site) }}</strong></div>
@@ -282,6 +305,11 @@
           <details v-for="site in siteList" :key="`site-${site}`" class="set-section" open>
             <summary class="section-title">{{ siteTitle(site) }}</summary>
             <div class="field">
+              <label>Filtra entità</label>
+              <input type="text" v-model="adminFilter[site]" placeholder="cerca: load, carico, pv..." />
+              <div class="help">Filtra per nome, chiave o entity_id.</div>
+            </div>
+            <div class="field">
               <label>Device name (HA)</label>
               <input type="text"
                      v-model="sp.devices[`s${site}`].name"
@@ -308,8 +336,8 @@
               <button class="ghost" :disabled="!canAutoMap(site)" @click="syncAllEntities(site)">Sincronizza elenco completo</button>
               <div class="help" v-if="!canAutoMap(site)">Inserisci Device name o Device ID, oppure seleziona un dispositivo.</div>
             </div>
-            <div v-if="visibleEntityDefs(site).length === 0" class="muted">Nessuna entità importata. Usa “Importa entità da dispositivo”.</div>
-            <div v-for="item in visibleEntityDefs(site)" :key="`s${site}_${item.key}`" class="field">
+            <div v-if="filteredEntityDefs(site).length === 0" class="muted">Nessuna entità importata. Usa “Importa entità da dispositivo”.</div>
+            <div v-for="item in filteredEntityDefs(site)" :key="`s${site}_${item.key}`" class="field">
               <label class="label-row">
                 <span>{{ labelFor(site, item.key, item.label) }}</span>
                 <span class="state-flag" :class="isOn(site, item.key) ? 'state-on' : 'state-off'">
@@ -329,7 +357,7 @@
               </div>
               <div v-if="item.help" class="help">{{ item.help }}</div>
             </div>
-            <div v-for="e in allEntities(site)" :key="`all-${site}-${e.entity_id}`" class="field field-readonly">
+            <div v-for="e in filteredAllEntities(site)" :key="`all-${site}-${e.entity_id}`" class="field field-readonly">
               <label class="label-row">
                 <span>{{ e.name || e.original_name || e.entity_id }}</span>
                 <span class="state-flag" :class="isOnKey(`all_s${site}_${e.entity_id}`) ? 'state-on' : 'state-off'">
@@ -775,6 +803,7 @@ const allEntitiesState = ref({ 1: [], 2: [], 3: [] })
 const newDatalog = ref({ 1: '', 2: '', 3: '' })
 const flowStates = ref({})
 const extraStates = ref({})
+const adminFilter = ref({ 1: '', 2: '', 3: '' })
 
 const energyEntityDefs = [
   { key: 'pv_power', label: 'PV Power (W)', placeholder: 'sensor.zcs_pv_power' },
@@ -979,6 +1008,27 @@ const visibleEntityDefs = (site) => {
 }
 const mappedEntries = (site) => {
   return energyEntityDefs.filter((item) => isMapped(site, item.key))
+}
+const _filterText = (site) => String(adminFilter.value?.[site] || '').trim().toLowerCase()
+const filteredEntityDefs = (site) => {
+  const q = _filterText(site)
+  if (!q) return visibleEntityDefs(site)
+  return visibleEntityDefs(site).filter((item) => {
+    const label = String(item.label || '').toLowerCase()
+    const key = String(item.key || '').toLowerCase()
+    const eid = String(ent.value?.[`s${site}_${item.key}`]?.entity_id || '').toLowerCase()
+    return label.includes(q) || key.includes(q) || eid.includes(q)
+  })
+}
+const filteredAllEntities = (site) => {
+  const q = _filterText(site)
+  const list = allEntities(site)
+  if (!q) return list
+  return list.filter((e) => {
+    const name = String(e.name || e.original_name || '').toLowerCase()
+    const eid = String(e.entity_id || '').toLowerCase()
+    return name.includes(q) || eid.includes(q)
+  })
 }
 const selectedEntities = (site) => {
   const out = []

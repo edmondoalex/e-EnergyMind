@@ -307,3 +307,6 @@
 ## 2026-02-15
 - Forecast: supporto sensori PV orari (today/tomorrow) con calibrazione e profilo orario da attributi.
 
+
+## 2026-02-15
+- Admin: aggiunto filtro per entità (ricerca) per trovare rapidamente Carico casa e altre voci.
