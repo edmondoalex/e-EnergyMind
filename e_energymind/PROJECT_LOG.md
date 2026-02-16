@@ -381,3 +381,7 @@ Data export: 2026-02-08 (Europe/Rome)
 - Automation: aggiunta stima extra kWh oggi/domani in settings e interface.
 - Versione add-on aggiornata a 2.1.30.
 
+## Aggiornamenti 2026-02-16
+- Forecast: target SOC dinamico per utenza e extra "safe" per ora/oggi basato su target.
+- UI: extra ora/oggi usa safe quando disponibile; target SOC mostrato nella card previsioni.
+- Versione add-on aggiornata a 2.1.31.

@@ -89,7 +89,9 @@
               <summary class="forecast-summary">
                 <strong>{{ row.name || siteTitle(row.site) }}</strong>
                 <span class="forecast-summary-meta">
-                  Extra Ora {{ fmtW(row.extra_now_w) }} · Fine Carica {{ fmtHour(row.charge_complete_hour) }}
+                  Extra Ora (safe) {{ fmtW(row.extra_safe_now_w ?? row.extra_now_w) }} ·
+                  Target SOC {{ fmtPct(row.target_soc) }} ·
+                  Fine Carica {{ fmtHour(row.charge_complete_hour) }}
                 </span>
               </summary>
               <div class="forecast-grid">
@@ -100,9 +102,10 @@
                 <div class="f-label">Surplus Oggi</div><div class="f-val">{{ fmtKwh(row.surplus_today_kwh) }}</div>
                 <div class="f-label">Export Oggi</div><div class="f-val">{{ fmtKwh(row.export_today_kwh) }}</div>
                 <div class="f-label">Export (sim)</div><div class="f-val">{{ fmtKwh(row.export_sim_today_kwh) }}</div>
-                <div class="f-label">Extra (sim) Oggi</div><div class="f-val">{{ fmtKwh(row.export_sim_today_kwh) }}</div>
+                <div class="f-label">Extra (safe) Oggi</div><div class="f-val">{{ fmtKwh(row.extra_safe_today_kwh ?? row.export_sim_today_kwh) }}</div>
                 <div class="f-label">Extra (sim) Domani</div><div class="f-val">{{ fmtKwh(row.export_sim_tomorrow_kwh) }}</div>
-                <div class="f-label">Extra Ora</div><div class="f-val">{{ fmtW(row.extra_now_w) }}</div>
+                <div class="f-label">Extra Ora (safe)</div><div class="f-val">{{ fmtW(row.extra_safe_now_w ?? row.extra_now_w) }}</div>
+                <div class="f-label">Extra Ora (sim)</div><div class="f-val">{{ fmtW(row.extra_now_w) }}</div>
                 <div class="f-label">Fine Carica Oggi</div><div class="f-val">{{ fmtHour(row.charge_complete_hour) }}</div>
                 <div class="f-label">Fine Carica Domani</div><div class="f-val">{{ fmtHour(row.charge_complete_hour_tomorrow) }}</div>
                 <div class="f-label">SOC Fine</div><div class="f-val">{{ fmtPct(row.end_soc) }}</div>
@@ -1006,11 +1009,11 @@ const adminPreview = (eid) => {
 }
 const extraNowFor = (site) => {
   const row = (forecast.value?.sites || []).find(r => Number(r.site) === Number(site))
-  return row?.extra_now_w ?? null
+  return row?.extra_safe_now_w ?? row?.extra_now_w ?? null
 }
 const extraTodayFor = (site) => {
   const row = (forecast.value?.sites || []).find(r => Number(r.site) === Number(site))
-  return row?.export_sim_today_kwh ?? null
+  return row?.extra_safe_today_kwh ?? row?.export_sim_today_kwh ?? null
 }
 const extraTomorrowFor = (site) => {
   const row = (forecast.value?.sites || []).find(r => Number(r.site) === Number(site))
