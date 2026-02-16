@@ -3,6 +3,7 @@ import json
 import time
 import sqlite3
 import mimetypes
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
@@ -376,6 +377,45 @@ def _hourly_profile(conn: sqlite3.Connection, entity_id: str, days: int = 7) -> 
         h = int(lt.tm_hour)
         sums[h] += float(v)
         counts[h] += 1
+    out = []
+    for h in range(24):
+        if counts[h] == 0:
+            out.append(0.0)
+        else:
+            out.append(sums[h] / counts[h])
+    return out
+
+
+def _hourly_from_forecast_entity(entity_id: str | None, day_start: int) -> list[float] | None:
+    if not entity_id:
+        return None
+    st = ha.states.get(entity_id)
+    if not st:
+        return None
+    attrs = st.get("attributes") or {}
+    data = None
+    if isinstance(attrs, dict):
+        data = attrs.get("watts") or attrs.get("w") or attrs.get("values")
+    if not isinstance(data, dict):
+        return None
+    sums = [0.0] * 24
+    counts = [0] * 24
+    for k, v in data.items():
+        try:
+            ts = int(datetime.fromisoformat(str(k)).timestamp())
+        except Exception:
+            continue
+        if ts < day_start or ts >= day_start + 86400:
+            continue
+        try:
+            val = float(v)
+        except Exception:
+            continue
+        h = time.localtime(ts).tm_hour
+        sums[h] += val
+        counts[h] += 1
+    if sum(counts) == 0:
+        return None
     out = []
     for h in range(24):
         if counts[h] == 0:
@@ -1367,10 +1407,16 @@ async def forecast():
 
             pv_fc_today_id = (fc.get("pv_forecast_today") or "").strip() or _eid(site, "forecast_today_kwh")
             pv_fc_tom_id = (fc.get("pv_forecast_tomorrow") or "").strip() or _eid(site, "forecast_tomorrow_kwh")
+            pv_fc_today_hourly_id = (fc.get("pv_forecast_today_hourly") or "").strip()
+            pv_fc_tom_hourly_id = (fc.get("pv_forecast_tomorrow_hourly") or "").strip()
             load_daily_id = (fc.get("load_daily") or "").strip() or _eid(site, "today_load_kwh")
 
             pv_fc_today = _state_num(pv_fc_today_id)
             pv_fc_tom = _state_num(pv_fc_tom_id)
+            if pv_fc_today is None and pv_fc_today_hourly_id:
+                pv_fc_today = _state_num(pv_fc_today_hourly_id)
+            if pv_fc_tom is None and pv_fc_tom_hourly_id:
+                pv_fc_tom = _state_num(pv_fc_tom_hourly_id)
             load_fc_today = _state_num(load_daily_id)
 
             soc_now = _state_num(soc_id)
@@ -1476,7 +1522,7 @@ async def forecast():
 
             hourly = []
             if pv_id and load_id:
-                pv_profile = _hourly_profile(conn, pv_id, 7)
+                pv_profile = _hourly_from_forecast_entity(pv_fc_today_hourly_id, today_start) or _hourly_profile(conn, pv_id, 7)
                 load_profile = _hourly_profile(conn, load_id, 7)
                 pv_sum = sum(pv_profile)
                 load_sum = sum(load_profile)
@@ -1519,6 +1565,8 @@ async def forecast():
                 "sources": {
                     "pv_forecast_today": pv_fc_today_id or None,
                     "pv_forecast_tomorrow": pv_fc_tom_id or None,
+                    "pv_forecast_today_hourly": pv_fc_today_hourly_id or None,
+                    "pv_forecast_tomorrow_hourly": pv_fc_tom_hourly_id or None,
                     "load_daily": load_daily_id or None,
                 },
                 "auto": {

@@ -323,3 +323,7 @@ Data export: 2026-02-08 (Europe/Rome)
 ## 2026-02-15
 - Forecast: profilo orario (PV/Load/Surplus) derivato da storico e scalato su previsioni.
 
+
+## 2026-02-15
+- Forecast: lettura sensori orari PV (attributi watts) per profilo orario e calibrazione.
+

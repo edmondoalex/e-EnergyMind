@@ -303,3 +303,7 @@
 
 ## 2026-02-15
 - Previsioni: aggiunto profilo orario PV/Load/Surplus con scaling su forecast.
+
+## 2026-02-15
+- Forecast: supporto sensori PV orari (today/tomorrow) con calibrazione e profilo orario da attributi.
+

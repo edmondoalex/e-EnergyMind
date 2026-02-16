@@ -360,8 +360,16 @@
               <input type="text" v-model="sp.forecast[`s${site}`].pv_forecast_today" placeholder="sensor.xxx" @change="saveConfig"/>
             </div>
             <div class="field">
+              <label>Forecast PV Oggi Orario (W)</label>
+              <input type="text" v-model="sp.forecast[`s${site}`].pv_forecast_today_hourly" placeholder="sensor.energy_production_today_4" @change="saveConfig"/>
+            </div>
+            <div class="field">
               <label>Forecast PV Domani (kWh)</label>
               <input type="text" v-model="sp.forecast[`s${site}`].pv_forecast_tomorrow" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>Forecast PV Domani Orario (W)</label>
+              <input type="text" v-model="sp.forecast[`s${site}`].pv_forecast_tomorrow_hourly" placeholder="sensor.energy_production_tomorrow_4" @change="saveConfig"/>
             </div>
             <div class="field">
               <label>Consumo giornaliero (kWh)</label>

@@ -45,6 +45,8 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "s1": {
             "pv_forecast_today": "",
             "pv_forecast_tomorrow": "",
+            "pv_forecast_today_hourly": "",
+            "pv_forecast_tomorrow_hourly": "",
             "load_daily": "",
             "battery_capacity_kwh": None,
             "max_charge_w": None,
@@ -56,6 +58,8 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "s2": {
             "pv_forecast_today": "",
             "pv_forecast_tomorrow": "",
+            "pv_forecast_today_hourly": "",
+            "pv_forecast_tomorrow_hourly": "",
             "load_daily": "",
             "battery_capacity_kwh": None,
             "max_charge_w": None,
@@ -67,6 +71,8 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "s3": {
             "pv_forecast_today": "",
             "pv_forecast_tomorrow": "",
+            "pv_forecast_today_hourly": "",
+            "pv_forecast_tomorrow_hourly": "",
             "load_daily": "",
             "battery_capacity_kwh": None,
             "max_charge_w": None,
@@ -173,7 +179,7 @@ def normalize_config(raw: Dict[str, Any]) -> Dict[str, Any]:
             src = forecast.get(key, {}) if isinstance(forecast.get(key, {}), dict) else {}
             for fkey in cfg["forecast"][key].keys():
                 val = src.get(fkey, cfg["forecast"][key][fkey])
-                if fkey in ("pv_forecast_today", "pv_forecast_tomorrow", "load_daily"):
+                if fkey in ("pv_forecast_today", "pv_forecast_tomorrow", "pv_forecast_today_hourly", "pv_forecast_tomorrow_hourly", "load_daily"):
                     cfg["forecast"][key][fkey] = str(val or "").strip()
                 else:
                     cfg["forecast"][key][fkey] = val
@@ -257,7 +263,7 @@ def apply_config(cfg: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any]
             for fkey in cfg["forecast"][key].keys():
                 if fkey in src:
                     val = src.get(fkey)
-                    if fkey in ("pv_forecast_today", "pv_forecast_tomorrow", "load_daily"):
+                    if fkey in ("pv_forecast_today", "pv_forecast_tomorrow", "pv_forecast_today_hourly", "pv_forecast_tomorrow_hourly", "load_daily"):
                         cfg["forecast"][key][fkey] = str(val or "").strip()
                     else:
                         cfg["forecast"][key][fkey] = val
