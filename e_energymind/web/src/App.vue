@@ -430,6 +430,7 @@
           <div class="help">Se lasci vuoto, il valore viene stimato automaticamente dai dati storici.</div>
           <details v-for="site in siteList" :key="`forecast-${site}`" class="set-section" open>
             <summary class="section-title">{{ siteTitle(site) }}</summary>
+            <div class="muted">BMS max stimato: {{ fmtChargeDischarge(maxChargeFor(site), maxDischargeFor(site)) }}</div>
             <div class="field">
               <label>Forecast PV Oggi (kWh)</label>
               <input type="text" v-model="sp.forecast[`s${site}`].pv_forecast_today" placeholder="sensor.xxx" @change="saveConfig"/>
@@ -521,7 +522,8 @@
               <span class="entity-value">
                 Ora {{ fmtW(extraNowFor(site)) }} ·
                 Oggi {{ fmtKwh(extraTodayFor(site)) }} ·
-                Domani {{ fmtKwh(extraTomorrowFor(site)) }}
+                Domani {{ fmtKwh(extraTomorrowFor(site)) }} ·
+                BMS Max {{ fmtChargeDischarge(maxChargeFor(site), maxDischargeFor(site)) }}
               </span>
             </div>
           </div>
@@ -654,6 +656,10 @@
             <div class="flow-card">
               <div class="k">Extra domani</div>
               <div class="v">{{ fmtKwh(extraTomorrowFor(site)) }}</div>
+            </div>
+            <div class="flow-card">
+              <div class="k">BMS Max C/D</div>
+              <div class="v">{{ fmtChargeDischarge(maxChargeFor(site), maxDischargeFor(site)) }}</div>
             </div>
             <div class="flow-card">
               <div class="k">Batteria V</div>
@@ -1018,6 +1024,14 @@ const extraTodayFor = (site) => {
 const extraTomorrowFor = (site) => {
   const row = (forecast.value?.sites || []).find(r => Number(r.site) === Number(site))
   return row?.export_sim_tomorrow_kwh ?? null
+}
+const maxChargeFor = (site) => {
+  const row = (forecast.value?.sites || []).find(r => Number(r.site) === Number(site))
+  return row?.max_charge_w ?? null
+}
+const maxDischargeFor = (site) => {
+  const row = (forecast.value?.sites || []).find(r => Number(r.site) === Number(site))
+  return row?.max_discharge_w ?? null
 }
 const getEnt = (site, key) => {
   if (!ent.value) return null

@@ -385,3 +385,6 @@ Data export: 2026-02-08 (Europe/Rome)
 - Forecast: target SOC dinamico per utenza e extra "safe" per ora/oggi basato su target.
 - UI: extra ora/oggi usa safe quando disponibile; target SOC mostrato nella card previsioni.
 - Versione add-on aggiornata a 2.1.31.
+## Aggiornamenti 2026-02-16
+- UI: BMS max stimato mostrato in Automation setting, Automazioni interface e parametri forecast.
+- Versione add-on aggiornata a 2.1.32.
