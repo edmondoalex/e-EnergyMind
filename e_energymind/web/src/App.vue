@@ -1752,8 +1752,19 @@ body{
 }
 .forecast-row{
   display:grid;
-  grid-template-columns: 1.2fr repeat(9, minmax(90px, 1fr)) minmax(90px, 1fr);
-  gap:6px;
+  grid-template-columns:
+    1.4fr
+    minmax(100px,1fr)
+    minmax(100px,1fr)
+    minmax(120px,1fr)
+    minmax(120px,1fr)
+    minmax(100px,1fr)
+    minmax(100px,1fr)
+    minmax(90px,1fr)
+    minmax(90px,1fr)
+    minmax(120px,1fr)
+    minmax(90px,1fr);
+  gap:8px;
   padding:8px;
   border:1px solid var(--line);
   border-radius:10px;
@@ -1762,6 +1773,10 @@ body{
 }
 .forecast-row > div{
   white-space:nowrap;
+}
+.forecast-head > div{
+  white-space:normal;
+  line-height:1.1;
 }
 .forecast-head{
   font-weight:700;
