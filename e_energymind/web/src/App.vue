@@ -67,32 +67,21 @@
         <div class="card inner" v-if="forecast?.sites?.length">
           <div class="row"><strong>Previsioni Solar e-EnergyMind</strong></div>
           <div class="muted" v-if="!forecast.updated_at">In attesa dati...</div>
-          <div class="forecast-table" v-else>
-            <div class="forecast-row forecast-head">
-              <div>Utenza</div>
-              <div>PV Oggi</div>
-              <div>PV Domani</div>
-              <div>Consumo Oggi</div>
-              <div>Consumo Domani</div>
-              <div>Surplus Oggi</div>
-              <div>Export Oggi</div>
-              <div>SOC Fine</div>
-              <div>Cap. kWh</div>
-              <div>Max C/D W</div>
-              <div>Fattore PV</div>
-            </div>
-            <div class="forecast-row" v-for="row in forecast.sites" :key="`fc-${row.site}`">
-              <div>{{ row.name || siteTitle(row.site) }}</div>
-              <div>{{ fmtKwh(row.pv_today_kwh) }}</div>
-              <div>{{ fmtKwh(row.pv_tomorrow_kwh) }}</div>
-              <div>{{ fmtKwh(row.load_today_kwh) }}</div>
-              <div>{{ fmtKwh(row.load_tomorrow_kwh) }}</div>
-              <div>{{ fmtKwh(row.surplus_today_kwh) }}</div>
-              <div>{{ fmtKwh(row.export_today_kwh) }}</div>
-              <div>{{ fmtPct(row.end_soc) }}</div>
-              <div>{{ fmtNum(row.capacity_kwh) }}</div>
-              <div>{{ fmtChargeDischarge(row.max_charge_w, row.max_discharge_w) }}</div>
-              <div>{{ fmtFactor(row.factors?.pv_adjust) }}</div>
+          <div v-else class="forecast-cards">
+            <div class="forecast-card" v-for="row in forecast.sites" :key="`fc-${row.site}`">
+              <div class="row"><strong>{{ row.name || siteTitle(row.site) }}</strong></div>
+              <div class="forecast-grid">
+                <div class="f-label">PV Oggi</div><div class="f-val">{{ fmtKwh(row.pv_today_kwh) }}</div>
+                <div class="f-label">PV Domani</div><div class="f-val">{{ fmtKwh(row.pv_tomorrow_kwh) }}</div>
+                <div class="f-label">Consumo Oggi</div><div class="f-val">{{ fmtKwh(row.load_today_kwh) }}</div>
+                <div class="f-label">Consumo Domani</div><div class="f-val">{{ fmtKwh(row.load_tomorrow_kwh) }}</div>
+                <div class="f-label">Surplus Oggi</div><div class="f-val">{{ fmtKwh(row.surplus_today_kwh) }}</div>
+                <div class="f-label">Export Oggi</div><div class="f-val">{{ fmtKwh(row.export_today_kwh) }}</div>
+                <div class="f-label">SOC Fine</div><div class="f-val">{{ fmtPct(row.end_soc) }}</div>
+                <div class="f-label">Cap. kWh</div><div class="f-val">{{ fmtNum(row.capacity_kwh) }}</div>
+                <div class="f-label">Max C/D W</div><div class="f-val">{{ fmtChargeDischarge(row.max_charge_w, row.max_discharge_w) }}</div>
+                <div class="f-label">Fattore PV</div><div class="f-val">{{ fmtFactor(row.factors?.pv_adjust) }}</div>
+              </div>
             </div>
           </div>
           <div class="muted forecast-note">Se un campo è vuoto, viene stimato automaticamente dai dati storici.</div>
@@ -1750,6 +1739,34 @@ body{
   flex-direction:column;
   gap:6px;
 }
+.forecast-cards{
+  margin-top:10px;
+  display:grid;
+  grid-template-columns:repeat(2, minmax(260px, 1fr));
+  gap:10px;
+}
+.forecast-card{
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#0b121a;
+  padding:10px 12px;
+}
+.forecast-grid{
+  margin-top:6px;
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:6px 10px;
+  font-size:12px;
+}
+.f-label{
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:0.04em;
+}
+.f-val{
+  text-align:right;
+  font-weight:600;
+}
 .forecast-row{
   display:grid;
   grid-template-columns:
@@ -2223,6 +2240,9 @@ body{
   .insights-compare{ grid-template-columns:1fr; }
   .forecast-row{ grid-template-columns: 1fr 1fr; row-gap:6px; }
   .hourly-row{ grid-template-columns: 1fr 1fr; row-gap:6px; }
+  .forecast-cards{ grid-template-columns:1fr; }
+  .forecast-grid{ grid-template-columns:1fr; }
+  .f-val{ text-align:left; }
 }
 @media (max-width: 900px){
   .top-inner{ grid-template-columns:1fr; justify-items:start; }

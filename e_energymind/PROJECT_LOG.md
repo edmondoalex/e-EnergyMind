@@ -350,4 +350,7 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-16
 - UI forecast: colonne allargate e header con wrapping per evitare sovrapposizioni.
 - Versione add-on aggiornata a 2.1.18.
+## Aggiornamenti 2026-02-16
+- UI forecast: layout a card per utenza per evitare sovrapposizioni.
+- Versione add-on aggiornata a 2.1.19.
 
