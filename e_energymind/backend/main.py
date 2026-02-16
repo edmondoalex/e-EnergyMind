@@ -362,8 +362,7 @@ def _hourly_profile(conn: sqlite3.Connection, entity_id: str, days: int = 7) -> 
         "SELECT ts, raw, value, unit FROM history WHERE entity_id = ? AND ts >= ? ORDER BY ts ASC",
         (entity_id, start_ts),
     )
-    sums = [0.0] * 24
-    counts = [0] * 24
+    series = []
     for ts, raw, val, unit in cur.fetchall():
         v = val if val is not None else _num_or_none(raw)
         if v is None:
@@ -373,16 +372,45 @@ def _hourly_profile(conn: sqlite3.Connection, entity_id: str, days: int = 7) -> 
             continue
         if u == "kw":
             v = v * 1000.0
-        lt = time.localtime(int(ts))
-        h = int(lt.tm_hour)
-        sums[h] += float(v)
-        counts[h] += 1
+        series.append((int(ts), float(v)))
+    if len(series) < 2:
+        return [0.0] * 24
+
+    sums_ws = [0.0] * 24
+    sums_s = [0.0] * 24
+    for i in range(1, len(series)):
+        t0, v0 = series[i - 1]
+        t1, v1 = series[i]
+        if t1 <= t0:
+            continue
+        seg_start = t0
+        seg_end = t1
+        while seg_start < seg_end:
+            lt = time.localtime(seg_start)
+            hour_start = int(time.mktime((lt.tm_year, lt.tm_mon, lt.tm_mday, lt.tm_hour, 0, 0, lt.tm_wday, lt.tm_yday, lt.tm_isdst)))
+            hour_end = hour_start + 3600
+            chunk_end = min(seg_end, hour_end)
+            dt = chunk_end - seg_start
+            if dt <= 0:
+                break
+            # linear interpolation for v at seg_start and chunk_end
+            total_dt = t1 - t0
+            r0 = (seg_start - t0) / total_dt
+            r1 = (chunk_end - t0) / total_dt
+            v_start = v0 + (v1 - v0) * r0
+            v_end = v0 + (v1 - v0) * r1
+            avg_v = (v_start + v_end) / 2.0
+            h = lt.tm_hour
+            sums_ws[h] += avg_v * dt
+            sums_s[h] += dt
+            seg_start = chunk_end
+
     out = []
     for h in range(24):
-        if counts[h] == 0:
+        if sums_s[h] == 0:
             out.append(0.0)
         else:
-            out.append(sums[h] / counts[h])
+            out.append(sums_ws[h] / sums_s[h])
     return out
 
 
@@ -1521,6 +1549,7 @@ async def forecast():
                     export_today = round(max(0.0, surplus), 2)
 
             hourly = []
+            hourly_tomorrow = []
             if pv_id and load_id:
                 pv_profile = _hourly_from_forecast_entity(pv_fc_today_hourly_id, today_start) or _hourly_profile(conn, pv_id, 7)
                 load_profile = _hourly_profile(conn, load_id, 7)
@@ -1536,6 +1565,27 @@ async def forecast():
                     pv_w = pv_profile[h] * pv_scale
                     load_w = load_profile[h] * load_scale
                     hourly.append({
+                        "h": h,
+                        "pv_w": round(pv_w, 1),
+                        "load_w": round(load_w, 1),
+                        "surplus_w": round(pv_w - load_w, 1),
+                    })
+            if pv_id and load_id:
+                tomorrow_start = today_start + 86400
+                pv_profile_tom = _hourly_from_forecast_entity(pv_fc_tom_hourly_id, tomorrow_start) or _hourly_profile(conn, pv_id, 7)
+                load_profile_tom = _hourly_profile(conn, load_id, 7)
+                pv_sum_tom = sum(pv_profile_tom)
+                load_sum_tom = sum(load_profile_tom)
+                pv_scale_tom = 1.0
+                load_scale_tom = 1.0
+                if pv_tom_kwh is not None and pv_sum_tom > 0:
+                    pv_scale_tom = (pv_tom_kwh * 1000.0) / pv_sum_tom
+                if load_tom_kwh is not None and load_sum_tom > 0:
+                    load_scale_tom = (load_tom_kwh * 1000.0) / load_sum_tom
+                for h in range(24):
+                    pv_w = pv_profile_tom[h] * pv_scale_tom
+                    load_w = load_profile_tom[h] * load_scale_tom
+                    hourly_tomorrow.append({
                         "h": h,
                         "pv_w": round(pv_w, 1),
                         "load_w": round(load_w, 1),
@@ -1562,6 +1612,7 @@ async def forecast():
                     "pv_adjust": round(pv_factor, 3),
                 },
                 "hourly": hourly,
+                "hourly_tomorrow": hourly_tomorrow,
                 "sources": {
                     "pv_forecast_today": pv_fc_today_id or None,
                     "pv_forecast_tomorrow": pv_fc_tom_id or None,

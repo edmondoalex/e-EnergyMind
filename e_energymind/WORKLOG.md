@@ -310,3 +310,9 @@
 
 ## 2026-02-15
 - Admin: aggiunto filtro per entità (ricerca) per trovare rapidamente Carico casa e altre voci.
+
+## 2026-02-15
+- UI: aggiunto tasto Aggiorna nella barra superiore.
+
+## 2026-02-15
+- Forecast: profilo orario load calcolato con media pesata nel tempo (non media semplice campioni).

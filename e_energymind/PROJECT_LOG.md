@@ -331,3 +331,11 @@ Data export: 2026-02-08 (Europe/Rome)
 ## 2026-02-15
 - Admin: filtro ricerca per entità nelle utenze (mappate e complete).
 
+
+## 2026-02-15
+- UI: tasto Aggiorna in alto nella top bar.
+
+
+## 2026-02-15
+- Forecast: media oraria load corretta con integrazione tempo (time-weighted).
+
