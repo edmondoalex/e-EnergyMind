@@ -7,6 +7,7 @@
         </div>
         <div class="top-center">
           <div class="top-actions">
+            <button class="action-btn" @click="refresh">Aggiorna</button>
             <button class="action-btn" @click="saveAll">Salva tutto</button>
             <button class="action-btn" @click="exportConfig">Esporta config</button>
             <label class="action-btn upload">

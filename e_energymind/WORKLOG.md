@@ -316,3 +316,7 @@
 
 ## 2026-02-15
 - Forecast: profilo orario load calcolato con media pesata nel tempo (non media semplice campioni).
+## 2026-02-16
+- Forecast: profilo load orario non viene più scalato automaticamente (solo se l’utente imposta un consumo giornaliero).
+- Versione add-on aggiornata a 2.1.15.
+

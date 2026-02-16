@@ -1437,7 +1437,7 @@ async def forecast():
             pv_fc_tom_id = (fc.get("pv_forecast_tomorrow") or "").strip() or _eid(site, "forecast_tomorrow_kwh")
             pv_fc_today_hourly_id = (fc.get("pv_forecast_today_hourly") or "").strip()
             pv_fc_tom_hourly_id = (fc.get("pv_forecast_tomorrow_hourly") or "").strip()
-            load_daily_id = (fc.get("load_daily") or "").strip() or _eid(site, "today_load_kwh")
+            load_daily_id = (fc.get("load_daily") or "").strip()
 
             pv_fc_today = _state_num(pv_fc_today_id)
             pv_fc_tom = _state_num(pv_fc_tom_id)
@@ -1445,7 +1445,7 @@ async def forecast():
                 pv_fc_today = _state_num(pv_fc_today_hourly_id)
             if pv_fc_tom is None and pv_fc_tom_hourly_id:
                 pv_fc_tom = _state_num(pv_fc_tom_hourly_id)
-            load_fc_today = _state_num(load_daily_id)
+            load_fc_today = _state_num(load_daily_id) if load_daily_id else None
 
             soc_now = _state_num(soc_id)
             export_limit = fc.get("export_limit_w") if fc.get("export_limit_w") is not None else _state_num(export_limit_id)
@@ -1559,7 +1559,8 @@ async def forecast():
                 load_scale = 1.0
                 if pv_today_kwh is not None and pv_sum > 0:
                     pv_scale = (pv_today_kwh * 1000.0) / pv_sum
-                if load_today_kwh is not None and load_sum > 0:
+                # Only scale the load profile if the user explicitly provides a daily load target.
+                if load_daily_id and load_today_kwh is not None and load_sum > 0:
                     load_scale = (load_today_kwh * 1000.0) / load_sum
                 for h in range(24):
                     pv_w = pv_profile[h] * pv_scale
@@ -1580,7 +1581,8 @@ async def forecast():
                 load_scale_tom = 1.0
                 if pv_tom_kwh is not None and pv_sum_tom > 0:
                     pv_scale_tom = (pv_tom_kwh * 1000.0) / pv_sum_tom
-                if load_tom_kwh is not None and load_sum_tom > 0:
+                # Only scale the load profile if the user explicitly provides a daily load target.
+                if load_daily_id and load_tom_kwh is not None and load_sum_tom > 0:
                     load_scale_tom = (load_tom_kwh * 1000.0) / load_sum_tom
                 for h in range(24):
                     pv_w = pv_profile_tom[h] * pv_scale_tom

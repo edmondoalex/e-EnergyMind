@@ -338,4 +338,7 @@ Data export: 2026-02-08 (Europe/Rome)
 
 ## 2026-02-15
 - Forecast: media oraria load corretta con integrazione tempo (time-weighted).
+## Aggiornamenti 2026-02-16
+- Forecast: profilo load orario non viene più scalato automaticamente (solo se l’utente imposta un consumo giornaliero).
+- Versione add-on aggiornata a 2.1.15.
 
