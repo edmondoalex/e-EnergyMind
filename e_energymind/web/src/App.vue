@@ -62,6 +62,11 @@
                 Carica tipica {{ insights.learned_rules[`site${site}`]?.typical_charge_pct ?? 'n/d' }}%
               </span>
             </div>
+            <div class="muted learned-note">
+              Export/Surplus sono soglie oltre le quali il sistema si aspetta che la batteria carichi.
+              “Durata” è il tempo minimo per confermare l’evento.
+              “Carica tipica” è la percentuale media di surplus che normalmente va in batteria.
+            </div>
           </div>
         </div>
         <div class="card inner" v-if="forecast?.sites?.length">
@@ -99,8 +104,11 @@
           <div class="row"><strong>Profilo Orario (oggi)</strong></div>
           <div class="muted" v-if="!forecast.updated_at">In attesa dati...</div>
           <div v-else class="hourly-wrap">
-            <div class="hourly-block" v-for="row in forecast.sites" :key="`hourly-${row.site}`">
-              <div class="row"><strong>{{ row.name || siteTitle(row.site) }}</strong></div>
+            <details class="hourly-block" v-for="row in forecast.sites" :key="`hourly-${row.site}`" open>
+              <summary class="forecast-summary">
+                <strong>{{ row.name || siteTitle(row.site) }}</strong>
+                <span class="forecast-summary-meta">Profilo orario oggi</span>
+              </summary>
               <div class="hourly-table">
                 <div class="hourly-row hourly-head">
                   <div>Ora</div>
@@ -121,15 +129,18 @@
                   <div>{{ fmtW(h.extra_w) }}</div>
                 </div>
               </div>
-            </div>
+            </details>
           </div>
         </div>
         <div class="card inner" v-if="forecast?.sites?.length">
           <div class="row"><strong>Profilo Orario (domani)</strong></div>
           <div class="muted" v-if="!forecast.updated_at">In attesa dati...</div>
           <div v-else class="hourly-wrap">
-            <div class="hourly-block" v-for="row in forecast.sites" :key="`hourly-tom-${row.site}`">
-              <div class="row"><strong>{{ row.name || siteTitle(row.site) }}</strong></div>
+            <details class="hourly-block" v-for="row in forecast.sites" :key="`hourly-tom-${row.site}`" open>
+              <summary class="forecast-summary">
+                <strong>{{ row.name || siteTitle(row.site) }}</strong>
+                <span class="forecast-summary-meta">Profilo orario domani</span>
+              </summary>
               <div class="hourly-table">
                 <div class="hourly-row hourly-head">
                   <div>Ora</div>
@@ -150,7 +161,7 @@
                   <div>{{ fmtW(h.extra_w) }}</div>
                 </div>
               </div>
-            </div>
+            </details>
           </div>
         </div>
         <div class="insights-compare" v-if="ent">
@@ -1946,6 +1957,11 @@ body{
   border:1px solid var(--line);
   border-radius:8px;
   background:#0b121a;
+}
+.learned-note{
+  margin-top:6px;
+  font-size:12px;
+  line-height:1.3;
 }
 .preview-val{
   color:var(--muted);

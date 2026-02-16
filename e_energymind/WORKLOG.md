@@ -343,4 +343,10 @@
 ## 2026-02-16
 - Report: rimossi grafici SVG dai report giornalieri.
 - Versione add-on aggiornata a 2.1.23.
+## 2026-02-16
+- UI forecast: profili orari collassabili per utenza (oggi/domani).
+- Versione add-on aggiornata a 2.1.24.
+## 2026-02-16
+- UI: spiegazione testuale delle regole apprese (legenda).
+- Versione add-on aggiornata a 2.1.25.
 
