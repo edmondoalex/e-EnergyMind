@@ -361,4 +361,7 @@
 ## 2026-02-16
 - Automation: extra ora disponibile mostrato in settings e interface.
 - Versione add-on aggiornata a 2.1.29.
+## 2026-02-16
+- Automation: aggiunta stima extra kWh oggi/domani in settings e interface.
+- Versione add-on aggiornata a 2.1.30.
 

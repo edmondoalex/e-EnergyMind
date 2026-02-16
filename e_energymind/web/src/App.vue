@@ -100,6 +100,8 @@
                 <div class="f-label">Surplus Oggi</div><div class="f-val">{{ fmtKwh(row.surplus_today_kwh) }}</div>
                 <div class="f-label">Export Oggi</div><div class="f-val">{{ fmtKwh(row.export_today_kwh) }}</div>
                 <div class="f-label">Export (sim)</div><div class="f-val">{{ fmtKwh(row.export_sim_today_kwh) }}</div>
+                <div class="f-label">Extra (sim) Oggi</div><div class="f-val">{{ fmtKwh(row.export_sim_today_kwh) }}</div>
+                <div class="f-label">Extra (sim) Domani</div><div class="f-val">{{ fmtKwh(row.export_sim_tomorrow_kwh) }}</div>
                 <div class="f-label">Extra Ora</div><div class="f-val">{{ fmtW(row.extra_now_w) }}</div>
                 <div class="f-label">Fine Carica Oggi</div><div class="f-val">{{ fmtHour(row.charge_complete_hour) }}</div>
                 <div class="f-label">Fine Carica Domani</div><div class="f-val">{{ fmtHour(row.charge_complete_hour_tomorrow) }}</div>
@@ -513,7 +515,11 @@
           <div class="entity-list">
             <div class="entity-row" v-for="site in siteList" :key="`extra-set-${site}`">
               <span class="entity-name">{{ siteTitle(site) }}</span>
-              <span class="entity-value">{{ fmtW(extraNowFor(site)) }}</span>
+              <span class="entity-value">
+                Ora {{ fmtW(extraNowFor(site)) }} ·
+                Oggi {{ fmtKwh(extraTodayFor(site)) }} ·
+                Domani {{ fmtKwh(extraTomorrowFor(site)) }}
+              </span>
             </div>
           </div>
         </div>
@@ -637,6 +643,14 @@
             <div class="flow-card">
               <div class="k">Extra ora</div>
               <div class="v">{{ fmtW(extraNowFor(site)) }}</div>
+            </div>
+            <div class="flow-card">
+              <div class="k">Extra oggi</div>
+              <div class="v">{{ fmtKwh(extraTodayFor(site)) }}</div>
+            </div>
+            <div class="flow-card">
+              <div class="k">Extra domani</div>
+              <div class="v">{{ fmtKwh(extraTomorrowFor(site)) }}</div>
             </div>
             <div class="flow-card">
               <div class="k">Batteria V</div>
@@ -993,6 +1007,14 @@ const adminPreview = (eid) => {
 const extraNowFor = (site) => {
   const row = (forecast.value?.sites || []).find(r => Number(r.site) === Number(site))
   return row?.extra_now_w ?? null
+}
+const extraTodayFor = (site) => {
+  const row = (forecast.value?.sites || []).find(r => Number(r.site) === Number(site))
+  return row?.export_sim_today_kwh ?? null
+}
+const extraTomorrowFor = (site) => {
+  const row = (forecast.value?.sites || []).find(r => Number(r.site) === Number(site))
+  return row?.export_sim_tomorrow_kwh ?? null
 }
 const getEnt = (site, key) => {
   if (!ent.value) return null
