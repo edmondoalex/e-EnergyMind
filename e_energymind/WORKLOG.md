@@ -372,3 +372,6 @@
 ## 2026-02-16
 - UI: visualizzazione BMS max stimato in Automation setting, Automazioni interface e sezione parametri forecast.
 - Versione add-on aggiornata a 2.1.32.
+## 2026-02-16
+- UI: etichette chiare (stima/sim) nei valori della card previsioni per evitare confusione.
+- Versione add-on aggiornata a 2.1.33.

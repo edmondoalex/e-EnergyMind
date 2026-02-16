@@ -95,23 +95,23 @@
                 </span>
               </summary>
               <div class="forecast-grid">
-                <div class="f-label">PV Oggi</div><div class="f-val">{{ fmtKwh(row.pv_today_kwh) }}</div>
-                <div class="f-label">PV Domani</div><div class="f-val">{{ fmtKwh(row.pv_tomorrow_kwh) }}</div>
-                <div class="f-label">Consumo Oggi</div><div class="f-val">{{ fmtKwh(row.load_today_kwh) }}</div>
-                <div class="f-label">Consumo Domani</div><div class="f-val">{{ fmtKwh(row.load_tomorrow_kwh) }}</div>
-                <div class="f-label">Surplus Oggi</div><div class="f-val">{{ fmtKwh(row.surplus_today_kwh) }}</div>
-                <div class="f-label">Export Oggi</div><div class="f-val">{{ fmtKwh(row.export_today_kwh) }}</div>
+                <div class="f-label">PV Oggi (stima)</div><div class="f-val">{{ fmtKwh(row.pv_today_kwh) }}</div>
+                <div class="f-label">PV Domani (stima)</div><div class="f-val">{{ fmtKwh(row.pv_tomorrow_kwh) }}</div>
+                <div class="f-label">Consumo Oggi (stima)</div><div class="f-val">{{ fmtKwh(row.load_today_kwh) }}</div>
+                <div class="f-label">Consumo Domani (stima)</div><div class="f-val">{{ fmtKwh(row.load_tomorrow_kwh) }}</div>
+                <div class="f-label">Surplus Oggi (stima)</div><div class="f-val">{{ fmtKwh(row.surplus_today_kwh) }}</div>
+                <div class="f-label">Export Oggi (stima)</div><div class="f-val">{{ fmtKwh(row.export_today_kwh) }}</div>
                 <div class="f-label">Export (sim)</div><div class="f-val">{{ fmtKwh(row.export_sim_today_kwh) }}</div>
-                <div class="f-label">Extra (safe) Oggi</div><div class="f-val">{{ fmtKwh(row.extra_safe_today_kwh ?? row.export_sim_today_kwh) }}</div>
+                <div class="f-label">Extra (safe) Oggi (stima)</div><div class="f-val">{{ fmtKwh(row.extra_safe_today_kwh ?? row.export_sim_today_kwh) }}</div>
                 <div class="f-label">Extra (sim) Domani</div><div class="f-val">{{ fmtKwh(row.export_sim_tomorrow_kwh) }}</div>
-                <div class="f-label">Extra Ora (safe)</div><div class="f-val">{{ fmtW(row.extra_safe_now_w ?? row.extra_now_w) }}</div>
+                <div class="f-label">Extra Ora (safe) (stima)</div><div class="f-val">{{ fmtW(row.extra_safe_now_w ?? row.extra_now_w) }}</div>
                 <div class="f-label">Extra Ora (sim)</div><div class="f-val">{{ fmtW(row.extra_now_w) }}</div>
-                <div class="f-label">Fine Carica Oggi</div><div class="f-val">{{ fmtHour(row.charge_complete_hour) }}</div>
-                <div class="f-label">Fine Carica Domani</div><div class="f-val">{{ fmtHour(row.charge_complete_hour_tomorrow) }}</div>
-                <div class="f-label">SOC Fine</div><div class="f-val">{{ fmtPct(row.end_soc) }}</div>
-                <div class="f-label">Cap. kWh</div><div class="f-val">{{ fmtNum(row.capacity_kwh) }}</div>
-                <div class="f-label">Max C/D W</div><div class="f-val">{{ fmtChargeDischarge(row.max_charge_w, row.max_discharge_w) }}</div>
-                <div class="f-label">Fattore PV</div><div class="f-val">{{ fmtFactor(row.factors?.pv_adjust) }}</div>
+                <div class="f-label">Fine Carica Oggi (stima)</div><div class="f-val">{{ fmtHour(row.charge_complete_hour) }}</div>
+                <div class="f-label">Fine Carica Domani (stima)</div><div class="f-val">{{ fmtHour(row.charge_complete_hour_tomorrow) }}</div>
+                <div class="f-label">SOC Fine (sim)</div><div class="f-val">{{ fmtPct(row.end_soc) }}</div>
+                <div class="f-label">Cap. kWh (stimata)</div><div class="f-val">{{ fmtNum(row.capacity_kwh) }}</div>
+                <div class="f-label">Max C/D W (stimato)</div><div class="f-val">{{ fmtChargeDischarge(row.max_charge_w, row.max_discharge_w) }}</div>
+                <div class="f-label">Fattore PV (stimato)</div><div class="f-val">{{ fmtFactor(row.factors?.pv_adjust) }}</div>
               </div>
             </details>
           </div>
