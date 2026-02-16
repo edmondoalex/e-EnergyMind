@@ -378,3 +378,6 @@
 ## 2026-02-16
 - UI: mostrati BMS max reali (storico) separati da valori usati/configurati.
 - Versione add-on aggiornata a 2.1.34.
+## 2026-02-16
+- Forecast: calcolo BMS max reale sempre da storico, anche se configurato manualmente.
+- Versione add-on aggiornata a 2.1.35.

@@ -1473,8 +1473,10 @@ async def forecast():
 
             # Auto parameters from learned rules / history
             cap_kwh = fc.get("battery_capacity_kwh") if fc.get("battery_capacity_kwh") is not None else site_rules.get("battery_capacity_kwh")
-            max_charge_w = fc.get("max_charge_w") if fc.get("max_charge_w") is not None else site_rules.get("max_charge_w")
-            max_discharge_w = fc.get("max_discharge_w") if fc.get("max_discharge_w") is not None else site_rules.get("max_discharge_w")
+            max_charge_w_cfg = fc.get("max_charge_w") if fc.get("max_charge_w") is not None else None
+            max_discharge_w_cfg = fc.get("max_discharge_w") if fc.get("max_discharge_w") is not None else None
+            max_charge_w = max_charge_w_cfg if max_charge_w_cfg is not None else site_rules.get("max_charge_w")
+            max_discharge_w = max_discharge_w_cfg if max_discharge_w_cfg is not None else site_rules.get("max_discharge_w")
 
             min_soc = fc.get("min_soc") if fc.get("min_soc") is not None else None
             max_soc = fc.get("max_soc") if fc.get("max_soc") is not None else None
@@ -1492,15 +1494,21 @@ async def forecast():
                     if max_soc is None:
                         max_soc = round(max(soc_vals), 1)
 
-            # Fallback for max charge/discharge from history
-            if batt_id and (max_charge_w is None or max_discharge_w is None):
+            # Real max charge/discharge from history (always compute if batt_id present)
+            learned_max_charge = None
+            learned_max_discharge = None
+            if batt_id:
                 batt_hist = _load_history_series(conn, batt_id, today_start - 2 * 86400)
                 charge_vals = [abs(v) for _, v in batt_hist if v < 0]
                 dis_vals = [abs(v) for _, v in batt_hist if v > 0]
-                if max_charge_w is None and charge_vals:
-                    max_charge_w = int(round(_percentile(charge_vals, 0.95)))
-                if max_discharge_w is None and dis_vals:
-                    max_discharge_w = int(round(_percentile(dis_vals, 0.95)))
+                if charge_vals:
+                    learned_max_charge = int(round(_percentile(charge_vals, 0.95)))
+                if dis_vals:
+                    learned_max_discharge = int(round(_percentile(dis_vals, 0.95)))
+            if max_charge_w is None:
+                max_charge_w = learned_max_charge
+            if max_discharge_w is None:
+                max_discharge_w = learned_max_discharge
 
             # Forecast values
             pv_today_kwh = (pv_fc_today * pv_factor) if pv_fc_today is not None else pv_base
@@ -1800,6 +1808,10 @@ async def forecast():
                 "capacity_kwh": cap_kwh,
                 "max_charge_w": max_charge_w,
                 "max_discharge_w": max_discharge_w,
+                "max_charge_w_cfg": max_charge_w_cfg,
+                "max_discharge_w_cfg": max_discharge_w_cfg,
+                "max_charge_w_learned": learned_max_charge,
+                "max_discharge_w_learned": learned_max_discharge,
                 "min_soc": min_soc,
                 "max_soc": max_soc,
                 "export_limit_w": export_limit,

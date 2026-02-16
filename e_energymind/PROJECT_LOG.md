@@ -394,3 +394,6 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-16
 - UI: BMS max reale separato da usato/configurato.
 - Versione add-on aggiornata a 2.1.34.
+## Aggiornamenti 2026-02-16
+- Forecast: BMS max reale calcolato sempre da storico, anche con valori configurati.
+- Versione add-on aggiornata a 2.1.35.
