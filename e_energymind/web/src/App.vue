@@ -508,6 +508,15 @@
       <section v-else-if="tab==='automation_settings'" class="card">
         <h2>Automation setting</h2>
         <p class="muted">Configurazione automazioni e campi dedicati per la vista istantanea.</p>
+        <div class="card inner" v-if="forecast?.sites?.length">
+          <div class="row"><strong>Extra disponibile ora</strong></div>
+          <div class="entity-list">
+            <div class="entity-row" v-for="site in siteList" :key="`extra-set-${site}`">
+              <span class="entity-name">{{ siteTitle(site) }}</span>
+              <span class="entity-value">{{ fmtW(extraNowFor(site)) }}</span>
+            </div>
+          </div>
+        </div>
         <div class="form" v-if="sp">
           <h3 class="section">Campi dedicati (diagramma istantaneo)</h3>
           <div class="help">Inserisci le entità da usare nella vista “Automazioni interface”.</div>
@@ -624,6 +633,10 @@
             <div class="flow-card">
               <div class="k">SOC</div>
               <div class="v">{{ flowValue(site, 'soc') }}</div>
+            </div>
+            <div class="flow-card">
+              <div class="k">Extra ora</div>
+              <div class="v">{{ fmtW(extraNowFor(site)) }}</div>
             </div>
             <div class="flow-card">
               <div class="k">Batteria V</div>
@@ -976,6 +989,10 @@ const adminPreview = (eid) => {
   const st = adminStates.value?.[eid]
   if (!st) return 'n/d'
   return fmtEntityRaw(st.state, st.attributes)
+}
+const extraNowFor = (site) => {
+  const row = (forecast.value?.sites || []).find(r => Number(r.site) === Number(site))
+  return row?.extra_now_w ?? null
 }
 const getEnt = (site, key) => {
   if (!ent.value) return null
@@ -1405,6 +1422,12 @@ async function refresh(){
       forecast.value = await fc.json()
     } catch {}
     await refreshExtraStates()
+  }
+  if (tab.value === 'automation_settings' || tab.value === 'automation_interface') {
+    try {
+      const fc = await fetch('/api/forecast')
+      forecast.value = await fc.json()
+    } catch {}
   }
   if (tab.value === 'automation_interface') {
     await refreshFlowStates()

@@ -374,4 +374,7 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-16
 - UI: campioni usati per regole apprese con etichetta per utenza.
 - Versione add-on aggiornata a 2.1.28.
+## Aggiornamenti 2026-02-16
+- Automation: extra ora disponibile mostrato in settings e interface.
+- Versione add-on aggiornata a 2.1.29.
 
