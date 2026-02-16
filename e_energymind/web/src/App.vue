@@ -68,8 +68,13 @@
           <div class="row"><strong>Previsioni Solar e-EnergyMind</strong></div>
           <div class="muted" v-if="!forecast.updated_at">In attesa dati...</div>
           <div v-else class="forecast-cards">
-            <div class="forecast-card" v-for="row in forecast.sites" :key="`fc-${row.site}`">
-              <div class="row"><strong>{{ row.name || siteTitle(row.site) }}</strong></div>
+            <details class="forecast-card" v-for="row in forecast.sites" :key="`fc-${row.site}`" open>
+              <summary class="forecast-summary">
+                <strong>{{ row.name || siteTitle(row.site) }}</strong>
+                <span class="forecast-summary-meta">
+                  Extra Ora {{ fmtW(row.extra_now_w) }} · Fine Carica {{ fmtHour(row.charge_complete_hour) }}
+                </span>
+              </summary>
               <div class="forecast-grid">
                 <div class="f-label">PV Oggi</div><div class="f-val">{{ fmtKwh(row.pv_today_kwh) }}</div>
                 <div class="f-label">PV Domani</div><div class="f-val">{{ fmtKwh(row.pv_tomorrow_kwh) }}</div>
@@ -86,7 +91,7 @@
                 <div class="f-label">Max C/D W</div><div class="f-val">{{ fmtChargeDischarge(row.max_charge_w, row.max_discharge_w) }}</div>
                 <div class="f-label">Fattore PV</div><div class="f-val">{{ fmtFactor(row.factors?.pv_adjust) }}</div>
               </div>
-            </div>
+            </details>
           </div>
           <div class="muted forecast-note">Se un campo è vuoto, viene stimato automaticamente dai dati storici.</div>
         </div>
@@ -346,6 +351,7 @@
             <div v-for="item in filteredEntityDefs(site)" :key="`s${site}_${item.key}`" class="field">
               <label class="label-row">
                 <span>{{ labelFor(site, item.key, item.label) }}</span>
+                <span class="preview-val">{{ adminPreview(ent?.[`s${site}_${item.key}`]?.entity_id) }}</span>
                 <span class="state-flag" :class="isOn(site, item.key) ? 'state-on' : 'state-off'">
                   <input class="flag-checkbox" type="checkbox" :checked="isOn(site, item.key)"
                          @change="toggleManual(site, item.key)"/>
@@ -366,6 +372,7 @@
             <div v-for="e in filteredAllEntities(site)" :key="`all-${site}-${e.entity_id}`" class="field field-readonly">
               <label class="label-row">
                 <span>{{ e.name || e.original_name || e.entity_id }}</span>
+                <span class="preview-val">{{ adminPreview(e.entity_id) }}</span>
                 <span class="state-flag" :class="isOnKey(`all_s${site}_${e.entity_id}`) ? 'state-on' : 'state-off'">
                   <input class="flag-checkbox" type="checkbox" :checked="isOnKey(`all_s${site}_${e.entity_id}`)"
                          @change="toggleManualKey(`all_s${site}_${e.entity_id}`)"/>
@@ -806,6 +813,7 @@ const overwriteMap = ref({ 1: false, 2: false, 3: false })
 const manualFlags = ref({})
 const historyModal = ref({ open: false, title: '', series: [], unit: '', samples: [] })
 const allEntitiesState = ref({ 1: [], 2: [], 3: [] })
+const adminStates = ref({})
 const newDatalog = ref({ 1: '', 2: '', 3: '' })
 const flowStates = ref({})
 const extraStates = ref({})
@@ -933,6 +941,12 @@ const fmtFactor = (v) => {
 const fmtW = (v) => {
   if (v === null || v === undefined || Number.isNaN(Number(v))) return 'n/d'
   return `${Math.round(Number(v))} W`
+}
+const adminPreview = (eid) => {
+  if (!eid) return 'n/d'
+  const st = adminStates.value?.[eid]
+  if (!st) return 'n/d'
+  return fmtEntityRaw(st.state, st.attributes)
 }
 const getEnt = (site, key) => {
   if (!ent.value) return null
@@ -1339,7 +1353,13 @@ async function syncAllEntities(site){
   window.alert(`Elenco completo aggiornato: ${data.total || 0} entità`)
 }
 async function refresh(){
-  if (tab.value === 'admin' || editingCount.value > 0) return
+  if (tab.value === 'admin') {
+    if (editingCount.value > 0) return
+    await refreshAdminStates()
+    lastUpdate.value = new Date()
+    return
+  }
+  if (editingCount.value > 0) return
   const s = await fetch('/api/status')
   status.value = await s.json()
   const d = await fetch('/api/db_info')
@@ -1405,6 +1425,31 @@ async function refreshExtraStates(){
   if (!r.ok) return
   const data = await r.json()
   extraStates.value = data.items || {}
+}
+
+async function refreshAdminStates(){
+  if (!ent.value) return
+  const ids = []
+  for (const site of siteList.value || []) {
+    for (const item of filteredEntityDefs(site)) {
+      const eid = String(ent.value?.[`s${site}_${item.key}`]?.entity_id || '').trim()
+      if (eid) ids.push(eid)
+    }
+    for (const e of filteredAllEntities(site)) {
+      const eid = String(e.entity_id || '').trim()
+      if (eid) ids.push(eid)
+    }
+  }
+  if (ids.length === 0) return
+  const uniq = Array.from(new Set(ids))
+  const r = await fetch('/api/entity_states', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ entity_ids: uniq })
+  })
+  if (!r.ok) return
+  const data = await r.json()
+  adminStates.value = data.items || {}
 }
 
 async function generateReport(){
@@ -1770,14 +1815,36 @@ body{
   border:1px solid var(--line);
   border-radius:10px;
   background:#0b121a;
+  padding:0;
+  overflow:hidden;
+}
+.forecast-summary{
+  list-style:none;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
   padding:10px 12px;
+  cursor:pointer;
+}
+.forecast-summary::-webkit-details-marker{
+  display:none;
+}
+.forecast-summary-meta{
+  color:var(--muted);
+  font-size:12px;
+  white-space:nowrap;
+}
+.forecast-card[open] .forecast-summary{
+  border-bottom:1px solid var(--line);
 }
 .forecast-grid{
-  margin-top:6px;
+  margin:6px 0 0;
   display:grid;
   grid-template-columns: 1fr 1fr;
   gap:6px 10px;
   font-size:12px;
+  padding:0 12px 10px;
 }
 .f-label{
   color:var(--muted);
@@ -1879,6 +1946,12 @@ body{
   border:1px solid var(--line);
   border-radius:8px;
   background:#0b121a;
+}
+.preview-val{
+  color:var(--muted);
+  font-size:12px;
+  margin-left:auto;
+  white-space:nowrap;
 }
 .insights-compare{
   display:grid;
@@ -2264,6 +2337,8 @@ body{
   .forecast-cards{ grid-template-columns:1fr; }
   .forecast-grid{ grid-template-columns:1fr; }
   .f-val{ text-align:left; }
+  .forecast-summary{ flex-direction:column; align-items:flex-start; }
+  .forecast-summary-meta{ white-space:normal; }
 }
 @media (max-width: 900px){
   .top-inner{ grid-template-columns:1fr; justify-items:start; }

@@ -1002,29 +1002,7 @@ def _generate_report_for_day(date_str: str) -> None:
             report["partial_charge_events"][f"site{site}"] = events
             report["summary"][f"site{site}_partial_charge_events"] = len(events)
 
-            # Charts
-            charts = report.setdefault("charts", {})
-            charts[f"site{site}_power_svg"] = f"report_{date_str}_site{site}_power.svg"
-            charts[f"site{site}_soc_svg"] = f"report_{date_str}_site{site}_soc.svg"
-            charts[f"site{site}_temp_svg"] = f"report_{date_str}_site{site}_temp.svg"
-            power_svg = _svg_chart({
-                "PV": _downsample(pv_series),
-                "Load": _downsample(load_series),
-                "Grid": _downsample(grid_series),
-                "Battery": _downsample(batt_series),
-            }, f"Utenza {site} — Potenze (W)")
-            (REPORT_DIR / charts[f"site{site}_power_svg"]).write_text(power_svg, encoding="utf-8")
-
-            soc_vals = [(ts, float(v)) for ts, _, v, _ in soc_series if ts < end_ts and v is not None]
-            temp_vals = [(ts, float(v)) for ts, _, v, _ in temp_series if ts < end_ts and v is not None]
-            soc_svg = _svg_chart({"SOC (%)": _downsample(soc_vals)}, f"Utenza {site} — SOC (%)")
-            temp_svg = _svg_chart({"Temp (C)": _downsample(temp_vals)}, f"Utenza {site} — Temp Batteria (C)")
-            (REPORT_DIR / charts[f"site{site}_soc_svg"]).write_text(soc_svg, encoding="utf-8")
-            (REPORT_DIR / charts[f"site{site}_temp_svg"]).write_text(temp_svg, encoding="utf-8")
-
-        # Comparison chart (PV + Battery) between sites
-        if pv_id and batt_id:
-            pass
+            # Charts disabled (SVG removed)
 
     md_lines.append("## Sintesi")
     md_lines.append(f"- Utenza 1: {report['summary'].get('site1_partial_charge_events', 0)} episodi di carica parziale.")

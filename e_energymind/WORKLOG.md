@@ -337,4 +337,10 @@
 ## 2026-02-16
 - Forecast: aggiunta potenza extra disponibile (instant) per utenza + colonne orarie.
 - Versione add-on aggiornata a 2.1.21.
+## 2026-02-16
+- Admin: preview valore accanto alle entità (live state) + refresh dedicato.
+- Versione add-on aggiornata a 2.1.22.
+## 2026-02-16
+- Report: rimossi grafici SVG dai report giornalieri.
+- Versione add-on aggiornata a 2.1.23.
 
