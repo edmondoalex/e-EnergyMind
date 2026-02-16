@@ -297,3 +297,9 @@
 ## 2026-02-15
 - Report: aggiunta relazione tecnica giornaliera con statistiche per utenza.
 
+
+## 2026-02-15
+- Previsioni Solar e-EnergyMind: aggiunti forecast automatici e parametri in Admin + tabella in User.
+
+## 2026-02-15
+- Previsioni: aggiunto profilo orario PV/Load/Surplus con scaling su forecast.

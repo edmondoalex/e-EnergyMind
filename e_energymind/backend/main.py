@@ -300,6 +300,91 @@ def _percentile(vals: list[float], p: float) -> float | None:
     return v[f] + (v[c] - v[f]) * (k - f)
 
 
+def _integrate_energy_kwh(series: list[tuple[int, float]]) -> float:
+    if len(series) < 2:
+        return 0.0
+    total = 0.0
+    for i in range(1, len(series)):
+        t0, v0 = series[i - 1]
+        t1, v1 = series[i]
+        dt = max(0, t1 - t0)
+        avg_w = (v0 + v1) / 2.0
+        total += (avg_w * dt) / 3600000.0
+    return total
+
+
+def _day_start(ts: int | None = None) -> int:
+    base = ts or int(time.time())
+    lt = time.localtime(base)
+    return int(time.mktime((lt.tm_year, lt.tm_mon, lt.tm_mday, 0, 0, 0, lt.tm_wday, lt.tm_yday, lt.tm_isdst)))
+
+
+def _load_history_power_series(conn: sqlite3.Connection, entity_id: str, start_ts: int, end_ts: int) -> list[tuple[int, float]]:
+    cur = conn.execute(
+        "SELECT ts, raw, value, unit FROM history WHERE entity_id = ? AND ts >= ? AND ts < ? ORDER BY ts ASC",
+        (entity_id, start_ts, end_ts),
+    )
+    rows = cur.fetchall()
+    out = []
+    for ts, raw, val, unit in rows:
+        v = val if val is not None else _num_or_none(raw)
+        if v is None:
+            continue
+        u = (unit or "").strip().lower()
+        if u in ("kwh", "wh"):
+            continue
+        if u == "kw":
+            v = v * 1000.0
+        out.append((int(ts), float(v)))
+    return out
+
+
+def _daily_energy_kwh(conn: sqlite3.Connection, entity_id: str, day_start: int, day_end: int) -> float:
+    series = _load_history_power_series(conn, entity_id, day_start, day_end)
+    return round(_integrate_energy_kwh(series), 3)
+
+
+def _median(values: list[float]) -> float | None:
+    if not values:
+        return None
+    v = sorted(values)
+    mid = len(v) // 2
+    if len(v) % 2 == 1:
+        return v[mid]
+    return (v[mid - 1] + v[mid]) / 2.0
+
+
+def _hourly_profile(conn: sqlite3.Connection, entity_id: str, days: int = 7) -> list[float]:
+    now = int(time.time())
+    start_ts = now - days * 86400
+    cur = conn.execute(
+        "SELECT ts, raw, value, unit FROM history WHERE entity_id = ? AND ts >= ? ORDER BY ts ASC",
+        (entity_id, start_ts),
+    )
+    sums = [0.0] * 24
+    counts = [0] * 24
+    for ts, raw, val, unit in cur.fetchall():
+        v = val if val is not None else _num_or_none(raw)
+        if v is None:
+            continue
+        u = (unit or "").strip().lower()
+        if u in ("kwh", "wh"):
+            continue
+        if u == "kw":
+            v = v * 1000.0
+        lt = time.localtime(int(ts))
+        h = int(lt.tm_hour)
+        sums[h] += float(v)
+        counts[h] += 1
+    out = []
+    for h in range(24):
+        if counts[h] == 0:
+            out.append(0.0)
+        else:
+            out.append(sums[h] / counts[h])
+    return out
+
+
 def _learn_rules_for_site(conn: sqlite3.Connection, site: int, ent_cfg: dict, export_positive: bool) -> dict:
     def _eid(k: str) -> str | None:
         return ent_cfg.get(f"s{site}_{k}")
@@ -321,6 +406,8 @@ def _learn_rules_for_site(conn: sqlite3.Connection, site: int, ent_cfg: dict, ex
     export_vals = []
     surplus_vals = []
     charge_frac = []
+    charge_powers = []
+    discharge_powers = []
     for ts, pv in pv_series[:: max(1, len(pv_series) // 300 or 1)]:
         load = _nearest_value(load_series, ts)
         grid = _nearest_value(grid_series, ts)
@@ -335,17 +422,42 @@ def _learn_rules_for_site(conn: sqlite3.Connection, site: int, ent_cfg: dict, ex
             export_vals.append(abs(grid))
         if batt < 0:
             charge_frac.append(abs(batt) / surplus if surplus > 0 else 0)
+            charge_powers.append(abs(batt))
+        elif batt > 0:
+            discharge_powers.append(abs(batt))
 
     export_thr = _percentile(export_vals, 0.6) or PARTIAL_EXPORT_MIN_W
     export_thr = max(PARTIAL_EXPORT_MIN_W, float(export_thr))
     surplus_thr = _percentile(surplus_vals, 0.3) or 0.0
     charge_pct = _percentile(charge_frac, 0.5)
 
+    # Estimate battery capacity from SOC delta and charged energy (last 24h)
+    soc_id = _eid("battery_soc")
+    cap_kwh = None
+    if soc_id:
+        soc_series = _load_history_raw_series(conn, soc_id, since_ts)
+        soc_vals = [v for _, _, v, _ in soc_series if v is not None]
+        if soc_vals:
+            soc_min = min(soc_vals)
+            soc_max = max(soc_vals)
+            if soc_max - soc_min >= 5:
+                batt_id = _eid("battery_power")
+                if batt_id:
+                    batt_series = _load_history_series(conn, batt_id, since_ts)
+                    charge_kwh = _integrate_energy_kwh([(t, -p) for t, p in batt_series if p < 0])
+                    try:
+                        cap_kwh = round(charge_kwh / ((soc_max - soc_min) / 100.0), 2)
+                    except Exception:
+                        cap_kwh = None
+
     return {
         "export_threshold_w": int(round(export_thr)),
         "min_surplus_w": int(round(surplus_thr)),
         "min_duration_s": PARTIAL_MIN_DURATION_S,
         "typical_charge_pct": round(charge_pct * 100, 1) if charge_pct is not None else None,
+        "max_charge_w": int(round(_percentile(charge_powers, 0.95))) if charge_powers else None,
+        "max_discharge_w": int(round(_percentile(discharge_powers, 0.95))) if discharge_powers else None,
+        "battery_capacity_kwh": cap_kwh,
         "samples": {
             "pv": len(pv_series),
             "load": len(load_series),
@@ -1219,6 +1331,205 @@ async def insights():
         },
         "sites": [site1, site2],
         "learned_rules": learned
+    })
+
+
+@app.get("/api/forecast")
+async def forecast():
+    cfg = load_config()
+    ent_cfg = cfg.get("entities", {}) or {}
+    forecast_cfg = cfg.get("forecast", {}) or {}
+    learned = cfg.get("runtime", {}).get("learned_rules", {}) if isinstance(cfg.get("runtime", {}), dict) else {}
+
+    def _eid(site: int, key: str) -> str | None:
+        return ent_cfg.get(f"s{site}_{key}")
+
+    now_ts = int(time.time())
+    today_start = _day_start(now_ts)
+    results = []
+
+    with sqlite3.connect(DB_PATH) as conn:
+        for site in (1, 2, 3):
+            if site > int(cfg.get("runtime", {}).get("sites_count", 2)):
+                continue
+
+            site_key = f"site{site}"
+            site_rules = learned.get(site_key, {}) if isinstance(learned, dict) else {}
+            fc = forecast_cfg.get(f"s{site}", {}) if isinstance(forecast_cfg, dict) else {}
+
+            pv_id = _eid(site, "pv_power_total") or _eid(site, "pv_power")
+            load_id = _eid(site, "load_power")
+            pv_today_id = _eid(site, "today_production_kwh")
+            load_today_id = _eid(site, "today_load_kwh")
+            soc_id = _eid(site, "battery_soc")
+            batt_id = _eid(site, "battery_power")
+            export_limit_id = _eid(site, "grid_export_power")
+
+            pv_fc_today_id = (fc.get("pv_forecast_today") or "").strip() or _eid(site, "forecast_today_kwh")
+            pv_fc_tom_id = (fc.get("pv_forecast_tomorrow") or "").strip() or _eid(site, "forecast_tomorrow_kwh")
+            load_daily_id = (fc.get("load_daily") or "").strip() or _eid(site, "today_load_kwh")
+
+            pv_fc_today = _state_num(pv_fc_today_id)
+            pv_fc_tom = _state_num(pv_fc_tom_id)
+            load_fc_today = _state_num(load_daily_id)
+
+            soc_now = _state_num(soc_id)
+            export_limit = fc.get("export_limit_w") if fc.get("export_limit_w") is not None else _state_num(export_limit_id)
+
+            # Auto baselines from history (7 giorni)
+            pv_days = []
+            load_days = []
+            for d in range(1, 8):
+                day_start = today_start - d * 86400
+                day_end = day_start + 86400
+                if pv_id:
+                    pv_days.append(_daily_energy_kwh(conn, pv_id, day_start, day_end))
+                if load_id:
+                    load_days.append(_daily_energy_kwh(conn, load_id, day_start, day_end))
+            pv_base = _median([v for v in pv_days if v > 0])
+            load_base = _median([v for v in load_days if v > 0])
+
+            # Correction factor if forecast entity present and history exists
+            pv_factor = 1.0
+            if pv_fc_today_id and pv_today_id:
+                hist_fc = _load_history_raw_series(conn, pv_fc_today_id, today_start - 8 * 86400)
+                hist_act = _load_history_raw_series(conn, pv_today_id, today_start - 8 * 86400)
+                if hist_fc and hist_act:
+                    # build daily max map
+                    fc_map = {}
+                    for ts, raw, val, _ in hist_fc:
+                        v = val if val is not None else _num_or_none(raw)
+                        if v is None:
+                            continue
+                        day = time.strftime("%Y-%m-%d", time.localtime(ts))
+                        fc_map[day] = max(fc_map.get(day, 0), float(v))
+                    act_map = {}
+                    for ts, raw, val, _ in hist_act:
+                        v = val if val is not None else _num_or_none(raw)
+                        if v is None:
+                            continue
+                        day = time.strftime("%Y-%m-%d", time.localtime(ts))
+                        act_map[day] = max(act_map.get(day, 0), float(v))
+                    ratios = []
+                    for day, fc_val in fc_map.items():
+                        act_val = act_map.get(day)
+                        if act_val and fc_val:
+                            ratios.append(act_val / fc_val)
+                    if ratios:
+                        pv_factor = max(0.6, min(1.4, _median(ratios) or 1.0))
+
+            # Auto parameters from learned rules / history
+            cap_kwh = fc.get("battery_capacity_kwh") if fc.get("battery_capacity_kwh") is not None else site_rules.get("battery_capacity_kwh")
+            max_charge_w = fc.get("max_charge_w") if fc.get("max_charge_w") is not None else site_rules.get("max_charge_w")
+            max_discharge_w = fc.get("max_discharge_w") if fc.get("max_discharge_w") is not None else site_rules.get("max_discharge_w")
+
+            min_soc = fc.get("min_soc") if fc.get("min_soc") is not None else None
+            max_soc = fc.get("max_soc") if fc.get("max_soc") is not None else None
+            if soc_id and (min_soc is None or max_soc is None):
+                soc_hist = _load_history_raw_series(conn, soc_id, today_start - 8 * 86400)
+                soc_vals = []
+                for _, raw, val, _ in soc_hist:
+                    v = val if val is not None else _num_or_none(raw)
+                    if v is None:
+                        continue
+                    soc_vals.append(float(v))
+                if soc_vals:
+                    if min_soc is None:
+                        min_soc = round(min(soc_vals), 1)
+                    if max_soc is None:
+                        max_soc = round(max(soc_vals), 1)
+
+            # Fallback for max charge/discharge from history
+            if batt_id and (max_charge_w is None or max_discharge_w is None):
+                batt_hist = _load_history_series(conn, batt_id, today_start - 2 * 86400)
+                charge_vals = [abs(v) for _, v in batt_hist if v < 0]
+                dis_vals = [abs(v) for _, v in batt_hist if v > 0]
+                if max_charge_w is None and charge_vals:
+                    max_charge_w = int(round(_percentile(charge_vals, 0.95)))
+                if max_discharge_w is None and dis_vals:
+                    max_discharge_w = int(round(_percentile(dis_vals, 0.95)))
+
+            # Forecast values
+            pv_today_kwh = (pv_fc_today * pv_factor) if pv_fc_today is not None else pv_base
+            pv_tom_kwh = (pv_fc_tom * pv_factor) if pv_fc_tom is not None else pv_base
+            load_today_kwh = load_fc_today if load_fc_today is not None else load_base
+            load_tom_kwh = load_today_kwh
+
+            # Estimate surplus and end SOC
+            surplus_today = None
+            export_today = None
+            end_soc = None
+            if pv_today_kwh is not None and load_today_kwh is not None:
+                surplus = pv_today_kwh - load_today_kwh
+                surplus_today = round(surplus, 2)
+                if cap_kwh and soc_now is not None:
+                    max_soc_eff = max_soc if max_soc is not None else 100.0
+                    min_soc_eff = min_soc if min_soc is not None else 0.0
+                    headroom_kwh = max(0.0, cap_kwh * max(0.0, (max_soc_eff - soc_now) / 100.0))
+                    charge_kwh = min(max(0.0, surplus), headroom_kwh)
+                    export_today = round(max(0.0, surplus - charge_kwh), 2)
+                    end_soc = soc_now + (charge_kwh / cap_kwh * 100.0) if cap_kwh else None
+                    if end_soc is not None:
+                        end_soc = round(max(min_soc_eff, min(max_soc_eff, end_soc)), 1)
+                else:
+                    export_today = round(max(0.0, surplus), 2)
+
+            hourly = []
+            if pv_id and load_id:
+                pv_profile = _hourly_profile(conn, pv_id, 7)
+                load_profile = _hourly_profile(conn, load_id, 7)
+                pv_sum = sum(pv_profile)
+                load_sum = sum(load_profile)
+                pv_scale = 1.0
+                load_scale = 1.0
+                if pv_today_kwh is not None and pv_sum > 0:
+                    pv_scale = (pv_today_kwh * 1000.0) / pv_sum
+                if load_today_kwh is not None and load_sum > 0:
+                    load_scale = (load_today_kwh * 1000.0) / load_sum
+                for h in range(24):
+                    pv_w = pv_profile[h] * pv_scale
+                    load_w = load_profile[h] * load_scale
+                    hourly.append({
+                        "h": h,
+                        "pv_w": round(pv_w, 1),
+                        "load_w": round(load_w, 1),
+                        "surplus_w": round(pv_w - load_w, 1),
+                    })
+
+            results.append({
+                "site": site,
+                "name": (cfg.get("devices", {}).get(f"s{site}", {}) or {}).get("name", "") or f"Utenza {site}",
+                "pv_today_kwh": round(pv_today_kwh, 2) if pv_today_kwh is not None else None,
+                "pv_tomorrow_kwh": round(pv_tom_kwh, 2) if pv_tom_kwh is not None else None,
+                "load_today_kwh": round(load_today_kwh, 2) if load_today_kwh is not None else None,
+                "load_tomorrow_kwh": round(load_tom_kwh, 2) if load_tom_kwh is not None else None,
+                "surplus_today_kwh": surplus_today,
+                "export_today_kwh": export_today,
+                "end_soc": end_soc,
+                "capacity_kwh": cap_kwh,
+                "max_charge_w": max_charge_w,
+                "max_discharge_w": max_discharge_w,
+                "min_soc": min_soc,
+                "max_soc": max_soc,
+                "export_limit_w": export_limit,
+                "factors": {
+                    "pv_adjust": round(pv_factor, 3),
+                },
+                "hourly": hourly,
+                "sources": {
+                    "pv_forecast_today": pv_fc_today_id or None,
+                    "pv_forecast_tomorrow": pv_fc_tom_id or None,
+                    "load_daily": load_daily_id or None,
+                },
+                "auto": {
+                    "pv_base_kwh": pv_base,
+                    "load_base_kwh": load_base,
+                },
+            })
+
+    return JSONResponse({
+        "updated_at": now_ts,
+        "sites": results,
     })
 
 

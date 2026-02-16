@@ -63,6 +63,62 @@
             </div>
           </div>
         </div>
+        <div class="card inner" v-if="forecast?.sites?.length">
+          <div class="row"><strong>Previsioni Solar e-EnergyMind</strong></div>
+          <div class="muted" v-if="!forecast.updated_at">In attesa dati...</div>
+          <div class="forecast-table" v-else>
+            <div class="forecast-row forecast-head">
+              <div>Utenza</div>
+              <div>PV Oggi</div>
+              <div>PV Domani</div>
+              <div>Consumo Oggi</div>
+              <div>Consumo Domani</div>
+              <div>Surplus Oggi</div>
+              <div>Export Oggi</div>
+              <div>SOC Fine</div>
+              <div>Cap. kWh</div>
+              <div>Max C/D W</div>
+              <div>Fattore PV</div>
+            </div>
+            <div class="forecast-row" v-for="row in forecast.sites" :key="`fc-${row.site}`">
+              <div>{{ row.name || siteTitle(row.site) }}</div>
+              <div>{{ fmtKwh(row.pv_today_kwh) }}</div>
+              <div>{{ fmtKwh(row.pv_tomorrow_kwh) }}</div>
+              <div>{{ fmtKwh(row.load_today_kwh) }}</div>
+              <div>{{ fmtKwh(row.load_tomorrow_kwh) }}</div>
+              <div>{{ fmtKwh(row.surplus_today_kwh) }}</div>
+              <div>{{ fmtKwh(row.export_today_kwh) }}</div>
+              <div>{{ fmtPct(row.end_soc) }}</div>
+              <div>{{ fmtNum(row.capacity_kwh) }}</div>
+              <div>{{ fmtChargeDischarge(row.max_charge_w, row.max_discharge_w) }}</div>
+              <div>{{ fmtFactor(row.factors?.pv_adjust) }}</div>
+            </div>
+          </div>
+          <div class="muted forecast-note">Se un campo è vuoto, viene stimato automaticamente dai dati storici.</div>
+        </div>
+        <div class="card inner" v-if="forecast?.sites?.length">
+          <div class="row"><strong>Profilo Orario (oggi)</strong></div>
+          <div class="muted" v-if="!forecast.updated_at">In attesa dati...</div>
+          <div v-else class="hourly-wrap">
+            <div class="hourly-block" v-for="row in forecast.sites" :key="`hourly-${row.site}`">
+              <div class="row"><strong>{{ row.name || siteTitle(row.site) }}</strong></div>
+              <div class="hourly-table">
+                <div class="hourly-row hourly-head">
+                  <div>Ora</div>
+                  <div>PV (W)</div>
+                  <div>Load (W)</div>
+                  <div>Surplus (W)</div>
+                </div>
+                <div class="hourly-row" v-for="h in row.hourly || []" :key="`h-${row.site}-${h.h}`">
+                  <div>{{ String(h.h).padStart(2,'0') }}:00</div>
+                  <div>{{ fmtW(h.pv_w) }}</div>
+                  <div>{{ fmtW(h.load_w) }}</div>
+                  <div>{{ fmtW(h.surplus_w) }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="insights-compare" v-if="ent">
           <div v-for="site in siteList" :key="`ins-${site}`" class="card inner">
             <div class="row"><strong>Intelligenza {{ siteTitle(site) }}</strong></div>
@@ -292,6 +348,50 @@
             <button class="ghost" @click="saveEntities">Salva sensori</button>
             <button class="ghost danger" @click="resetEntities">Reset entità</button>
           </div>
+        </div>
+
+        <div class="form" v-if="sp">
+          <h3 class="section">Previsioni Solar e-EnergyMind (parametri)</h3>
+          <div class="help">Se lasci vuoto, il valore viene stimato automaticamente dai dati storici.</div>
+          <details v-for="site in siteList" :key="`forecast-${site}`" class="set-section" open>
+            <summary class="section-title">{{ siteTitle(site) }}</summary>
+            <div class="field">
+              <label>Forecast PV Oggi (kWh)</label>
+              <input type="text" v-model="sp.forecast[`s${site}`].pv_forecast_today" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>Forecast PV Domani (kWh)</label>
+              <input type="text" v-model="sp.forecast[`s${site}`].pv_forecast_tomorrow" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>Consumo giornaliero (kWh)</label>
+              <input type="text" v-model="sp.forecast[`s${site}`].load_daily" placeholder="sensor.xxx" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>Capacità batteria (kWh)</label>
+              <input type="number" step="0.1" v-model.number="sp.forecast[`s${site}`].battery_capacity_kwh" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>Max carica (W)</label>
+              <input type="number" step="10" v-model.number="sp.forecast[`s${site}`].max_charge_w" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>Max scarica (W)</label>
+              <input type="number" step="10" v-model.number="sp.forecast[`s${site}`].max_discharge_w" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>SOC minimo (%)</label>
+              <input type="number" step="0.1" v-model.number="sp.forecast[`s${site}`].min_soc" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>SOC massimo (%)</label>
+              <input type="number" step="0.1" v-model.number="sp.forecast[`s${site}`].max_soc" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>Export limit (W)</label>
+              <input type="number" step="10" v-model.number="sp.forecast[`s${site}`].export_limit_w" @change="saveConfig"/>
+            </div>
+          </details>
         </div>
 
         <div class="form" v-if="sp">
@@ -653,6 +753,7 @@ const actions = ref([])
 const analysis = ref({ ok: false, events: [], missing: [] })
 const reportStatus = ref(null)
 const insights = ref({ global: null, sites: [] })
+const forecast = ref(null)
 const loggingCheck = ref(null)
 const loggingHours = ref(24)
 let pollTimer = null
@@ -758,6 +859,32 @@ const fmtEntityRaw = (st, attrs) => {
   const num = Number(st)
   if (Number.isFinite(num)) return `${num} ${unit}`.trim()
   return `${st} ${unit}`.trim()
+}
+const fmtKwh = (v) => {
+  if (v === null || v === undefined || Number.isNaN(Number(v))) return 'n/d'
+  return `${Number(v).toFixed(2)} kWh`
+}
+const fmtPct = (v) => {
+  if (v === null || v === undefined || Number.isNaN(Number(v))) return 'n/d'
+  return `${Number(v).toFixed(1)} %`
+}
+const fmtNum = (v) => {
+  if (v === null || v === undefined || Number.isNaN(Number(v))) return 'n/d'
+  return Number(v).toFixed(2)
+}
+const fmtChargeDischarge = (c, d) => {
+  if ((c === null || c === undefined) && (d === null || d === undefined)) return 'n/d'
+  const cText = c === null || c === undefined ? 'n/d' : `${Math.round(Number(c))}`
+  const dText = d === null || d === undefined ? 'n/d' : `${Math.round(Number(d))}`
+  return `${cText} / ${dText}`
+}
+const fmtFactor = (v) => {
+  if (v === null || v === undefined || Number.isNaN(Number(v))) return 'n/d'
+  return `${Number(v).toFixed(2)}x`
+}
+const fmtW = (v) => {
+  if (v === null || v === undefined || Number.isNaN(Number(v))) return 'n/d'
+  return `${Math.round(Number(v))} W`
 }
 const getEnt = (site, key) => {
   if (!ent.value) return null
@@ -1156,6 +1283,8 @@ async function refresh(){
       analysis.value = await an.json()
       const ins = await fetch('/api/insights')
       insights.value = await ins.json()
+      const fc = await fetch('/api/forecast')
+      forecast.value = await fc.json()
     } catch {}
     await refreshExtraStates()
   }
@@ -1556,6 +1685,72 @@ body{
   flex-direction:column;
   gap:6px;
 }
+.forecast-table{
+  margin-top:10px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.forecast-row{
+  display:grid;
+  grid-template-columns: 1.2fr repeat(9, minmax(90px, 1fr)) minmax(90px, 1fr);
+  gap:6px;
+  padding:8px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#0b121a;
+  font-size:12px;
+}
+.forecast-row > div{
+  white-space:nowrap;
+}
+.forecast-head{
+  font-weight:700;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:0.04em;
+  background:#0f1620;
+}
+.forecast-note{
+  margin-top:8px;
+  font-size:12px;
+}
+.hourly-wrap{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  margin-top:8px;
+}
+.hourly-block{
+  background:#0b121a;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px;
+}
+.hourly-table{
+  margin-top:8px;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  max-height:320px;
+  overflow:auto;
+}
+.hourly-row{
+  display:grid;
+  grid-template-columns: 90px repeat(3, minmax(100px, 1fr));
+  gap:8px;
+  padding:6px 8px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#0f1620;
+  font-size:12px;
+}
+.hourly-head{
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.04em;
+  color:var(--muted);
+}
 .entity-list-full{
   max-height:520px;
   overflow:auto;
@@ -1952,6 +2147,8 @@ body{
   .row3{ grid-template-columns:repeat(2, minmax(160px,1fr)); }
   .flow-grid{ grid-template-columns:repeat(2, minmax(160px,1fr)); }
   .insights-compare{ grid-template-columns:1fr; }
+  .forecast-row{ grid-template-columns: 1fr 1fr; row-gap:6px; }
+  .hourly-row{ grid-template-columns: 1fr 1fr; row-gap:6px; }
 }
 @media (max-width: 900px){
   .top-inner{ grid-template-columns:1fr; justify-items:start; }

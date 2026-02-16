@@ -41,6 +41,41 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         },
         "extra_datalog_entities": []
     },
+    "forecast": {
+        "s1": {
+            "pv_forecast_today": "",
+            "pv_forecast_tomorrow": "",
+            "load_daily": "",
+            "battery_capacity_kwh": None,
+            "max_charge_w": None,
+            "max_discharge_w": None,
+            "min_soc": None,
+            "max_soc": None,
+            "export_limit_w": None,
+        },
+        "s2": {
+            "pv_forecast_today": "",
+            "pv_forecast_tomorrow": "",
+            "load_daily": "",
+            "battery_capacity_kwh": None,
+            "max_charge_w": None,
+            "max_discharge_w": None,
+            "min_soc": None,
+            "max_soc": None,
+            "export_limit_w": None,
+        },
+        "s3": {
+            "pv_forecast_today": "",
+            "pv_forecast_tomorrow": "",
+            "load_daily": "",
+            "battery_capacity_kwh": None,
+            "max_charge_w": None,
+            "max_discharge_w": None,
+            "min_soc": None,
+            "max_soc": None,
+            "export_limit_w": None,
+        },
+    },
     "devices": {
         "s1": {"name": "", "id": ""},
         "s2": {"name": "", "id": ""},
@@ -131,6 +166,17 @@ def normalize_config(raw: Dict[str, Any]) -> Dict[str, Any]:
                     enabled = bool(item.get("enabled", True))
                     extra_list.append({"site": site, "entity_id": entity_id, "enabled": enabled})
         cfg["automation"]["extra_datalog_entities"] = extra_list
+
+    forecast = raw.get("forecast", {})
+    if isinstance(forecast, dict):
+        for key in ("s1", "s2", "s3"):
+            src = forecast.get(key, {}) if isinstance(forecast.get(key, {}), dict) else {}
+            for fkey in cfg["forecast"][key].keys():
+                val = src.get(fkey, cfg["forecast"][key][fkey])
+                if fkey in ("pv_forecast_today", "pv_forecast_tomorrow", "load_daily"):
+                    cfg["forecast"][key][fkey] = str(val or "").strip()
+                else:
+                    cfg["forecast"][key][fkey] = val
         flow = automation.get("flow_entities", {})
         if isinstance(flow, dict):
             for key in ("s1", "s2", "s3"):
@@ -202,7 +248,19 @@ def apply_config(cfg: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any]
                 if site in (1, 2, 3) and entity_id:
                     enabled = bool(item.get("enabled", True))
                     extra_list.append({"site": site, "entity_id": entity_id, "enabled": enabled})
-            cfg["automation"]["extra_datalog_entities"] = extra_list
+                    cfg["automation"]["extra_datalog_entities"] = extra_list
+
+    forecast = payload.get("forecast", {})
+    if isinstance(forecast, dict):
+        for key in ("s1", "s2", "s3"):
+            src = forecast.get(key, {}) if isinstance(forecast.get(key, {}), dict) else {}
+            for fkey in cfg["forecast"][key].keys():
+                if fkey in src:
+                    val = src.get(fkey)
+                    if fkey in ("pv_forecast_today", "pv_forecast_tomorrow", "load_daily"):
+                        cfg["forecast"][key][fkey] = str(val or "").strip()
+                    else:
+                        cfg["forecast"][key][fkey] = val
         flow = automation.get("flow_entities", {})
         if isinstance(flow, dict):
             for key in ("s1", "s2", "s3"):
