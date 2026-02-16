@@ -62,10 +62,20 @@
                 Carica tipica {{ insights.learned_rules[`site${site}`]?.typical_charge_pct ?? 'n/d' }}%
               </span>
             </div>
+            <div class="entity-row learned-samples" v-for="site in siteList" :key="`lr-s-${site}`">
+              <span class="entity-name">Campioni usati</span>
+              <span class="entity-value">
+                PV {{ insights.learned_rules[`site${site}`]?.samples?.pv ?? 'n/d' }},
+                Load {{ insights.learned_rules[`site${site}`]?.samples?.load ?? 'n/d' }},
+                Grid {{ insights.learned_rules[`site${site}`]?.samples?.grid ?? 'n/d' }},
+                Batt {{ insights.learned_rules[`site${site}`]?.samples?.battery ?? 'n/d' }}
+              </span>
+            </div>
             <div class="muted learned-note">
               Export/Surplus sono soglie oltre le quali il sistema si aspetta che la batteria carichi.
               “Durata” è il tempo minimo per confermare l’evento.
               “Carica tipica” è la percentuale media di surplus che normalmente va in batteria.
+              “Campioni usati” indica quanti dati reali sono stati analizzati per calcolare le soglie.
             </div>
           </div>
         </div>
@@ -1962,6 +1972,9 @@ body{
   margin-top:6px;
   font-size:12px;
   line-height:1.3;
+}
+.learned-samples{
+  background:#0f1620;
 }
 .preview-val{
   color:var(--muted);

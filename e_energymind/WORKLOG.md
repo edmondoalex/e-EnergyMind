@@ -349,4 +349,7 @@
 ## 2026-02-16
 - UI: spiegazione testuale delle regole apprese (legenda).
 - Versione add-on aggiornata a 2.1.25.
+## 2026-02-16
+- UI: Regole apprese con campioni usati per ogni utenza.
+- Versione add-on aggiornata a 2.1.26.
 
