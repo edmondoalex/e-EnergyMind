@@ -110,7 +110,8 @@
                 <div class="f-label">Fine Carica Domani (stima)</div><div class="f-val">{{ fmtHour(row.charge_complete_hour_tomorrow) }}</div>
                 <div class="f-label">SOC Fine (sim)</div><div class="f-val">{{ fmtPct(row.end_soc) }}</div>
                 <div class="f-label">Cap. kWh (stimata)</div><div class="f-val">{{ fmtNum(row.capacity_kwh) }}</div>
-                <div class="f-label">Max C/D W (stimato)</div><div class="f-val">{{ fmtChargeDischarge(row.max_charge_w, row.max_discharge_w) }}</div>
+                <div class="f-label">Max C/D W (reale)</div><div class="f-val">{{ fmtChargeDischarge(row.max_charge_w_learned, row.max_discharge_w_learned) }}</div>
+                <div class="f-label">Max C/D W (usato)</div><div class="f-val">{{ fmtChargeDischarge(row.max_charge_w, row.max_discharge_w) }}</div>
                 <div class="f-label">Fattore PV (stimato)</div><div class="f-val">{{ fmtFactor(row.factors?.pv_adjust) }}</div>
               </div>
             </details>
@@ -430,7 +431,8 @@
           <div class="help">Se lasci vuoto, il valore viene stimato automaticamente dai dati storici.</div>
           <details v-for="site in siteList" :key="`forecast-${site}`" class="set-section" open>
             <summary class="section-title">{{ siteTitle(site) }}</summary>
-            <div class="muted">BMS max stimato: {{ fmtChargeDischarge(maxChargeFor(site), maxDischargeFor(site)) }}</div>
+            <div class="muted">BMS max reale: {{ fmtChargeDischarge(maxChargeLearnedFor(site), maxDischargeLearnedFor(site)) }}</div>
+            <div class="muted">BMS max usato: {{ fmtChargeDischarge(maxChargeFor(site), maxDischargeFor(site)) }}</div>
             <div class="field">
               <label>Forecast PV Oggi (kWh)</label>
               <input type="text" v-model="sp.forecast[`s${site}`].pv_forecast_today" placeholder="sensor.xxx" @change="saveConfig"/>
@@ -523,7 +525,8 @@
                 Ora {{ fmtW(extraNowFor(site)) }} ·
                 Oggi {{ fmtKwh(extraTodayFor(site)) }} ·
                 Domani {{ fmtKwh(extraTomorrowFor(site)) }} ·
-                BMS Max {{ fmtChargeDischarge(maxChargeFor(site), maxDischargeFor(site)) }}
+                BMS Max (reale) {{ fmtChargeDischarge(maxChargeLearnedFor(site), maxDischargeLearnedFor(site)) }} ·
+                BMS Max (usato) {{ fmtChargeDischarge(maxChargeFor(site), maxDischargeFor(site)) }}
               </span>
             </div>
           </div>
@@ -659,7 +662,8 @@
             </div>
             <div class="flow-card">
               <div class="k">BMS Max C/D</div>
-              <div class="v">{{ fmtChargeDischarge(maxChargeFor(site), maxDischargeFor(site)) }}</div>
+              <div class="v">{{ fmtChargeDischarge(maxChargeLearnedFor(site), maxDischargeLearnedFor(site)) }}</div>
+              <div class="s">Usato {{ fmtChargeDischarge(maxChargeFor(site), maxDischargeFor(site)) }}</div>
             </div>
             <div class="flow-card">
               <div class="k">Batteria V</div>
@@ -1032,6 +1036,14 @@ const maxChargeFor = (site) => {
 const maxDischargeFor = (site) => {
   const row = (forecast.value?.sites || []).find(r => Number(r.site) === Number(site))
   return row?.max_discharge_w ?? null
+}
+const maxChargeLearnedFor = (site) => {
+  const row = (forecast.value?.sites || []).find(r => Number(r.site) === Number(site))
+  return row?.max_charge_w_learned ?? null
+}
+const maxDischargeLearnedFor = (site) => {
+  const row = (forecast.value?.sites || []).find(r => Number(r.site) === Number(site))
+  return row?.max_discharge_w_learned ?? null
 }
 const getEnt = (site, key) => {
   if (!ent.value) return null
