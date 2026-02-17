@@ -446,3 +446,6 @@
 ## 2026-02-17
 - Proxy `/ha`: aggiunti passthrough per `/auth` e `/api` (login HA).
 - Versione add-on aggiornata a 2.1.56.
+## 2026-02-17
+- Proxy `/ha`: aggiunto WebSocket passthrough `/api/websocket` (fix "Unable to connect").
+- Versione add-on aggiornata a 2.1.57.

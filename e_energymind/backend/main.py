@@ -1100,6 +1100,51 @@ async def ha_ws_proxy(path: str, websocket: WebSocket):
         await asyncio.gather(client_to_ha(), ha_to_client())
 
 
+@app.websocket("/api/websocket")
+async def ha_api_ws_proxy(websocket: WebSocket):
+    await websocket.accept()
+    session = await _ensure_proxy_session()
+    base = _ha_base_url()
+    if base.startswith("https://"):
+        ws_base = "wss://" + base[len("https://") :]
+    elif base.startswith("http://"):
+        ws_base = "ws://" + base[len("http://") :]
+    else:
+        ws_base = "ws://homeassistant:8123"
+    target = f"{ws_base}/api/websocket"
+
+    headers = {}
+    origin = websocket.headers.get("origin")
+    if origin:
+        headers["Origin"] = origin
+
+    async with session.ws_connect(target, headers=headers) as ws:
+        async def client_to_ha():
+            try:
+                while True:
+                    msg = await websocket.receive()
+                    if msg["type"] == "websocket.receive":
+                        if msg.get("text") is not None:
+                            await ws.send_str(msg["text"])
+                        elif msg.get("bytes") is not None:
+                            await ws.send_bytes(msg["bytes"])
+                    elif msg["type"] == "websocket.disconnect":
+                        break
+            finally:
+                await ws.close()
+
+        async def ha_to_client():
+            async for msg in ws:
+                if msg.type == aiohttp.WSMsgType.TEXT:
+                    await websocket.send_text(msg.data)
+                elif msg.type == aiohttp.WSMsgType.BINARY:
+                    await websocket.send_bytes(msg.data)
+                elif msg.type in (aiohttp.WSMsgType.CLOSE, aiohttp.WSMsgType.CLOSED, aiohttp.WSMsgType.ERROR):
+                    break
+
+        await asyncio.gather(client_to_ha(), ha_to_client())
+
+
 @app.on_event("startup")
 async def startup_event():
     global ha_task, log_task, proxy_session
