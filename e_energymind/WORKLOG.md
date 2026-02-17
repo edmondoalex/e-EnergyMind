@@ -468,3 +468,6 @@
 ## 2026-02-17
 - Proxy `/ha`: middleware che proxy `/api/*` verso HA solo se referer da `/ha` o `/lovelace`.
 - Versione add-on aggiornata a 2.1.63.
+## 2026-02-17
+- Proxy `/ha`: base HTML ora usa `/` (no prefix) per routing HA; middleware `/api` esteso a dashboard.
+- Versione add-on aggiornata a 2.1.64.
