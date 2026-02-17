@@ -443,3 +443,6 @@
 ## 2026-02-17
 - Proxy `/ha`: base URL ora forza `http://homeassistant:8123` se manca `ha_url` (serve per static/frontend).
 - Versione add-on aggiornata a 2.1.55.
+## 2026-02-17
+- Proxy `/ha`: aggiunti passthrough per `/auth` e `/api` (login HA).
+- Versione add-on aggiornata a 2.1.56.

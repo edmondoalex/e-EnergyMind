@@ -1037,6 +1037,22 @@ async def ha_favicon_proxy(request: Request):
     return await _proxy_request(request, "favicon.ico")
 
 
+@app.api_route(
+    "/auth/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+)
+async def ha_auth_proxy(path: str, request: Request):
+    return await _proxy_request(request, f"auth/{path}")
+
+
+@app.api_route(
+    "/api/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+)
+async def ha_api_proxy(path: str, request: Request):
+    return await _proxy_request(request, f"api/{path}")
+
+
 @app.websocket("/ha/{path:path}")
 async def ha_ws_proxy(path: str, websocket: WebSocket):
     await websocket.accept()
