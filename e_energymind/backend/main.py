@@ -103,6 +103,59 @@ def _rewrite_html_paths(body: str) -> str:
     return body
 
 
+async def _proxy_request(request: Request, target_path: str) -> Response:
+    session = await _ensure_proxy_session()
+    base = _ha_base_url()
+    target = f"{base}/{target_path.lstrip('/')}"
+    if request.url.query:
+        target = f"{target}?{request.url.query}"
+
+    headers = {k: v for k, v in request.headers.items() if k.lower() not in HOP_HEADERS}
+    headers.pop("host", None)
+    headers.pop("accept-encoding", None)
+    headers["accept-encoding"] = "identity"
+    body = await request.body()
+
+    resp = await session.request(
+        request.method,
+        target,
+        headers=headers,
+        data=body,
+        allow_redirects=False,
+    )
+    resp_headers = {
+        k: v
+        for k, v in resp.headers.items()
+        if k.lower() not in HOP_HEADERS and k.lower() not in ("content-length", "content-encoding")
+    }
+    if "location" in resp_headers:
+        resp_headers["location"] = _rewrite_location(resp_headers["location"], base)
+
+    content_type = resp.headers.get("content-type", "")
+    if "text/html" in content_type.lower():
+        raw = await resp.read()
+        text = raw.decode("utf-8", errors="ignore")
+        text = _rewrite_html_base(text)
+        text = _rewrite_html_paths(text)
+        return Response(
+            content=text,
+            status_code=resp.status,
+            headers=resp_headers,
+            media_type="text/html",
+        )
+
+    async def _stream():
+        async for chunk in resp.content.iter_chunked(65536):
+            yield chunk
+
+    return StreamingResponse(
+        _stream(),
+        status_code=resp.status,
+        headers=resp_headers,
+        background=BackgroundTask(resp.release),
+    )
+
+
 async def _ensure_proxy_session() -> aiohttp.ClientSession:
     global proxy_session
     if proxy_session is None or proxy_session.closed:
@@ -898,56 +951,87 @@ async def ha_root():
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
 )
 async def ha_proxy(path: str, request: Request):
-    session = await _ensure_proxy_session()
-    base = _ha_base_url()
-    target = f"{base}/{path}"
-    if request.url.query:
-        target = f"{target}?{request.url.query}"
+    return await _proxy_request(request, path)
 
-    headers = {k: v for k, v in request.headers.items() if k.lower() not in HOP_HEADERS}
-    headers.pop("host", None)
-    headers.pop("accept-encoding", None)
-    headers["accept-encoding"] = "identity"
-    body = await request.body()
 
-    resp = await session.request(
-        request.method,
-        target,
-        headers=headers,
-        data=body,
-        allow_redirects=False,
-    )
-    resp_headers = {
-        k: v
-        for k, v in resp.headers.items()
-        if k.lower() not in HOP_HEADERS and k.lower() not in ("content-length", "content-encoding")
-    }
-    if "location" in resp_headers:
-        resp_headers["location"] = _rewrite_location(resp_headers["location"], base)
+@app.api_route(
+    "/static/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+)
+async def ha_static_proxy(path: str, request: Request):
+    return await _proxy_request(request, f"static/{path}")
 
-    content_type = resp.headers.get("content-type", "")
-    if "text/html" in content_type.lower():
-        raw = await resp.read()
-        text = raw.decode("utf-8", errors="ignore")
-        text = _rewrite_html_base(text)
-        text = _rewrite_html_paths(text)
-        return Response(
-            content=text,
-            status_code=resp.status,
-            headers=resp_headers,
-            media_type="text/html",
-        )
 
-    async def _stream():
-        async for chunk in resp.content.iter_chunked(65536):
-            yield chunk
+@app.api_route(
+    "/frontend_latest/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+)
+async def ha_frontend_proxy(path: str, request: Request):
+    return await _proxy_request(request, f"frontend_latest/{path}")
 
-    return StreamingResponse(
-        _stream(),
-        status_code=resp.status,
-        headers=resp_headers,
-        background=BackgroundTask(resp.release),
-    )
+
+@app.api_route(
+    "/hacsfiles/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+)
+async def ha_hacs_proxy(path: str, request: Request):
+    return await _proxy_request(request, f"hacsfiles/{path}")
+
+
+@app.api_route(
+    "/dwains_dashboard/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+)
+async def ha_dwains_proxy(path: str, request: Request):
+    return await _proxy_request(request, f"dwains_dashboard/{path}")
+
+
+@app.api_route(
+    "/local/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+)
+async def ha_local_proxy(path: str, request: Request):
+    return await _proxy_request(request, f"local/{path}")
+
+
+@app.api_route(
+    "/media/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+)
+async def ha_media_proxy(path: str, request: Request):
+    return await _proxy_request(request, f"media/{path}")
+
+
+@app.api_route(
+    "/manifest.json",
+    methods=["GET", "HEAD"],
+)
+async def ha_manifest_proxy(request: Request):
+    return await _proxy_request(request, "manifest.json")
+
+
+@app.api_route(
+    "/service_worker.js",
+    methods=["GET", "HEAD"],
+)
+async def ha_sw_proxy(request: Request):
+    return await _proxy_request(request, "service_worker.js")
+
+
+@app.api_route(
+    "/sw.js",
+    methods=["GET", "HEAD"],
+)
+async def ha_sw_short_proxy(request: Request):
+    return await _proxy_request(request, "sw.js")
+
+
+@app.api_route(
+    "/favicon.ico",
+    methods=["GET", "HEAD"],
+)
+async def ha_favicon_proxy(request: Request):
+    return await _proxy_request(request, "favicon.ico")
 
 
 @app.websocket("/ha/{path:path}")

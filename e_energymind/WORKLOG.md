@@ -437,3 +437,6 @@
 ## 2026-02-17
 - Proxy `/ha`: rewrite HTML per prefissare risorse con `/ha` (fix 404 static/frontend_latest).
 - Versione add-on aggiornata a 2.1.53.
+## 2026-02-17
+- Proxy `/ha`: proxy diretto anche per `/static`, `/frontend_latest`, `/hacsfiles`, `/dwains_dashboard`, `/local`, `/media`.
+- Versione add-on aggiornata a 2.1.54.
