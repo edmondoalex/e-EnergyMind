@@ -10,6 +10,7 @@ from typing import Any, Dict
 import aiohttp
 from fastapi import FastAPI, HTTPException, Request, WebSocket
 from fastapi.responses import JSONResponse, FileResponse, StreamingResponse, RedirectResponse
+from starlette.background import BackgroundTask
 
 from .ha_client import HAClient
 from .storage import load_config, save_config, apply_config, apply_entities, ENERGY_ENTITY_KEYS
@@ -891,25 +892,31 @@ async def ha_proxy(path: str, request: Request):
     headers.pop("host", None)
     body = await request.body()
 
-    async with session.request(
+    resp = await session.request(
         request.method,
         target,
         headers=headers,
         data=body,
         allow_redirects=False,
-    ) as resp:
-        resp_headers = {
-            k: v
-            for k, v in resp.headers.items()
-            if k.lower() not in HOP_HEADERS and k.lower() != "content-length"
-        }
-        if "location" in resp_headers:
-            resp_headers["location"] = _rewrite_location(resp_headers["location"], base)
-        return StreamingResponse(
-            resp.content.iter_chunked(65536),
-            status_code=resp.status,
-            headers=resp_headers,
-        )
+    )
+    resp_headers = {
+        k: v
+        for k, v in resp.headers.items()
+        if k.lower() not in HOP_HEADERS and k.lower() != "content-length"
+    }
+    if "location" in resp_headers:
+        resp_headers["location"] = _rewrite_location(resp_headers["location"], base)
+
+    async def _stream():
+        async for chunk in resp.content.iter_chunked(65536):
+            yield chunk
+
+    return StreamingResponse(
+        _stream(),
+        status_code=resp.status,
+        headers=resp_headers,
+        background=BackgroundTask(resp.release),
+    )
 
 
 @app.websocket("/ha/{path:path}")

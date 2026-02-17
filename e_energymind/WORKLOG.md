@@ -428,3 +428,6 @@
 - View-Card: aggiunto reverse proxy `/ha` per aprire Lovelace in iframe da porta 8100 (fix blocco X-Frame/CSP).
 - View-Card: default `ha_base_url` a `/ha` e fallback automatico su porta 8100.
 - Versione add-on aggiornata a 2.1.50.
+## 2026-02-17
+- Proxy `/ha`: fix streaming response (evita ERR_INCOMPLETE_CHUNKED_ENCODING).
+- Versione add-on aggiornata a 2.1.51.
