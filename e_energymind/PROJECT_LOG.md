@@ -475,3 +475,6 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-17
 - Proxy `/ha`: aggiunto passthrough anche per `/auth/*` root (fix auth token 404).
 - Versione add-on aggiornata a 2.1.60.
+## Aggiornamenti 2026-02-17
+- Proxy `/ha`: aggiunto passthrough per `/lovelace/*` root (fix redirect a /lovelace/0).
+- Versione add-on aggiornata a 2.1.61.

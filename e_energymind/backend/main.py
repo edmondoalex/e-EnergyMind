@@ -1043,6 +1043,23 @@ async def ha_favicon_proxy(request: Request):
 
 
 @app.api_route(
+    "/lovelace/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+)
+async def ha_lovelace_proxy(path: str, request: Request):
+    # HA frontend may redirect to /lovelace/0 without /ha prefix.
+    return await _proxy_request(request, f"lovelace/{path}")
+
+
+@app.api_route(
+    "/lovelace",
+    methods=["GET", "HEAD"],
+)
+async def ha_lovelace_root_proxy(request: Request):
+    return await _proxy_request(request, "lovelace")
+
+
+@app.api_route(
     "/ha/auth/{path:path}",
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
 )
