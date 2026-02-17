@@ -112,6 +112,8 @@
                 <div class="f-label">Cap. kWh (stimata)</div><div class="f-val">{{ fmtNum(row.capacity_kwh) }}</div>
                 <div class="f-label">Max C/D W (reale)</div><div class="f-val">{{ fmtChargeDischarge(row.max_charge_w_learned, row.max_discharge_w_learned) }}</div>
                 <div class="f-label">Max C/D W (usato)</div><div class="f-val">{{ fmtChargeDischarge(row.max_charge_w, row.max_discharge_w) }}</div>
+                <div class="f-label">Allineamento PV (reale)</div><div class="f-val">{{ fmtPctSigned(row.factors?.error_pct) }}</div>
+                <div class="f-label">PV Reale vs Forecast (kWh)</div><div class="f-val">{{ fmtKwhPair(row.factors?.actual_last_kwh, row.factors?.forecast_last_kwh) }}</div>
                 <div class="f-label">Fattore PV (stimato)</div><div class="f-val">{{ fmtFactor(row.factors?.pv_adjust) }}</div>
               </div>
             </details>
@@ -1006,6 +1008,17 @@ const fmtChargeDischarge = (c, d) => {
 const fmtFactor = (v) => {
   if (v === null || v === undefined || Number.isNaN(Number(v))) return 'n/d'
   return `${Number(v).toFixed(2)}x`
+}
+const fmtPctSigned = (v) => {
+  if (v === null || v === undefined || Number.isNaN(Number(v))) return 'n/d'
+  const n = Number(v)
+  const sign = n > 0 ? '+' : ''
+  return `${sign}${n.toFixed(1)} %`
+}
+const fmtKwhPair = (actual, forecast) => {
+  if (actual === null || actual === undefined || Number.isNaN(Number(actual))) return 'n/d'
+  if (forecast === null || forecast === undefined || Number.isNaN(Number(forecast))) return 'n/d'
+  return `${Number(actual).toFixed(2)} / ${Number(forecast).toFixed(2)}`
 }
 const fmtW = (v) => {
   if (v === null || v === undefined || Number.isNaN(Number(v))) return 'n/d'

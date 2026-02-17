@@ -384,3 +384,6 @@
 ## 2026-02-16
 - Forecast: log trasparente di pv_adjust con confronto forecast vs reale (per utenza, una volta al giorno).
 - Versione add-on aggiornata a 2.1.36.
+## 2026-02-16
+- Forecast: aggiunto indicatore di allineamento reale vs forecast (percentuale e kWh).
+- Versione add-on aggiornata a 2.1.37.

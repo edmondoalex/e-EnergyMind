@@ -1500,9 +1500,18 @@ async def forecast():
                                     f"ratio={round(ratio,3) if ratio is not None else 'n/d'} "
                                     f"pv_adjust={round(pv_factor,3)}"
                                 )
+                                err_pct = None
+                                if fc_val:
+                                    try:
+                                        err_pct = (act_val - fc_val) / fc_val * 100.0
+                                    except Exception:
+                                        err_pct = None
                                 pv_adjust_meta[f"s{site}"] = {
                                     "last_day": last_day,
                                     "pv_adjust": round(pv_factor, 3),
+                                    "forecast": round(fc_val, 2) if fc_val is not None else None,
+                                    "actual": round(act_val, 2) if act_val is not None else None,
+                                    "error_pct": round(err_pct, 1) if err_pct is not None else None,
                                     "last_ts": now_ts,
                                 }
                                 pv_meta_dirty = True
@@ -1855,6 +1864,9 @@ async def forecast():
                 "target_reason": target_reason,
                 "factors": {
                     "pv_adjust": round(pv_factor, 3),
+                    "forecast_last_kwh": (pv_adjust_meta.get(f"s{site}", {}) or {}).get("forecast"),
+                    "actual_last_kwh": (pv_adjust_meta.get(f"s{site}", {}) or {}).get("actual"),
+                    "error_pct": (pv_adjust_meta.get(f"s{site}", {}) or {}).get("error_pct"),
                 },
                 "hourly": hourly,
                 "hourly_tomorrow": hourly_tomorrow,

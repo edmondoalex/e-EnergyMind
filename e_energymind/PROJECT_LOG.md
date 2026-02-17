@@ -400,3 +400,6 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-16
 - Forecast: log pv_adjust (forecast vs reale) per utenza, una volta al giorno.
 - Versione add-on aggiornata a 2.1.36.
+## Aggiornamenti 2026-02-16
+- Forecast: indicatore allineamento reale vs forecast (percentuale e kWh) in UI.
+- Versione add-on aggiornata a 2.1.37.
