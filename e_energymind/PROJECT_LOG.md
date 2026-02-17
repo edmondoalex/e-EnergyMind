@@ -481,3 +481,6 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-17
 - Proxy `/ha`: iniezione token `ha_token` in header Authorization per richieste e WebSocket (fix Unauthorized).
 - Versione add-on aggiornata a 2.1.62.
+## Aggiornamenti 2026-02-17
+- Proxy `/ha`: middleware che proxy `/api/*` verso HA solo se referer da `/ha` o `/lovelace`.
+- Versione add-on aggiornata a 2.1.63.

@@ -30,6 +30,17 @@ APP_VERSION = _load_version()
 
 app = FastAPI(title="e-EnergyMind", version=APP_VERSION)
 
+
+@app.middleware("http")
+async def ha_api_proxy_middleware(request: Request, call_next):
+    path = request.url.path or ""
+    if path == "/api" or path.startswith("/api/"):
+        ref = (request.headers.get("referer") or "").lower()
+        if "/ha/" in ref or "/lovelace" in ref:
+            target = path.lstrip("/")
+            return await _proxy_request(request, target)
+    return await call_next(request)
+
 ha = HAClient()
 ha_task: asyncio.Task | None = None
 log_task: asyncio.Task | None = None
