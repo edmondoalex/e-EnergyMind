@@ -1524,10 +1524,10 @@ async function refreshFlowStates(){
   if (ids.length === 0) return
   const uniq = Array.from(new Set(ids))
   const r = await fetch(apiUrl('api/entity_states'),{
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ entity_ids: uniq }))
-  })
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entity_ids: uniq })
+    })
   if (!r.ok) return
   const data = await r.json()
   flowStates.value = data.items || {}
@@ -1543,10 +1543,10 @@ async function refreshExtraStates(){
   if (ids.length === 0) return
   const uniq = Array.from(new Set(ids))
   const r = await fetch(apiUrl('api/entity_states'),{
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ entity_ids: uniq }))
-  })
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entity_ids: uniq })
+    })
   if (!r.ok) return
   const data = await r.json()
   extraStates.value = data.items || {}
@@ -1568,10 +1568,10 @@ async function refreshAdminStates(){
   if (ids.length === 0) return
   const uniq = Array.from(new Set(ids))
   const r = await fetch(apiUrl('api/entity_states'),{
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ entity_ids: uniq }))
-  })
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entity_ids: uniq })
+    })
   if (!r.ok) return
   const data = await r.json()
   adminStates.value = data.items || {}

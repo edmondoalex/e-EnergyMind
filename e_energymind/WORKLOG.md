@@ -412,3 +412,6 @@
 ## 2026-02-17
 - Ingress: chiamate API frontend ora relative al path corrente (evita 401 su /api in HA).
 - Versione add-on aggiornata a 2.1.45.
+## 2026-02-17
+- Fix: syntax error nelle chiamate API (Ingress) in App.vue.
+- Versione add-on aggiornata a 2.1.46.

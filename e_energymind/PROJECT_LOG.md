@@ -428,3 +428,6 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-17
 - Ingress: API frontend relative al path corrente (evita 401 su /api in HA).
 - Versione add-on aggiornata a 2.1.45.
+## Aggiornamenti 2026-02-17
+- Fix: errore sintassi chiamate API (Ingress) in App.vue.
+- Versione add-on aggiornata a 2.1.46.
