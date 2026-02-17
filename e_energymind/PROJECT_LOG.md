@@ -406,3 +406,6 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-16
 - Forecast: allineamento PV intraday (reale vs forecast parziale) in UI.
 - Versione add-on aggiornata a 2.1.38.
+## Aggiornamenti 2026-02-17
+- Forecast: fallback allineamento reale vs forecast usando valori odierni quando lo storico manca.
+- Versione add-on aggiornata a 2.1.39.

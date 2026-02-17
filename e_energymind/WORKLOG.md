@@ -390,3 +390,6 @@
 ## 2026-02-16
 - Forecast: aggiunto allineamento PV intraday (reale vs forecast parziale) con percentuale.
 - Versione add-on aggiornata a 2.1.38.
+## 2026-02-17
+- Forecast: fallback allineamento reale vs forecast usando valori odierni quando lo storico manca (evita n/d).
+- Versione add-on aggiornata a 2.1.39.

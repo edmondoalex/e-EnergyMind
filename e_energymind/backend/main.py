@@ -1516,6 +1516,22 @@ async def forecast():
                                 }
                                 pv_meta_dirty = True
 
+            # Fallback alignment values (today, partial) if no meta available yet
+            fallback_fc_kwh = None
+            fallback_act_kwh = None
+            fallback_err_pct = None
+            if pv_fc_today_id and pv_today_id:
+                fc_now = _state_num(pv_fc_today_id)
+                act_now = _state_num(pv_today_id)
+                if fc_now is not None and act_now is not None:
+                    fallback_fc_kwh = round(fc_now, 2)
+                    fallback_act_kwh = round(act_now, 2)
+                    if fc_now:
+                        try:
+                            fallback_err_pct = round((act_now - fc_now) / fc_now * 100.0, 1)
+                        except Exception:
+                            fallback_err_pct = None
+
             # Auto parameters from learned rules / history
             cap_kwh = fc.get("battery_capacity_kwh") if fc.get("battery_capacity_kwh") is not None else site_rules.get("battery_capacity_kwh")
             max_charge_w_cfg = fc.get("max_charge_w") if fc.get("max_charge_w") is not None else None
@@ -1849,6 +1865,15 @@ async def forecast():
                     if 0 <= hour_now < len(hourly_safe):
                         extra_safe_now_w = hourly_safe[hour_now].get("extra_safe_w")
 
+            meta = pv_adjust_meta.get(f"s{site}", {}) if isinstance(pv_adjust_meta.get(f"s{site}"), dict) else {}
+            forecast_last_kwh = meta.get("forecast")
+            actual_last_kwh = meta.get("actual")
+            error_pct = meta.get("error_pct")
+            if forecast_last_kwh is None or actual_last_kwh is None:
+                forecast_last_kwh = forecast_last_kwh if forecast_last_kwh is not None else fallback_fc_kwh
+                actual_last_kwh = actual_last_kwh if actual_last_kwh is not None else fallback_act_kwh
+                error_pct = error_pct if error_pct is not None else fallback_err_pct
+
             results.append({
                 "site": site,
                 "name": (cfg.get("devices", {}).get(f"s{site}", {}) or {}).get("name", "") or f"Utenza {site}",
@@ -1886,9 +1911,9 @@ async def forecast():
                 "target_reason": target_reason,
                 "factors": {
                     "pv_adjust": round(pv_factor, 3),
-                    "forecast_last_kwh": (pv_adjust_meta.get(f"s{site}", {}) or {}).get("forecast"),
-                    "actual_last_kwh": (pv_adjust_meta.get(f"s{site}", {}) or {}).get("actual"),
-                    "error_pct": (pv_adjust_meta.get(f"s{site}", {}) or {}).get("error_pct"),
+                    "forecast_last_kwh": forecast_last_kwh,
+                    "actual_last_kwh": actual_last_kwh,
+                    "error_pct": error_pct,
                     "intraday_forecast_kwh": intraday_forecast_kwh,
                     "intraday_actual_kwh": intraday_actual_kwh,
                     "intraday_error_pct": intraday_error_pct,
