@@ -390,6 +390,9 @@
             <div v-for="item in filteredEntityDefs(site)" :key="`s${site}_${item.key}`" class="field">
               <label class="label-row">
                 <span>{{ labelFor(site, item.key, item.label) }}</span>
+                <span v-if="haNameFor(site, ent?.[`s${site}_${item.key}`]?.entity_id)" class="muted">
+                  · HA: {{ haNameFor(site, ent?.[`s${site}_${item.key}`]?.entity_id) }}
+                </span>
                 <span class="preview-val">{{ adminPreview(ent?.[`s${site}_${item.key}`]?.entity_id) }}</span>
                 <span class="state-flag" :class="isOn(site, item.key) ? 'state-on' : 'state-off'">
                   <input class="flag-checkbox" type="checkbox" :checked="isOn(site, item.key)"
@@ -1087,6 +1090,14 @@ const labelFor = (site, key, fallback) => {
   const e = getEnt(site, key)
   const fn = e?.attributes?.friendly_name
   return (typeof fn === 'string' && fn.trim().length > 0) ? fn : fallback
+}
+const haNameFor = (site, entityId) => {
+  if (!entityId) return ''
+  const list = allEntities(site)
+  const match = list.find((e) => e.entity_id === entityId)
+  if (!match) return ''
+  const name = (match.original_name || match.name || '').trim()
+  return name
 }
 const deviceLabel = (site) => {
   const dev = sp.value?.devices?.[`s${site}`] || {}

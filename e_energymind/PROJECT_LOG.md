@@ -409,3 +409,6 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-17
 - Forecast: fallback allineamento reale vs forecast usando valori odierni quando lo storico manca.
 - Versione add-on aggiornata a 2.1.39.
+## Aggiornamenti 2026-02-17
+- Admin: mostrato nome addon + nome originale HA per ogni entità mappata (debug rinomina).
+- Versione add-on aggiornata a 2.1.40.
