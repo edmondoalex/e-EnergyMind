@@ -402,3 +402,7 @@
 ## 2026-02-17
 - UI: aggiunto pulsante legenda nelle previsioni con popup descrittivo dei campi.
 - Versione add-on aggiornata a 2.1.42.
+## 2026-02-17
+- View-Card: aggiunta configurazione numero card, titolo e path in Automation setting.
+- View-Card: rendering delle card tramite iframe su view Lovelace configurate.
+- Versione add-on aggiornata a 2.1.43.

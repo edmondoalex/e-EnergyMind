@@ -654,6 +654,26 @@
             </div>
           </details>
         </div>
+        <div class="form" v-if="sp">
+          <h3 class="section">View-Card</h3>
+          <div class="field">
+            <label>Numero card</label>
+            <input type="number" min="1" max="6" v-model.number="sp.view_card.count" @change="onViewCardCountChange"/>
+            <div class="help">Quante card visualizzare nella sezione View-Card.</div>
+          </div>
+          <div v-for="(item, idx) in viewCardSlots" :key="`vc-${idx}`" class="card inner">
+            <div class="row"><strong>Card {{ idx + 1 }}</strong></div>
+            <div class="field">
+              <label>Nome card</label>
+              <input type="text" v-model="sp.view_card.cards[idx].title" placeholder="Privato Inst" @change="saveConfig"/>
+            </div>
+            <div class="field">
+              <label>Path card</label>
+              <input type="text" v-model="sp.view_card.cards[idx].path" placeholder="/lovelace/energy-flow?kiosk" @change="saveConfig"/>
+              <div class="help">Inserisci il path della vista Lovelace (es. /lovelace/energy-flow?kiosk).</div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section v-else-if="tab==='automation_interface'" class="card">
@@ -747,107 +767,15 @@
 
       <section v-else-if="tab==='view_card'" class="card">
         <h2>View-Card</h2>
-        <p class="muted">Vista grafica stile power-flow, animata e responsive.</p>
-        <div v-for="site in siteList" :key="`view-${site}`" class="card inner viewcard-wrap">
-          <div class="row">
-            <strong>{{ siteTitle(site) }}</strong>
-          </div>
-          <div class="viewcard-panel">
-            <div class="viewcard-title">{{ siteTitle(site).toUpperCase() }}</div>
-
-            <div class="viewcard-box yellow viewcard-today">
-              <div class="val">{{ flowValue(site,'today_prod') }}</div>
-              <div class="lab">Energia solare oggi</div>
+        <p class="muted">Le card vengono caricate dalle view Lovelace configurate in Automation setting.</p>
+        <div v-if="viewCardSlots.length === 0" class="muted">Nessuna card configurata.</div>
+        <div v-else class="viewcard-iframe-list">
+          <div v-for="(item, idx) in viewCardSlots" :key="`vc-view-${idx}`" class="card inner viewcard-iframe">
+            <div class="row"><strong>{{ item.title || `Card ${idx + 1}` }}</strong></div>
+            <div class="iframe-wrap">
+              <iframe v-if="item.path" class="viewcard-iframe-el" :src="item.path" loading="lazy"></iframe>
+              <div v-else class="muted">Imposta il path in Automation setting.</div>
             </div>
-
-            <div class="viewcard-box yellow viewcard-solar">
-              <div class="val">{{ flowValueOr(site,'pv_total','pv') }}</div>
-              <div class="lab">Solare</div>
-            </div>
-
-            <div class="viewcard-box yellow viewcard-house">
-              <div class="val">{{ flowValue(site,'load') }}</div>
-              <div class="lab">Consumo casa</div>
-            </div>
-
-            <div class="viewcard-box red viewcard-grid">
-              <div class="val">{{ flowValue(site,'grid') }}</div>
-              <div class="lab">Rete (import + / export -)</div>
-            </div>
-
-            <div class="viewcard-box purple viewcard-batt">
-              <div class="val">{{ flowValue(site,'battery') }}</div>
-              <div class="lab">Batteria (scarica + / carica -)</div>
-            </div>
-
-            <div class="viewcard-box purple viewcard-soc">
-              <div class="val">{{ flowValue(site,'soc') }}</div>
-              <div class="lab">SoC</div>
-            </div>
-
-            <div class="viewcard-box red viewcard-vf">
-              <div class="val">{{ flowValue(site,'voltage') }}</div>
-              <div class="lab">{{ flowValue(site,'frequency') }}</div>
-            </div>
-
-            <div class="viewcard-icon i-solar">
-              <svg viewBox="0 0 64 64" fill="none">
-                <path d="M10 40h28l-6 14H16l-6-14Z" stroke="currentColor" stroke-width="4" />
-                <path d="M46 12l8 8M46 28h12M42 16l6 6" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-                <path d="M38 10l-6 18h10l-6 22" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
-              </svg>
-              <div>
-                <div class="icon-title">FV</div>
-                <div class="icon-cap">Produzione</div>
-              </div>
-            </div>
-
-            <div class="viewcard-icon i-house">
-              <svg viewBox="0 0 64 64" fill="none">
-                <path d="M10 30 32 12l22 18v22H10V30Z" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
-                <path d="M26 52V38h12v14" stroke="currentColor" stroke-width="4" />
-              </svg>
-              <div>
-                <div class="icon-title">Casa</div>
-                <div class="icon-cap">Consumo</div>
-              </div>
-            </div>
-
-            <div class="viewcard-icon i-grid">
-              <svg viewBox="0 0 64 64" fill="none">
-                <path d="M20 54h24M24 54l8-36 8 36" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M22 30h20M20 40h24" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-              </svg>
-              <div>
-                <div class="icon-title">Rete</div>
-                <div class="icon-cap">Linea</div>
-              </div>
-            </div>
-
-            <div class="viewcard-icon i-batt">
-              <svg viewBox="0 0 64 64" fill="none">
-                <rect x="14" y="18" width="36" height="30" rx="4" stroke="currentColor" stroke-width="4"/>
-                <path d="M50 28h4v10h-4" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-                <path d="M24 33h16" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-              </svg>
-              <div>
-                <div class="icon-title">Batteria</div>
-                <div class="icon-cap">Accumulo</div>
-              </div>
-            </div>
-
-            <svg class="viewcard-svg" viewBox="0 0 1200 675" preserveAspectRatio="none">
-              <path class="pipe" d="M 260 235 H 520 V 360 H 860" />
-              <path class="pipe" d="M 260 535 H 520" />
-              <path class="pipe" d="M 520 360 V 535 H 860" />
-              <path class="pipe" d="M 520 360 V 235" />
-
-              <path id="flow_solar_house" class="flow yellow" :class="flowClass(site,'pv')" d="M 260 235 H 520 V 360 H 860" />
-              <path id="flow_batt" class="flow purple" :class="flowClass(site,'battery')" d="M 260 535 H 520" />
-              <path id="flow_grid" class="flow red" :class="flowClass(site,'grid')" d="M 520 360 V 535 H 860" />
-            </svg>
-
-            <div class="viewcard-footer">Dati da Home Assistant (sensor.xxx) via WebSocket</div>
           </div>
         </div>
       </section>
@@ -909,6 +837,16 @@ const reportStatus = ref(null)
 const insights = ref({ global: null, sites: [] })
 const forecast = ref(null)
 const showLegend = ref(false)
+const viewCardSlots = computed(() => {
+  const cfg = sp.value?.view_card || {}
+  const count = Number(cfg.count || 0)
+  const safeCount = Math.max(0, Math.min(6, Number.isFinite(count) ? count : 0))
+  const cards = Array.isArray(cfg.cards) ? cfg.cards : []
+  return Array.from({ length: safeCount }, (_, i) => ({
+    title: String(cards[i]?.title || '').trim(),
+    path: String(cards[i]?.path || '').trim()
+  }))
+})
 const loggingCheck = ref(null)
 const loggingHours = ref(24)
 let pollTimer = null
@@ -1386,6 +1324,28 @@ function onBlur(){
   if (editingCount.value === 0) startPolling()
 }
 
+function ensureViewCards(){
+  if (!sp.value.view_card) {
+    sp.value.view_card = { count: 3, cards: [] }
+  }
+  let count = Number(sp.value.view_card.count || 0)
+  if (!Number.isFinite(count)) count = 3
+  count = Math.max(1, Math.min(6, count))
+  sp.value.view_card.count = count
+  const cards = Array.isArray(sp.value.view_card.cards) ? sp.value.view_card.cards : []
+  while (cards.length < count) {
+    cards.push({ title: '', path: '' })
+  }
+  sp.value.view_card.cards = cards.map(c => ({
+    title: String(c?.title || '').trim(),
+    path: String(c?.path || '').trim(),
+  }))
+}
+async function onViewCardCountChange(){
+  ensureViewCards()
+  await saveConfig()
+}
+
 async function loadConfig(){
   const r = await fetch('/api/config')
   sp.value = await r.json()
@@ -1417,6 +1377,7 @@ async function loadConfig(){
       if (typeof sp.value.devices[key].id !== 'string') sp.value.devices[key].id = ''
     }
   }
+  ensureViewCards()
   if (sp.value?.runtime?.ui_poll_ms) {
     pollMs.value = Number(sp.value.runtime.ui_poll_ms) || 3000
   }
@@ -2334,16 +2295,40 @@ body{
   border:1px solid var(--line);
   border-radius:16px;
 }
-.viewcard-panel{
-  width:min(1200px, 98vw);
-  aspect-ratio: 16 / 9;
-  background: radial-gradient(1200px 600px at 50% 40%, #161a1f 0%, #0e1012 55%, #0b0d0f 100%);
-  border-radius:18px;
-  box-shadow:0 30px 80px rgba(0,0,0,.45);
-  position:relative;
-  overflow:hidden;
-  margin:12px auto 0;
-}
+  .viewcard-panel{
+    width:min(1200px, 98vw);
+    aspect-ratio: 16 / 9;
+    background: radial-gradient(1200px 600px at 50% 40%, #161a1f 0%, #0e1012 55%, #0b0d0f 100%);
+    border-radius:18px;
+    box-shadow:0 30px 80px rgba(0,0,0,.45);
+    position:relative;
+    overflow:hidden;
+    margin:12px auto 0;
+  }
+  .viewcard-iframe-list{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    margin-top:12px;
+  }
+  .viewcard-iframe{
+    padding:14px;
+  }
+  .iframe-wrap{
+    width:100%;
+    height:60vh;
+    min-height:360px;
+    max-height:75vh;
+    border-radius:14px;
+    overflow:hidden;
+    background:#0b0d0f;
+    border:1px solid rgba(255,255,255,.08);
+  }
+  .viewcard-iframe-el{
+    width:100%;
+    height:100%;
+    border:0;
+  }
 .viewcard-title{
   position:absolute;
   left:0;

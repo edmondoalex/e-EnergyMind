@@ -87,6 +87,14 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "s2": {"name": "", "id": ""},
         "s3": {"name": "", "id": ""},
     },
+    "view_card": {
+        "count": 3,
+        "cards": [
+            {"title": "", "path": ""},
+            {"title": "", "path": ""},
+            {"title": "", "path": ""},
+        ],
+    },
     "all_entities": {
         "s1": [],
         "s2": [],
@@ -192,6 +200,24 @@ def normalize_config(raw: Dict[str, Any]) -> Dict[str, Any]:
                         v = src.get(k, "")
                         cfg["automation"]["flow_entities"][key][k] = str(v or "")
 
+    view_card = raw.get("view_card", {})
+    if isinstance(view_card, dict):
+        count = int(_float(view_card.get("count"), cfg["view_card"]["count"]))
+        cfg["view_card"]["count"] = max(1, min(6, count))
+        cards = view_card.get("cards", [])
+        out_cards = []
+        if isinstance(cards, list):
+            for item in cards:
+                if not isinstance(item, dict):
+                    continue
+                out_cards.append({
+                    "title": str(item.get("title") or "").strip(),
+                    "path": str(item.get("path") or "").strip(),
+                })
+        while len(out_cards) < cfg["view_card"]["count"]:
+            out_cards.append({"title": "", "path": ""})
+        cfg["view_card"]["cards"] = out_cards
+
     return cfg
 
 
@@ -275,6 +301,24 @@ def apply_config(cfg: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any]
                     for k in cfg["automation"]["flow_entities"][key].keys():
                         if k in src:
                             cfg["automation"]["flow_entities"][key][k] = str(src.get(k) or "")
+
+    view_card = payload.get("view_card", {})
+    if isinstance(view_card, dict):
+        count = int(_float(view_card.get("count"), cfg["view_card"]["count"]))
+        cfg["view_card"]["count"] = max(1, min(6, count))
+        cards = view_card.get("cards", [])
+        out_cards = []
+        if isinstance(cards, list):
+            for item in cards:
+                if not isinstance(item, dict):
+                    continue
+                out_cards.append({
+                    "title": str(item.get("title") or "").strip(),
+                    "path": str(item.get("path") or "").strip(),
+                })
+        while len(out_cards) < cfg["view_card"]["count"]:
+            out_cards.append({"title": "", "path": ""})
+        cfg["view_card"]["cards"] = out_cards
 
     return cfg
 
