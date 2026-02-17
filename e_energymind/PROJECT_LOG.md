@@ -456,3 +456,6 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-17
 - Proxy `/ha`: proxy diretto anche per `/static`, `/frontend_latest`, `/hacsfiles`, `/dwains_dashboard`, `/local`, `/media`.
 - Versione add-on aggiornata a 2.1.54.
+## Aggiornamenti 2026-02-17
+- Proxy `/ha`: base URL ora forza `http://homeassistant:8123` se manca `ha_url` (serve per static/frontend).
+- Versione add-on aggiornata a 2.1.55.

@@ -73,6 +73,9 @@ def _ha_base_url() -> str:
                 base = ha_url.strip()
         except Exception:
             pass
+    # Supervisor core proxy doesn't serve static/frontend paths; prefer direct HA if not set.
+    if "supervisor/core" in base:
+        base = "http://homeassistant:8123"
     return str(base).rstrip("/")
 
 
