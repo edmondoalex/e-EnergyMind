@@ -7,8 +7,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse, FileResponse
+import aiohttp
+from fastapi import FastAPI, HTTPException, Request, WebSocket
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse, RedirectResponse
 
 from .ha_client import HAClient
 from .storage import load_config, save_config, apply_config, apply_entities, ENERGY_ENTITY_KEYS
@@ -31,6 +32,7 @@ app = FastAPI(title="e-EnergyMind", version=APP_VERSION)
 ha = HAClient()
 ha_task: asyncio.Task | None = None
 log_task: asyncio.Task | None = None
+proxy_session: aiohttp.ClientSession | None = None
 action_log: list[str] = []
 last_history_state: dict[str, tuple[str | None, int]] = {}
 last_report_date: str | None = None
@@ -46,6 +48,49 @@ RETENTION_DAYS = 90
 PARTIAL_EXPORT_MIN_W = 300
 PARTIAL_MIN_DURATION_S = 10
 LEARN_UPDATE_S = 7200
+
+HOP_HEADERS = {
+    "connection",
+    "keep-alive",
+    "proxy-authenticate",
+    "proxy-authorization",
+    "te",
+    "trailers",
+    "transfer-encoding",
+    "upgrade",
+}
+
+
+def _ha_base_url() -> str:
+    base = getattr(ha, "_base_url", None) or "http://supervisor/core"
+    options_path = Path("/data/options.json")
+    if options_path.exists():
+        try:
+            data = json.loads(options_path.read_text(encoding="utf-8"))
+            ha_url = data.get("ha_url")
+            if isinstance(ha_url, str) and ha_url.strip():
+                base = ha_url.strip()
+        except Exception:
+            pass
+    return str(base).rstrip("/")
+
+
+def _rewrite_location(location: str, base_url: str) -> str:
+    if not location:
+        return location
+    loc = location
+    if loc.startswith(base_url):
+        return "/ha" + loc[len(base_url):]
+    if loc.startswith("/") and not loc.startswith("/ha/"):
+        return "/ha" + loc
+    return loc
+
+
+async def _ensure_proxy_session() -> aiohttp.ClientSession:
+    global proxy_session
+    if proxy_session is None or proxy_session.closed:
+        proxy_session = aiohttp.ClientSession()
+    return proxy_session
 
 
 def _log_action(msg: str) -> None:
@@ -826,9 +871,98 @@ async def index_html():
     return FileResponse("/app/static/index.html")
 
 
+@app.get("/ha")
+async def ha_root():
+    return RedirectResponse(url="/ha/")
+
+
+@app.api_route(
+    "/ha/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+)
+async def ha_proxy(path: str, request: Request):
+    session = await _ensure_proxy_session()
+    base = _ha_base_url()
+    target = f"{base}/{path}"
+    if request.url.query:
+        target = f"{target}?{request.url.query}"
+
+    headers = {k: v for k, v in request.headers.items() if k.lower() not in HOP_HEADERS}
+    headers.pop("host", None)
+    body = await request.body()
+
+    async with session.request(
+        request.method,
+        target,
+        headers=headers,
+        data=body,
+        allow_redirects=False,
+    ) as resp:
+        resp_headers = {
+            k: v
+            for k, v in resp.headers.items()
+            if k.lower() not in HOP_HEADERS and k.lower() != "content-length"
+        }
+        if "location" in resp_headers:
+            resp_headers["location"] = _rewrite_location(resp_headers["location"], base)
+        return StreamingResponse(
+            resp.content.iter_chunked(65536),
+            status_code=resp.status,
+            headers=resp_headers,
+        )
+
+
+@app.websocket("/ha/{path:path}")
+async def ha_ws_proxy(path: str, websocket: WebSocket):
+    await websocket.accept()
+    session = await _ensure_proxy_session()
+    base = _ha_base_url()
+    if base.startswith("https://"):
+        ws_base = "wss://" + base[len("https://") :]
+    elif base.startswith("http://"):
+        ws_base = "ws://" + base[len("http://") :]
+    else:
+        ws_base = "ws://homeassistant:8123"
+    target = f"{ws_base}/{path}"
+    if websocket.url.query:
+        target = f"{target}?{websocket.url.query}"
+
+    headers = {}
+    origin = websocket.headers.get("origin")
+    if origin:
+        headers["Origin"] = origin
+
+    async with session.ws_connect(target, headers=headers) as ws:
+        async def client_to_ha():
+            try:
+                while True:
+                    msg = await websocket.receive()
+                    if msg["type"] == "websocket.receive":
+                        if msg.get("text") is not None:
+                            await ws.send_str(msg["text"])
+                        elif msg.get("bytes") is not None:
+                            await ws.send_bytes(msg["bytes"])
+                    elif msg["type"] == "websocket.disconnect":
+                        break
+            finally:
+                await ws.close()
+
+        async def ha_to_client():
+            async for msg in ws:
+                if msg.type == aiohttp.WSMsgType.TEXT:
+                    await websocket.send_text(msg.data)
+                elif msg.type == aiohttp.WSMsgType.BINARY:
+                    await websocket.send_bytes(msg.data)
+                elif msg.type in (aiohttp.WSMsgType.CLOSE, aiohttp.WSMsgType.CLOSED, aiohttp.WSMsgType.ERROR):
+                    break
+
+        await asyncio.gather(client_to_ha(), ha_to_client())
+
+
 @app.on_event("startup")
 async def startup_event():
-    global ha_task, log_task
+    global ha_task, log_task, proxy_session
+    proxy_session = await _ensure_proxy_session()
     try:
         await ha.start()
         ha_task = asyncio.create_task(ha.run())
@@ -840,10 +974,13 @@ async def startup_event():
 
 @app.on_event("shutdown")
 async def shutdown_event():
+    global proxy_session
     if ha_task:
         ha_task.cancel()
     if log_task:
         log_task.cancel()
+    if proxy_session and not proxy_session.closed:
+        await proxy_session.close()
     await ha.close()
 
 

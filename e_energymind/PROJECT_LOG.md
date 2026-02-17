@@ -440,3 +440,7 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-17
 - View-Card: iframe 100vh e wrapper senza overflow per ridurre lo scroll esterno.
 - Versione add-on aggiornata a 2.1.49.
+## Aggiornamenti 2026-02-17
+- View-Card: aggiunto reverse proxy `/ha` per aprire Lovelace in iframe da porta 8100 (fix blocco X-Frame/CSP).
+- View-Card: default `ha_base_url` a `/ha` e fallback automatico su porta 8100.
+- Versione add-on aggiornata a 2.1.50.

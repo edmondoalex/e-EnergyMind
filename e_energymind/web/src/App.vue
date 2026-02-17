@@ -663,8 +663,8 @@
           </div>
           <div class="field">
             <label>HA base URL (iframe)</label>
-            <input type="text" v-model="sp.view_card.ha_base_url" placeholder="http://192.168.3.24:8123" @change="saveConfig"/>
-            <div class="help">Usato solo quando apri da porta 8100. Se il path non è assoluto, viene prefissato con questo URL.</div>
+            <input type="text" v-model="sp.view_card.ha_base_url" placeholder="/ha" @change="saveConfig"/>
+            <div class="help">Usato solo quando apri da porta 8100. Se il path non è assoluto, viene prefissato con questo URL. Suggerito: `/ha` (proxy interno).</div>
           </div>
           <div v-for="(item, idx) in viewCardSlots" :key="`vc-${idx}`" class="card inner">
             <div class="row"><strong>Card {{ idx + 1 }}</strong></div>
@@ -879,7 +879,10 @@ const resolveViewCardPath = (path, baseUrl) => {
   if (!val) return ''
   if (/^https?:\/\//i.test(val)) return val
   const suffix = val.startsWith('/') ? val : `/${val}`
-  const base = String(baseUrl || '').trim().replace(/\/+$/, '')
+  let base = String(baseUrl || '').trim().replace(/\/+$/, '')
+  if (!base && window.location.port === '8100') {
+    base = `${window.location.origin}/ha`
+  }
   if (base) return `${base}${suffix}`
   return `${window.location.origin}${suffix}`
 }

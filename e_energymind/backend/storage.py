@@ -89,7 +89,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     },
     "view_card": {
         "count": 3,
-        "ha_base_url": "",
+        "ha_base_url": "/ha",
         "cards": [
             {"title": "Card 1", "path": ""},
             {"title": "Card 2", "path": ""},
