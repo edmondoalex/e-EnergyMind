@@ -456,3 +456,6 @@
 ## 2026-02-17
 - Proxy `/ha`: aggiunto WebSocket passthrough anche su `/api/websocket` (solo WS) per compatibilità frontend HA.
 - Versione add-on aggiornata a 2.1.59.
+## 2026-02-17
+- Proxy `/ha`: aggiunto passthrough anche per `/auth/*` root (fix auth token 404).
+- Versione add-on aggiornata a 2.1.60.

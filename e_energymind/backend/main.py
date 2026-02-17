@@ -1051,6 +1051,15 @@ async def ha_auth_proxy(path: str, request: Request):
 
 
 @app.api_route(
+    "/auth/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+)
+async def ha_auth_proxy_root(path: str, request: Request):
+    # HA frontend sometimes posts /auth/token from root origin.
+    return await _proxy_request(request, f"auth/{path}")
+
+
+@app.api_route(
     "/ha/api/{path:path}",
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
 )
