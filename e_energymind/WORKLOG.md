@@ -471,3 +471,6 @@
 ## 2026-02-17
 - Proxy `/ha`: base HTML ora usa `/` (no prefix) per routing HA; middleware `/api` esteso a dashboard.
 - Versione add-on aggiornata a 2.1.64.
+## 2026-02-17
+- Proxy `/ha`: ripristinato base `/ha/` e rewrite path per routing HA corretto.
+- Versione add-on aggiornata a 2.1.65.

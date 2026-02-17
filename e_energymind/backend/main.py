@@ -118,12 +118,20 @@ def _rewrite_html_base(body: str) -> str:
     if "<base " in body:
         return body
     if "<head>" in body:
-        return body.replace("<head>", "<head><base href=\"/\">", 1)
-    return "<base href=\"/\">" + body
+        return body.replace("<head>", "<head><base href=\"/ha/\">", 1)
+    return "<base href=\"/ha/\">" + body
 
 
 def _rewrite_html_paths(body: str) -> str:
-    # Keep root paths: we proxy HA assets and API at root for iframe.
+    body = body.replace('href="/manifest.json"', 'href="/ha/manifest.json"')
+    body = body.replace('"/service_worker.js"', '"/ha/service_worker.js"')
+    body = body.replace('"/sw.js"', '"/ha/sw.js"')
+    body = body.replace('"/auth/', '"/ha/auth/')
+    body = body.replace('"/api/', '"/ha/api/')
+    body = body.replace('href="/ha/', 'href="/ha/')
+    body = body.replace('src="/ha/', 'src="/ha/')
+    body = body.replace('href="/', 'href="/ha/')
+    body = body.replace('src="/', 'src="/ha/')
     return body
 
 
