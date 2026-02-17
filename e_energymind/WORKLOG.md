@@ -409,3 +409,6 @@
 ## 2026-02-17
 - Ingress: assets caricati con path relativo (Vite base './') per evitare 404 su /assets.
 - Versione add-on aggiornata a 2.1.44.
+## 2026-02-17
+- Ingress: chiamate API frontend ora relative al path corrente (evita 401 su /api in HA).
+- Versione add-on aggiornata a 2.1.45.

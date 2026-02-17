@@ -863,6 +863,11 @@ const flowStates = ref({})
 const extraStates = ref({})
 const adminFilter = ref({ 1: '', 2: '', 3: '' })
 
+const apiUrl = (path) => {
+  const safePath = String(path || '').replace(/^\/+/, '')
+  return new URL(safePath, window.location.href).toString()
+}
+
 const energyEntityDefs = [
   { key: 'pv_power', label: 'PV Power (W)', placeholder: 'sensor.zcs_pv_power' },
   { key: 'pv_power_aux', label: 'PV Power Aux (W)', placeholder: 'sensor.zcs_pv1_power' },
@@ -1294,7 +1299,7 @@ const flowActive = (site, key) => {
 
 async function openHistory(item, site){
   if (!item?.entity_id) return
-  const r = await fetch(`/api/history?site=${site}&hours=24&entity_id=${encodeURIComponent(item.entity_id)}`)
+  const r = await fetch(apiUrl(`api/history?site=${site}&hours=24&entity_id=${encodeURIComponent(item.entity_id)}`))
   if (!r.ok) return
   const data = await r.json()
   const items = Array.isArray(data.items) ? data.items : []
@@ -1347,7 +1352,7 @@ async function onViewCardCountChange(){
 }
 
 async function loadConfig(){
-  const r = await fetch('/api/config')
+  const r = await fetch(apiUrl('api/config'))
   sp.value = await r.json()
   if (!sp.value.automation) {
     sp.value.automation = {
@@ -1386,18 +1391,18 @@ async function loadConfig(){
   }
 }
 async function saveConfig(){
-  await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(sp.value)})
+  await fetch(apiUrl('api/config'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(sp.value)})
   await loadConfig()
 }
 async function loadEntities(){
   if (editingCount.value > 0) return
-  const r = await fetch('/api/entities')
+  const r = await fetch(apiUrl('api/entities'))
   const data = await r.json()
   ent.value = data
 }
 async function loadAllEntities(site){
   try {
-    const r = await fetch(`/api/entities_all?site=${site}`)
+    const r = await fetch(apiUrl(`api/entities_all?site=${site}`))
     if (!r.ok) return
     const data = await r.json()
     const items = Array.isArray(data.items) ? data.items : []
@@ -1409,14 +1414,14 @@ async function saveEntities(){
   for (const key of Object.keys(ent.value || {})) {
     payload[key] = ent.value?.[key]?.entity_id || null
   }
-  await fetch('/api/entities',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entities: payload})})
+  await fetch(apiUrl('api/entities'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entities: payload})})
   dirtyEnt.value = {}
   await refresh()
 }
 async function resetEntities(){
   const ok = window.confirm('Resettare tutte le entità? Operazione irreversibile.')
   if (!ok) return
-  await fetch('/api/entities/reset',{method:'POST'})
+  await fetch(apiUrl('api/entities/reset'),{method:'POST'})
   await loadEntities()
   await refresh()
 }
@@ -1428,7 +1433,7 @@ async function autoMapSite(site){
     return
   }
   const payload = { site, device_name: dev.name || '', device_id: dev.id || '', overwrite: !!overwriteMap.value[site] }
-  const r = await fetch('/api/auto_map',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+  const r = await fetch(apiUrl('api/auto_map'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
   if (!r.ok) {
     window.alert('Importa entità fallito')
     return
@@ -1452,7 +1457,7 @@ async function syncAllEntities(site){
     return
   }
   const payload = { site, device_name: dev.name || '', device_id: dev.id || '' }
-  const r = await fetch('/api/all_entities_sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+  const r = await fetch(apiUrl('api/all_entities_sync'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
   if (!r.ok) {
     window.alert('Sync elenco fallito')
     return
@@ -1474,26 +1479,26 @@ async function refresh(){
     return
   }
   if (editingCount.value > 0) return
-  const s = await fetch('/api/status')
+  const s = await fetch(apiUrl('api/status'))
   status.value = await s.json()
-  const d = await fetch('/api/db_info')
+  const d = await fetch(apiUrl('api/db_info'))
   dbInfo.value = await d.json()
-  const a = await fetch('/api/actions')
+  const a = await fetch(apiUrl('api/actions'))
   actions.value = (await a.json()).items || []
   if (tab.value === 'user') {
     try {
-      const an = await fetch(`/api/analysis?site=1&hours=24`)
+      const an = await fetch(apiUrl(`api/analysis?site=1&hours=24`))
       analysis.value = await an.json()
-      const ins = await fetch('/api/insights')
+      const ins = await fetch(apiUrl('api/insights'))
       insights.value = await ins.json()
-      const fc = await fetch('/api/forecast')
+      const fc = await fetch(apiUrl('api/forecast'))
       forecast.value = await fc.json()
     } catch {}
     await refreshExtraStates()
   }
   if (tab.value === 'automation_settings' || tab.value === 'automation_interface') {
     try {
-      const fc = await fetch('/api/forecast')
+      const fc = await fetch(apiUrl('api/forecast'))
       forecast.value = await fc.json()
     } catch {}
   }
@@ -1518,10 +1523,10 @@ async function refreshFlowStates(){
   }
   if (ids.length === 0) return
   const uniq = Array.from(new Set(ids))
-  const r = await fetch('/api/entity_states', {
+  const r = await fetch(apiUrl('api/entity_states'),{
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ entity_ids: uniq })
+    body: JSON.stringify({ entity_ids: uniq }))
   })
   if (!r.ok) return
   const data = await r.json()
@@ -1537,10 +1542,10 @@ async function refreshExtraStates(){
   }
   if (ids.length === 0) return
   const uniq = Array.from(new Set(ids))
-  const r = await fetch('/api/entity_states', {
+  const r = await fetch(apiUrl('api/entity_states'),{
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ entity_ids: uniq })
+    body: JSON.stringify({ entity_ids: uniq }))
   })
   if (!r.ok) return
   const data = await r.json()
@@ -1562,10 +1567,10 @@ async function refreshAdminStates(){
   }
   if (ids.length === 0) return
   const uniq = Array.from(new Set(ids))
-  const r = await fetch('/api/entity_states', {
+  const r = await fetch(apiUrl('api/entity_states'),{
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ entity_ids: uniq })
+    body: JSON.stringify({ entity_ids: uniq }))
   })
   if (!r.ok) return
   const data = await r.json()
@@ -1574,7 +1579,7 @@ async function refreshAdminStates(){
 
 async function generateReport(){
   try {
-    const r = await fetch('/api/reports/generate', { method: 'POST' })
+    const r = await fetch(apiUrl('api/reports/generate'),{ method: 'POST' })
     if (!r.ok) return
     reportStatus.value = await r.json()
   } catch {}
@@ -1584,7 +1589,7 @@ async function runLoggingCheck(site = null){
     const qs = new URLSearchParams()
     if (site) qs.set('site', String(site))
     qs.set('hours', String(loggingHours.value || 24))
-    const r = await fetch(`/api/logging_check?${qs.toString()}`)
+    const r = await fetch(apiUrl(`api/logging_check?${qs.toString()}`))
     if (!r.ok) return
     loggingCheck.value = await r.json()
   } catch {}
@@ -1688,7 +1693,7 @@ function siteInsight(site){
 }
 
 async function exportConfig(){
-  const r = await fetch('/api/config')
+  const r = await fetch(apiUrl('api/config'))
   const data = await r.json()
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
@@ -1704,7 +1709,7 @@ async function importConfig(ev){
   const text = await file.text()
   let data = null
   try { data = JSON.parse(text) } catch { return }
-  await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+  await fetch(apiUrl('api/config'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
   await loadAll()
 }
 async function saveAll(){
