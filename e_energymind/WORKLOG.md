@@ -431,3 +431,6 @@
 ## 2026-02-17
 - Proxy `/ha`: fix streaming response (evita ERR_INCOMPLETE_CHUNKED_ENCODING).
 - Versione add-on aggiornata a 2.1.51.
+## 2026-02-17
+- Proxy `/ha`: disabilitata compressione upstream per evitare ERR_CONTENT_DECODING_FAILED.
+- Versione add-on aggiornata a 2.1.52.

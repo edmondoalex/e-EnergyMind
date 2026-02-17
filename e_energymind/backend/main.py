@@ -890,6 +890,8 @@ async def ha_proxy(path: str, request: Request):
 
     headers = {k: v for k, v in request.headers.items() if k.lower() not in HOP_HEADERS}
     headers.pop("host", None)
+    headers.pop("accept-encoding", None)
+    headers["accept-encoding"] = "identity"
     body = await request.body()
 
     resp = await session.request(
@@ -902,7 +904,7 @@ async def ha_proxy(path: str, request: Request):
     resp_headers = {
         k: v
         for k, v in resp.headers.items()
-        if k.lower() not in HOP_HEADERS and k.lower() != "content-length"
+        if k.lower() not in HOP_HEADERS and k.lower() not in ("content-length", "content-encoding")
     }
     if "location" in resp_headers:
         resp_headers["location"] = _rewrite_location(resp_headers["location"], base)
