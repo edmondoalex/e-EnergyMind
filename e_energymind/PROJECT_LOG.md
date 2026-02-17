@@ -465,3 +465,7 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-17
 - Proxy `/ha`: aggiunto WebSocket passthrough `/api/websocket` (fix "Unable to connect").
 - Versione add-on aggiornata a 2.1.57.
+## Aggiornamenti 2026-02-17
+- Proxy `/ha`: spostati passthrough HA su `/ha/auth` e `/ha/api` per non rompere API addon.
+- Proxy `/ha`: WebSocket su `/ha/api/websocket`.
+- Versione add-on aggiornata a 2.1.58.

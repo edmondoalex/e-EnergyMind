@@ -99,6 +99,11 @@ def _rewrite_html_base(body: str) -> str:
 
 
 def _rewrite_html_paths(body: str) -> str:
+    body = body.replace('href="/manifest.json"', 'href="/ha/manifest.json"')
+    body = body.replace('"/service_worker.js"', '"/ha/service_worker.js"')
+    body = body.replace('"/sw.js"', '"/ha/sw.js"')
+    body = body.replace('"/auth/', '"/ha/auth/')
+    body = body.replace('"/api/', '"/ha/api/')
     body = body.replace('href="/ha/', 'href="/ha/')
     body = body.replace('src="/ha/', 'src="/ha/')
     body = body.replace('href="/', 'href="/ha/')
@@ -1018,7 +1023,7 @@ async def ha_manifest_proxy(request: Request):
     methods=["GET", "HEAD"],
 )
 async def ha_sw_proxy(request: Request):
-    return await _proxy_request(request, "service_worker.js")
+    return Response(status_code=404)
 
 
 @app.api_route(
@@ -1026,7 +1031,7 @@ async def ha_sw_proxy(request: Request):
     methods=["GET", "HEAD"],
 )
 async def ha_sw_short_proxy(request: Request):
-    return await _proxy_request(request, "sw.js")
+    return Response(status_code=404)
 
 
 @app.api_route(
@@ -1038,7 +1043,7 @@ async def ha_favicon_proxy(request: Request):
 
 
 @app.api_route(
-    "/auth/{path:path}",
+    "/ha/auth/{path:path}",
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
 )
 async def ha_auth_proxy(path: str, request: Request):
@@ -1046,7 +1051,7 @@ async def ha_auth_proxy(path: str, request: Request):
 
 
 @app.api_route(
-    "/api/{path:path}",
+    "/ha/api/{path:path}",
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
 )
 async def ha_api_proxy(path: str, request: Request):
@@ -1100,7 +1105,7 @@ async def ha_ws_proxy(path: str, websocket: WebSocket):
         await asyncio.gather(client_to_ha(), ha_to_client())
 
 
-@app.websocket("/api/websocket")
+@app.websocket("/ha/api/websocket")
 async def ha_api_ws_proxy(websocket: WebSocket):
     await websocket.accept()
     session = await _ensure_proxy_session()
