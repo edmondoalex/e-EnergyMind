@@ -1087,6 +1087,22 @@ async def ha_lovelace_root_proxy(request: Request):
 
 
 @app.api_route(
+    "/dashboard-{name}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+)
+async def ha_dashboard_root_proxy(name: str, request: Request):
+    return await _proxy_request(request, f"dashboard-{name}")
+
+
+@app.api_route(
+    "/dashboard-{name}/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+)
+async def ha_dashboard_proxy(name: str, path: str, request: Request):
+    return await _proxy_request(request, f"dashboard-{name}/{path}")
+
+
+@app.api_route(
     "/ha/auth/{path:path}",
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
 )

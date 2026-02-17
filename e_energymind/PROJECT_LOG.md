@@ -490,3 +490,6 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-17
 - Proxy `/ha`: ripristinato base `/ha/` e rewrite path per routing HA corretto.
 - Versione add-on aggiornata a 2.1.65.
+## Aggiornamenti 2026-02-17
+- Proxy `/ha`: aggiunto passthrough root per `/dashboard-*` (supporta redirect a /dashboard-... senza /ha).
+- Versione add-on aggiornata a 2.1.66.
