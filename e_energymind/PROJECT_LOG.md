@@ -397,3 +397,6 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-16
 - Forecast: BMS max reale calcolato sempre da storico, anche con valori configurati.
 - Versione add-on aggiornata a 2.1.35.
+## Aggiornamenti 2026-02-16
+- Forecast: log pv_adjust (forecast vs reale) per utenza, una volta al giorno.
+- Versione add-on aggiornata a 2.1.36.

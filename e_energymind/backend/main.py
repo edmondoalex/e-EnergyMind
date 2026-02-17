@@ -1386,6 +1386,12 @@ async def forecast():
     ent_cfg = cfg.get("entities", {}) or {}
     forecast_cfg = cfg.get("forecast", {}) or {}
     learned = cfg.get("runtime", {}).get("learned_rules", {}) if isinstance(cfg.get("runtime", {}), dict) else {}
+    runtime = cfg.setdefault("runtime", {})
+    pv_adjust_meta = runtime.get("pv_adjust_meta")
+    if not isinstance(pv_adjust_meta, dict):
+        pv_adjust_meta = {}
+        runtime["pv_adjust_meta"] = pv_adjust_meta
+    pv_meta_dirty = False
 
     def _eid(site: int, key: str) -> str | None:
         return ent_cfg.get(f"s{site}_{key}")
@@ -1470,6 +1476,36 @@ async def forecast():
                             ratios.append(act_val / fc_val)
                     if ratios:
                         pv_factor = max(0.6, min(1.4, _median(ratios) or 1.0))
+                        # Log pv_adjust changes (once per day/site) for transparency
+                        common_days = sorted(set(fc_map.keys()) & set(act_map.keys()))
+                        if common_days:
+                            last_day = common_days[-1]
+                            fc_val = fc_map.get(last_day)
+                            act_val = act_map.get(last_day)
+                            ratio = (act_val / fc_val) if (act_val and fc_val) else None
+                            meta = pv_adjust_meta.get(f"s{site}", {}) if isinstance(pv_adjust_meta.get(f"s{site}"), dict) else {}
+                            last_logged_day = meta.get("last_day")
+                            last_logged_factor = meta.get("pv_adjust")
+                            last_ts = meta.get("last_ts") or 0
+                            need_log = False
+                            if last_logged_day != last_day:
+                                need_log = True
+                            elif last_logged_factor is not None and abs(float(pv_factor) - float(last_logged_factor)) >= 0.02 and (now_ts - int(last_ts)) > 6 * 3600:
+                                need_log = True
+                            if need_log:
+                                _log_action(
+                                    f"{time.strftime('%Y-%m-%d %H:%M:%S')} PV_ADJUST site={site} day={last_day} "
+                                    f"forecast={round(fc_val,2) if fc_val is not None else 'n/d'} "
+                                    f"actual={round(act_val,2) if act_val is not None else 'n/d'} "
+                                    f"ratio={round(ratio,3) if ratio is not None else 'n/d'} "
+                                    f"pv_adjust={round(pv_factor,3)}"
+                                )
+                                pv_adjust_meta[f"s{site}"] = {
+                                    "last_day": last_day,
+                                    "pv_adjust": round(pv_factor, 3),
+                                    "last_ts": now_ts,
+                                }
+                                pv_meta_dirty = True
 
             # Auto parameters from learned rules / history
             cap_kwh = fc.get("battery_capacity_kwh") if fc.get("battery_capacity_kwh") is not None else site_rules.get("battery_capacity_kwh")
@@ -1836,6 +1872,8 @@ async def forecast():
                 },
             })
 
+    if pv_meta_dirty:
+        save_config(cfg)
     return JSONResponse({
         "updated_at": now_ts,
         "sites": results,
