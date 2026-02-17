@@ -415,3 +415,6 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-17
 - Forecast: allineamento reale usa produzione reale (kWh) anche se il sensore “today” è in W.
 - Versione add-on aggiornata a 2.1.41.
+## Aggiornamenti 2026-02-17
+- UI: aggiunto pulsante legenda nelle previsioni con popup descrittivo dei campi.
+- Versione add-on aggiornata a 2.1.42.

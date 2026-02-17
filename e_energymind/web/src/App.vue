@@ -82,7 +82,10 @@
           </div>
         </div>
         <div class="card inner" v-if="forecast?.sites?.length">
-          <div class="row"><strong>Previsioni Solar e-EnergyMind</strong></div>
+          <div class="row row-between">
+            <strong>Previsioni Solar e-EnergyMind</strong>
+            <button class="ghost legend-btn" @click="showLegend = true">Legenda</button>
+          </div>
           <div class="muted" v-if="!forecast.updated_at">In attesa dati...</div>
           <div v-else class="forecast-cards">
             <details class="forecast-card" v-for="row in forecast.sites" :key="`fc-${row.site}`" open>
@@ -121,6 +124,32 @@
             </details>
           </div>
           <div class="muted forecast-note">Se un campo è vuoto, viene stimato automaticamente dai dati storici.</div>
+        </div>
+        <div v-if="showLegend" class="modal-backdrop" @click.self="showLegend = false">
+          <div class="modal-card">
+            <div class="modal-head">
+              <strong>Legenda Previsioni</strong>
+              <button class="ghost" @click="showLegend = false">Chiudi</button>
+            </div>
+            <div class="modal-body">
+              <div class="legend-item"><strong>PV Oggi/Domani (stima)</strong>: energia FV prevista (kWh), corretta da pv_adjust.</div>
+              <div class="legend-item"><strong>Consumo Oggi/Domani (stima)</strong>: consumo previsto (kWh) da profilo storico o target.</div>
+              <div class="legend-item"><strong>Surplus Oggi (stima)</strong>: PV − Consumo (kWh).</div>
+              <div class="legend-item"><strong>Export Oggi (stima)</strong>: energia esportabile dopo carica batteria al target.</div>
+              <div class="legend-item"><strong>Export (sim)</strong>: export simulato con profilo orario e limiti C/D.</div>
+              <div class="legend-item"><strong>Extra (safe)</strong>: extra sicuro senza compromettere il target SOC.</div>
+              <div class="legend-item"><strong>Extra Ora</strong>: extra disponibile adesso (W).</div>
+              <div class="legend-item"><strong>Fine Carica</strong>: ora stimata raggiungimento target SOC.</div>
+              <div class="legend-item"><strong>SOC Fine (sim)</strong>: SOC stimato a fine giornata.</div>
+              <div class="legend-item"><strong>Cap. kWh</strong>: capacità batteria usata nei calcoli.</div>
+              <div class="legend-item"><strong>Max C/D W</strong>: max carica/scarica reale stimata vs usata.</div>
+              <div class="legend-item"><strong>Allineamento PV (reale)</strong>: differenza % tra reale e forecast giornaliero.</div>
+              <div class="legend-item"><strong>PV Reale vs Forecast (kWh)</strong>: reale/forecast in kWh.</div>
+              <div class="legend-item"><strong>Allineamento PV (intraday)</strong>: confronto parziale fino ad ora.</div>
+              <div class="legend-item"><strong>PV Intraday Reale vs Forecast (kWh)</strong>: kWh parziali reale/forecast.</div>
+              <div class="legend-item"><strong>Fattore PV (stimato)</strong>: pv_adjust applicato alle previsioni.</div>
+            </div>
+          </div>
         </div>
         <details class="card inner" v-if="forecast?.sites?.length" open>
           <summary class="forecast-summary">
@@ -879,6 +908,7 @@ const analysis = ref({ ok: false, events: [], missing: [] })
 const reportStatus = ref(null)
 const insights = ref({ global: null, sites: [] })
 const forecast = ref(null)
+const showLegend = ref(false)
 const loggingCheck = ref(null)
 const loggingHours = ref(24)
 let pollTimer = null
@@ -2022,6 +2052,50 @@ body{
 .forecast-note{
   margin-top:8px;
   font-size:12px;
+}
+.row-between{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.legend-btn{
+  padding:6px 10px;
+}
+.modal-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+.modal-card{
+  width:min(720px, 92vw);
+  max-height:80vh;
+  overflow:auto;
+  background:#0f1620;
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:16px;
+  padding:16px;
+  box-shadow:0 10px 40px rgba(0,0,0,0.35);
+}
+.modal-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:8px;
+}
+.modal-body{
+  display:grid;
+  gap:8px;
+  font-size:13px;
+  color:#c9d6e2;
+}
+.legend-item strong{
+  color:#e6eff7;
 }
 .hourly-wrap{
   display:flex;
