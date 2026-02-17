@@ -879,6 +879,9 @@ const resolveViewCardPath = (path, baseUrl) => {
   if (!val) return ''
   if (/^https?:\/\//i.test(val)) return val
   const suffix = val.startsWith('/') ? val : `/${val}`
+  if (suffix.startsWith('/dashboard-') || suffix.startsWith('/lovelace/') || suffix.startsWith('/energy/')) {
+    return `${window.location.origin}${suffix}`
+  }
   let base = String(baseUrl || '').trim().replace(/\/+$/, '')
   if (!base && window.location.port === '8100') {
     base = `${window.location.origin}/ha`

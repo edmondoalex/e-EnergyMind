@@ -477,3 +477,6 @@
 ## 2026-02-17
 - Proxy `/ha`: aggiunto passthrough root per `/dashboard-*` (supporta redirect a /dashboard-... senza /ha).
 - Versione add-on aggiornata a 2.1.66.
+## 2026-02-17
+- View-Card: path `/dashboard-*` e `/lovelace/*` ora bypassano `ha_base_url` (fix panoramica in iframe).
+- Versione add-on aggiornata a 2.1.67.
