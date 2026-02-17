@@ -661,6 +661,11 @@
             <input type="number" min="1" max="6" v-model.number="sp.view_card.count" @change="onViewCardCountChange"/>
             <div class="help">Quante card visualizzare nella sezione View-Card.</div>
           </div>
+          <div class="field">
+            <label>HA base URL (iframe)</label>
+            <input type="text" v-model="sp.view_card.ha_base_url" placeholder="http://192.168.3.24:8123" @change="saveConfig"/>
+            <div class="help">Usato solo quando apri da porta 8100. Se il path non è assoluto, viene prefissato con questo URL.</div>
+          </div>
           <div v-for="(item, idx) in viewCardSlots" :key="`vc-${idx}`" class="card inner">
             <div class="row"><strong>Card {{ idx + 1 }}</strong></div>
               <div class="field">
@@ -837,16 +842,17 @@ const reportStatus = ref(null)
 const insights = ref({ global: null, sites: [] })
 const forecast = ref(null)
 const showLegend = ref(false)
-const viewCardSlots = computed(() => {
-  const cfg = sp.value?.view_card || {}
-  const count = Number(cfg.count || 0)
-  const safeCount = Math.max(0, Math.min(6, Number.isFinite(count) ? count : 0))
-  const cards = Array.isArray(cfg.cards) ? cfg.cards : []
-  return Array.from({ length: safeCount }, (_, i) => ({
-    title: String(cards[i]?.title || '').trim(),
-    path: String(cards[i]?.path || '').trim()
-  }))
-})
+  const viewCardSlots = computed(() => {
+    const cfg = sp.value?.view_card || {}
+    const count = Number(cfg.count || 0)
+    const safeCount = Math.max(0, Math.min(6, Number.isFinite(count) ? count : 0))
+    const cards = Array.isArray(cfg.cards) ? cfg.cards : []
+    const baseUrl = String(cfg.ha_base_url || '').trim()
+    return Array.from({ length: safeCount }, (_, i) => ({
+      title: String(cards[i]?.title || '').trim(),
+      path: resolveViewCardPath(String(cards[i]?.path || '').trim(), baseUrl)
+    }))
+  })
 const loggingCheck = ref(null)
 const loggingHours = ref(24)
 let pollTimer = null
@@ -866,6 +872,17 @@ const adminFilter = ref({ 1: '', 2: '', 3: '' })
 const apiUrl = (path) => {
   const safePath = String(path || '').replace(/^\/+/, '')
   return new URL(safePath, window.location.href).toString()
+}
+
+const resolveViewCardPath = (path, baseUrl) => {
+  const val = String(path || '').trim()
+  if (!val) return ''
+  if (/^https?:\/\//i.test(val)) return val
+  if (!baseUrl) return val
+  const base = String(baseUrl).trim().replace(/\/+$/, '')
+  if (!base) return val
+  const suffix = val.startsWith('/') ? val : `/${val}`
+  return `${base}${suffix}`
 }
 
 const energyEntityDefs = [
@@ -1329,14 +1346,17 @@ function onBlur(){
   if (editingCount.value === 0) startPolling()
 }
 
-function ensureViewCards(){
-  if (!sp.value.view_card) {
-    sp.value.view_card = { count: 3, cards: [] }
-  }
-  let count = Number(sp.value.view_card.count || 0)
-  if (!Number.isFinite(count)) count = 3
-  count = Math.max(1, Math.min(6, count))
-  sp.value.view_card.count = count
+  function ensureViewCards(){
+    if (!sp.value.view_card) {
+      sp.value.view_card = { count: 3, ha_base_url: '', cards: [] }
+    }
+    let count = Number(sp.value.view_card.count || 0)
+    if (!Number.isFinite(count)) count = 3
+    count = Math.max(1, Math.min(6, count))
+    sp.value.view_card.count = count
+    if (typeof sp.value.view_card.ha_base_url !== 'string') {
+      sp.value.view_card.ha_base_url = ''
+    }
   const cards = Array.isArray(sp.value.view_card.cards) ? sp.value.view_card.cards : []
   while (cards.length < count) {
     cards.push({ title: '', path: '' })

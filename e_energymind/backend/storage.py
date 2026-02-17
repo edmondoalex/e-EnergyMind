@@ -89,6 +89,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     },
     "view_card": {
         "count": 3,
+        "ha_base_url": "",
         "cards": [
             {"title": "Card 1", "path": ""},
             {"title": "Card 2", "path": ""},
@@ -204,6 +205,8 @@ def normalize_config(raw: Dict[str, Any]) -> Dict[str, Any]:
     if isinstance(view_card, dict):
         count = int(_float(view_card.get("count"), cfg["view_card"]["count"]))
         cfg["view_card"]["count"] = max(1, min(6, count))
+        if isinstance(view_card.get("ha_base_url"), str):
+            cfg["view_card"]["ha_base_url"] = view_card.get("ha_base_url", "").strip()
         cards = view_card.get("cards", [])
         out_cards = []
         if isinstance(cards, list):
@@ -306,6 +309,8 @@ def apply_config(cfg: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any]
     if isinstance(view_card, dict):
         count = int(_float(view_card.get("count"), cfg["view_card"]["count"]))
         cfg["view_card"]["count"] = max(1, min(6, count))
+        if isinstance(view_card.get("ha_base_url"), str):
+            cfg["view_card"]["ha_base_url"] = view_card.get("ha_base_url", "").strip()
         cards = view_card.get("cards", [])
         out_cards = []
         if isinstance(cards, list):

@@ -415,3 +415,6 @@
 ## 2026-02-17
 - Fix: syntax error nelle chiamate API (Ingress) in App.vue.
 - Versione add-on aggiornata a 2.1.46.
+## 2026-02-17
+- View-Card: aggiunto HA base URL per iframe quando si apre da porta 8100.
+- Versione add-on aggiornata a 2.1.47.
