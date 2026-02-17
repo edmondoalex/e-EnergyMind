@@ -418,3 +418,6 @@
 ## 2026-02-17
 - View-Card: aggiunto HA base URL per iframe quando si apre da porta 8100.
 - Versione add-on aggiornata a 2.1.47.
+## 2026-02-17
+- View-Card: path relativo ora risolto su origin corrente (Ingress) se manca HA base URL.
+- Versione add-on aggiornata a 2.1.48.

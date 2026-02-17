@@ -434,3 +434,6 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-17
 - View-Card: HA base URL per iframe quando si usa la porta 8100.
 - Versione add-on aggiornata a 2.1.47.
+## Aggiornamenti 2026-02-17
+- View-Card: path relativo risolto su origin corrente (Ingress) se manca HA base URL.
+- Versione add-on aggiornata a 2.1.48.

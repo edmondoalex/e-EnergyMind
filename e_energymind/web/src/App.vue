@@ -878,11 +878,10 @@ const resolveViewCardPath = (path, baseUrl) => {
   const val = String(path || '').trim()
   if (!val) return ''
   if (/^https?:\/\//i.test(val)) return val
-  if (!baseUrl) return val
-  const base = String(baseUrl).trim().replace(/\/+$/, '')
-  if (!base) return val
   const suffix = val.startsWith('/') ? val : `/${val}`
-  return `${base}${suffix}`
+  const base = String(baseUrl || '').trim().replace(/\/+$/, '')
+  if (base) return `${base}${suffix}`
+  return `${window.location.origin}${suffix}`
 }
 
 const energyEntityDefs = [
