@@ -453,3 +453,6 @@
 - Proxy `/ha`: spostati passthrough HA su `/ha/auth` e `/ha/api` per non rompere API addon.
 - Proxy `/ha`: WebSocket su `/ha/api/websocket`.
 - Versione add-on aggiornata a 2.1.58.
+## 2026-02-17
+- Proxy `/ha`: aggiunto WebSocket passthrough anche su `/api/websocket` (solo WS) per compatibilità frontend HA.
+- Versione add-on aggiornata a 2.1.59.

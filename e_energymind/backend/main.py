@@ -1107,6 +1107,16 @@ async def ha_ws_proxy(path: str, websocket: WebSocket):
 
 @app.websocket("/ha/api/websocket")
 async def ha_api_ws_proxy(websocket: WebSocket):
+    await _ha_ws_tunnel(websocket, "/api/websocket")
+
+
+@app.websocket("/api/websocket")
+async def ha_api_ws_proxy_root(websocket: WebSocket):
+    # Keep add-on REST /api intact; only WS is proxied for HA frontend compatibility.
+    await _ha_ws_tunnel(websocket, "/api/websocket")
+
+
+async def _ha_ws_tunnel(websocket: WebSocket, path: str):
     await websocket.accept()
     session = await _ensure_proxy_session()
     base = _ha_base_url()
@@ -1116,7 +1126,7 @@ async def ha_api_ws_proxy(websocket: WebSocket):
         ws_base = "ws://" + base[len("http://") :]
     else:
         ws_base = "ws://homeassistant:8123"
-    target = f"{ws_base}/api/websocket"
+    target = f"{ws_base}{path}"
 
     headers = {}
     origin = websocket.headers.get("origin")
