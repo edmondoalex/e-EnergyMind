@@ -421,3 +421,6 @@
 ## 2026-02-17
 - View-Card: path relativo ora risolto su origin corrente (Ingress) se manca HA base URL.
 - Versione add-on aggiornata a 2.1.48.
+## 2026-02-17
+- View-Card: iframe esteso a 100vh e wrapper senza overflow per ridurre lo scroll esterno.
+- Versione add-on aggiornata a 2.1.49.

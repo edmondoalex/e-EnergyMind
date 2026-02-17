@@ -2337,12 +2337,13 @@ body{
   }
   .viewcard-iframe{
     padding:14px;
+    overflow:hidden;
   }
   .iframe-wrap{
     width:100%;
-    height:60vh;
-    min-height:360px;
-    max-height:75vh;
+    height:100vh;
+    min-height:600px;
+    max-height:100vh;
     border-radius:14px;
     overflow:hidden;
     background:#0b0d0f;
