@@ -387,3 +387,6 @@
 ## 2026-02-16
 - Forecast: aggiunto indicatore di allineamento reale vs forecast (percentuale e kWh).
 - Versione add-on aggiornata a 2.1.37.
+## 2026-02-16
+- Forecast: aggiunto allineamento PV intraday (reale vs forecast parziale) con percentuale.
+- Versione add-on aggiornata a 2.1.38.

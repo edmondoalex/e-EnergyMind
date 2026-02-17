@@ -1599,6 +1599,9 @@ async def forecast():
             extra_safe_today_kwh = None
             target_soc = None
             target_reason = None
+            intraday_forecast_kwh = None
+            intraday_actual_kwh = None
+            intraday_error_pct = None
             if pv_id and load_id:
                 pv_profile = _hourly_from_forecast_entity(pv_fc_today_hourly_id, today_start) or _hourly_profile(conn, pv_id, 7)
                 load_profile = _hourly_profile(conn, load_id, 7)
@@ -1611,6 +1614,25 @@ async def forecast():
                 # Only scale the load profile if the user explicitly provides a daily load target.
                 if (load_daily_id and not load_daily_is_today) and load_today_kwh is not None and load_sum > 0:
                     load_scale = (load_today_kwh * 1000.0) / load_sum
+
+                # Intraday alignment (actual vs forecast so far)
+                try:
+                    intraday_actual_kwh = _daily_energy_kwh(conn, pv_id, today_start, now_ts)
+                    now_lt = time.localtime(now_ts)
+                    h_now = now_lt.tm_hour
+                    frac = (now_lt.tm_min + (now_lt.tm_sec / 60.0)) / 60.0
+                    forecast_wh = 0.0
+                    for h in range(0, min(24, h_now)):
+                        forecast_wh += pv_profile[h] * pv_scale
+                    if 0 <= h_now < 24:
+                        forecast_wh += pv_profile[h_now] * pv_scale * max(0.0, min(1.0, frac))
+                    intraday_forecast_kwh = round(forecast_wh / 1000.0, 3)
+                    if intraday_forecast_kwh and intraday_forecast_kwh > 0:
+                        intraday_error_pct = round((intraday_actual_kwh - intraday_forecast_kwh) / intraday_forecast_kwh * 100.0, 1)
+                except Exception:
+                    intraday_actual_kwh = None
+                    intraday_forecast_kwh = None
+                    intraday_error_pct = None
 
                 tomorrow_start = today_start + 86400
                 pv_profile_tom = _hourly_from_forecast_entity(pv_fc_tom_hourly_id, tomorrow_start) or _hourly_profile(conn, pv_id, 7)
@@ -1867,6 +1889,9 @@ async def forecast():
                     "forecast_last_kwh": (pv_adjust_meta.get(f"s{site}", {}) or {}).get("forecast"),
                     "actual_last_kwh": (pv_adjust_meta.get(f"s{site}", {}) or {}).get("actual"),
                     "error_pct": (pv_adjust_meta.get(f"s{site}", {}) or {}).get("error_pct"),
+                    "intraday_forecast_kwh": intraday_forecast_kwh,
+                    "intraday_actual_kwh": intraday_actual_kwh,
+                    "intraday_error_pct": intraday_error_pct,
                 },
                 "hourly": hourly,
                 "hourly_tomorrow": hourly_tomorrow,

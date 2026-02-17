@@ -114,6 +114,8 @@
                 <div class="f-label">Max C/D W (usato)</div><div class="f-val">{{ fmtChargeDischarge(row.max_charge_w, row.max_discharge_w) }}</div>
                 <div class="f-label">Allineamento PV (reale)</div><div class="f-val">{{ fmtPctSigned(row.factors?.error_pct) }}</div>
                 <div class="f-label">PV Reale vs Forecast (kWh)</div><div class="f-val">{{ fmtKwhPair(row.factors?.actual_last_kwh, row.factors?.forecast_last_kwh) }}</div>
+                <div class="f-label">Allineamento PV (intraday)</div><div class="f-val">{{ fmtPctSigned(row.factors?.intraday_error_pct) }}</div>
+                <div class="f-label">PV Intraday Reale vs Forecast (kWh)</div><div class="f-val">{{ fmtKwhPair(row.factors?.intraday_actual_kwh, row.factors?.intraday_forecast_kwh) }}</div>
                 <div class="f-label">Fattore PV (stimato)</div><div class="f-val">{{ fmtFactor(row.factors?.pv_adjust) }}</div>
               </div>
             </details>

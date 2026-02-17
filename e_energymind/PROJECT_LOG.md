@@ -403,3 +403,6 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-16
 - Forecast: indicatore allineamento reale vs forecast (percentuale e kWh) in UI.
 - Versione add-on aggiornata a 2.1.37.
+## Aggiornamenti 2026-02-16
+- Forecast: allineamento PV intraday (reale vs forecast parziale) in UI.
+- Versione add-on aggiornata a 2.1.38.
