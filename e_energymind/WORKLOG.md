@@ -462,3 +462,6 @@
 ## 2026-02-17
 - Proxy `/ha`: aggiunto passthrough per `/lovelace/*` root (fix redirect a /lovelace/0).
 - Versione add-on aggiornata a 2.1.61.
+## 2026-02-17
+- Proxy `/ha`: iniezione token `ha_token` in header Authorization per richieste e WebSocket (fix Unauthorized).
+- Versione add-on aggiornata a 2.1.62.

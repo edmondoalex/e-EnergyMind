@@ -79,6 +79,19 @@ def _ha_base_url() -> str:
     return str(base).rstrip("/")
 
 
+def _ha_access_token() -> str | None:
+    options_path = Path("/data/options.json")
+    if options_path.exists():
+        try:
+            data = json.loads(options_path.read_text(encoding="utf-8"))
+            ha_token = data.get("ha_token")
+            if isinstance(ha_token, str) and ha_token.strip():
+                return ha_token.strip()
+        except Exception:
+            pass
+    return None
+
+
 def _rewrite_location(location: str, base_url: str) -> str:
     if not location:
         return location
@@ -122,6 +135,9 @@ async def _proxy_request(request: Request, target_path: str) -> Response:
     headers.pop("host", None)
     headers.pop("accept-encoding", None)
     headers["accept-encoding"] = "identity"
+    token = _ha_access_token()
+    if token and "authorization" not in {k.lower() for k in headers.keys()}:
+        headers["Authorization"] = f"Bearer {token}"
     body = await request.body()
 
     resp = await session.request(
@@ -1155,6 +1171,9 @@ async def _ha_ws_tunnel(websocket: WebSocket, path: str):
     target = f"{ws_base}{path}"
 
     headers = {}
+    token = _ha_access_token()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
     origin = websocket.headers.get("origin")
     if origin:
         headers["Origin"] = origin
