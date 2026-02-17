@@ -396,3 +396,6 @@
 ## 2026-02-17
 - Admin: mostrato nome addon + nome originale HA per ogni entità mappata (debug rinomina).
 - Versione add-on aggiornata a 2.1.40.
+## 2026-02-17
+- Forecast: allineamento reale usa produzione reale (kWh) anche se il sensore “today” è in W.
+- Versione add-on aggiornata a 2.1.41.

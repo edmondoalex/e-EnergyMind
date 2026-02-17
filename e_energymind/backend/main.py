@@ -87,6 +87,22 @@ def _state_str(entity_id: str | None) -> str | None:
     return None if raw is None else str(raw)
 
 
+def _state_unit(entity_id: str | None) -> str | None:
+    if not entity_id:
+        return None
+    st = ha.states.get(entity_id)
+    if not st:
+        return None
+    attrs = st.get("attributes") or {}
+    unit = attrs.get("unit_of_measurement")
+    return None if unit is None else str(unit)
+
+
+def _is_energy_unit(unit: str | None) -> bool:
+    u = (unit or "").strip().lower()
+    return u in ("kwh", "wh")
+
+
 def _load_all_entities_store() -> Dict[str, list]:
     if not ALL_ENTITIES_PATH.exists():
         return {"s1": [], "s2": [], "s3": []}
@@ -1448,13 +1464,14 @@ async def forecast():
             pv_base = _median([v for v in pv_days if v > 0])
             load_base = _median([v for v in load_days if v > 0])
 
+            pv_today_unit = _state_unit(pv_today_id)
+
             # Correction factor if forecast entity present and history exists
             pv_factor = 1.0
-            if pv_fc_today_id and pv_today_id:
+            if pv_fc_today_id:
                 hist_fc = _load_history_raw_series(conn, pv_fc_today_id, today_start - 8 * 86400)
-                hist_act = _load_history_raw_series(conn, pv_today_id, today_start - 8 * 86400)
-                if hist_fc and hist_act:
-                    # build daily max map
+                if hist_fc:
+                    # build daily max map from forecast
                     fc_map = {}
                     for ts, raw, val, _ in hist_fc:
                         v = val if val is not None else _num_or_none(raw)
@@ -1462,13 +1479,24 @@ async def forecast():
                             continue
                         day = time.strftime("%Y-%m-%d", time.localtime(ts))
                         fc_map[day] = max(fc_map.get(day, 0), float(v))
+
                     act_map = {}
-                    for ts, raw, val, _ in hist_act:
-                        v = val if val is not None else _num_or_none(raw)
-                        if v is None:
-                            continue
-                        day = time.strftime("%Y-%m-%d", time.localtime(ts))
-                        act_map[day] = max(act_map.get(day, 0), float(v))
+                    if pv_today_id and _is_energy_unit(pv_today_unit):
+                        hist_act = _load_history_raw_series(conn, pv_today_id, today_start - 8 * 86400)
+                        for ts, raw, val, _ in hist_act:
+                            v = val if val is not None else _num_or_none(raw)
+                            if v is None:
+                                continue
+                            day = time.strftime("%Y-%m-%d", time.localtime(ts))
+                            act_map[day] = max(act_map.get(day, 0), float(v))
+                    elif pv_id:
+                        for day in fc_map.keys():
+                            try:
+                                dts = int(time.mktime(time.strptime(day, "%Y-%m-%d")))
+                            except Exception:
+                                continue
+                            act_map[day] = _daily_energy_kwh(conn, pv_id, dts, dts + 86400)
+
                     ratios = []
                     for day, fc_val in fc_map.items():
                         act_val = act_map.get(day)
@@ -1522,7 +1550,11 @@ async def forecast():
             fallback_err_pct = None
             if pv_fc_today_id and pv_today_id:
                 fc_now = _state_num(pv_fc_today_id)
-                act_now = _state_num(pv_today_id)
+                act_now = None
+                if _is_energy_unit(pv_today_unit):
+                    act_now = _state_num(pv_today_id)
+                elif pv_id:
+                    act_now = _daily_energy_kwh(conn, pv_id, today_start, now_ts)
                 if fc_now is not None and act_now is not None:
                     fallback_fc_kwh = round(fc_now, 2)
                     fallback_act_kwh = round(act_now, 2)
