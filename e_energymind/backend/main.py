@@ -9,7 +9,7 @@ from typing import Any, Dict
 
 import aiohttp
 from fastapi import FastAPI, HTTPException, Request, WebSocket
-from fastapi.responses import JSONResponse, FileResponse, StreamingResponse, RedirectResponse
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse, RedirectResponse, Response
 from starlette.background import BackgroundTask
 
 from .ha_client import HAClient
@@ -85,6 +85,22 @@ def _rewrite_location(location: str, base_url: str) -> str:
     if loc.startswith("/") and not loc.startswith("/ha/"):
         return "/ha" + loc
     return loc
+
+
+def _rewrite_html_base(body: str) -> str:
+    if "<base " in body:
+        return body
+    if "<head>" in body:
+        return body.replace("<head>", "<head><base href=\"/ha/\">", 1)
+    return "<base href=\"/ha/\">" + body
+
+
+def _rewrite_html_paths(body: str) -> str:
+    body = body.replace('href="/ha/', 'href="/ha/')
+    body = body.replace('src="/ha/', 'src="/ha/')
+    body = body.replace('href="/', 'href="/ha/')
+    body = body.replace('src="/', 'src="/ha/')
+    return body
 
 
 async def _ensure_proxy_session() -> aiohttp.ClientSession:
@@ -908,6 +924,19 @@ async def ha_proxy(path: str, request: Request):
     }
     if "location" in resp_headers:
         resp_headers["location"] = _rewrite_location(resp_headers["location"], base)
+
+    content_type = resp.headers.get("content-type", "")
+    if "text/html" in content_type.lower():
+        raw = await resp.read()
+        text = raw.decode("utf-8", errors="ignore")
+        text = _rewrite_html_base(text)
+        text = _rewrite_html_paths(text)
+        return Response(
+            content=text,
+            status_code=resp.status,
+            headers=resp_headers,
+            media_type="text/html",
+        )
 
     async def _stream():
         async for chunk in resp.content.iter_chunked(65536):

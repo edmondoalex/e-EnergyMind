@@ -434,3 +434,6 @@
 ## 2026-02-17
 - Proxy `/ha`: disabilitata compressione upstream per evitare ERR_CONTENT_DECODING_FAILED.
 - Versione add-on aggiornata a 2.1.52.
+## 2026-02-17
+- Proxy `/ha`: rewrite HTML per prefissare risorse con `/ha` (fix 404 static/frontend_latest).
+- Versione add-on aggiornata a 2.1.53.
