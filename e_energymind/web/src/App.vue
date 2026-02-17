@@ -663,10 +663,10 @@
           </div>
           <div v-for="(item, idx) in viewCardSlots" :key="`vc-${idx}`" class="card inner">
             <div class="row"><strong>Card {{ idx + 1 }}</strong></div>
-            <div class="field">
-              <label>Nome card</label>
-              <input type="text" v-model="sp.view_card.cards[idx].title" placeholder="Privato Inst" @change="saveConfig"/>
-            </div>
+              <div class="field">
+                <label>Nome card</label>
+                <input type="text" v-model="sp.view_card.cards[idx].title" placeholder="Card 1" @change="saveConfig"/>
+              </div>
             <div class="field">
               <label>Path card</label>
               <input type="text" v-model="sp.view_card.cards[idx].path" placeholder="/lovelace/energy-flow?kiosk" @change="saveConfig"/>

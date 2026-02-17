@@ -90,9 +90,9 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "view_card": {
         "count": 3,
         "cards": [
-            {"title": "", "path": ""},
-            {"title": "", "path": ""},
-            {"title": "", "path": ""},
+            {"title": "Card 1", "path": ""},
+            {"title": "Card 2", "path": ""},
+            {"title": "Card 3", "path": ""},
         ],
     },
     "all_entities": {
