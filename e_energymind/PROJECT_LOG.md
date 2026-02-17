@@ -422,3 +422,6 @@ Data export: 2026-02-08 (Europe/Rome)
 - View-Card: configurazione numero card, titolo e path in Automation setting.
 - View-Card: rendering card tramite iframe su view Lovelace configurate.
 - Versione add-on aggiornata a 2.1.43.
+## Aggiornamenti 2026-02-17
+- Ingress: assets con path relativo (Vite base './') per evitare 404 su /assets.
+- Versione add-on aggiornata a 2.1.44.
