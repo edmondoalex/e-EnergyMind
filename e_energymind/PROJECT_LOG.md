@@ -506,3 +506,6 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-17
 - Automation: aggiunta sezione entità consumi extra-safe e consumo extra-safe kWh in forecast.
 - Versione add-on aggiornata a 2.1.70.
+## Aggiornamenti 2026-02-17
+- Fix: rimosso blocco extra_safe_entities fuori funzione che causava crash startup.
+- Versione add-on aggiornata a 2.1.71.

@@ -2805,20 +2805,3 @@ async def ha_debug():
     out["device_registry"] = await _probe_ws("config/device_registry/list")
     out["entity_registry"] = await _probe_ws("config/entity_registry/list")
     return JSONResponse(out)
-            raw_safe = automation_cfg.get("extra_safe_entities", [])
-            safe_entities = []
-            if isinstance(raw_safe, list):
-                for item in raw_safe:
-                    if not isinstance(item, dict):
-                        continue
-                    try:
-                        s = int(item.get("site") or 0)
-                    except Exception:
-                        s = 0
-                    if s != site:
-                        continue
-                    if not bool(item.get("enabled", True)):
-                        continue
-                    eid = str(item.get("entity_id") or "").strip()
-                    if eid:
-                        safe_entities.append(eid)
