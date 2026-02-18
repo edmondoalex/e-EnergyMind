@@ -141,6 +141,9 @@
               <div class="legend-item"><strong>Export (sim)</strong>: export simulato con profilo orario e limiti C/D.</div>
               <div class="legend-item"><strong>Extra (safe)</strong>: extra sicuro senza compromettere il target SOC.</div>
               <div class="legend-item"><strong>Extra Ora</strong>: extra disponibile adesso (W).</div>
+              <div class="legend-item"><strong>Extra SAFE possibile</strong>: potenza accendibile ora (W) stimata per massimizzare autoconsumo senza compromettere la batteria.</div>
+              <div class="legend-item"><strong>Consumo Extra-safe Ora</strong>: somma istantanea (W) delle entità extra-safe.</div>
+              <div class="legend-item"><strong>Extra-safe Consumi Oggi</strong>: energia (kWh) consumata oggi dalle entità extra-safe.</div>
               <div class="legend-item"><strong>Fine Carica</strong>: ora stimata raggiungimento target SOC.</div>
               <div class="legend-item"><strong>SOC Fine (sim)</strong>: SOC stimato a fine giornata.</div>
               <div class="legend-item"><strong>Cap. kWh</strong>: capacità batteria usata nei calcoli.</div>

@@ -521,3 +521,6 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-17
 - User: aggiunti Extra-safe consumo ora e label "Extra SAFE possibile".
 - Versione add-on aggiornata a 2.1.76.
+## Aggiornamenti 2026-02-17
+- Legenda: aggiunti campi Extra SAFE possibile e consumi extra-safe.
+- Versione add-on aggiornata a 2.1.77.
