@@ -559,6 +559,7 @@
               <span class="entity-name">{{ siteTitle(site) }}</span>
               <span class="entity-value">
                 Ora {{ fmtW(extraNowFor(site)) }} ·
+                Extra-safe consumi oggi {{ fmtKwh(extraSafeLoadTodayFor(site)) }} ·
                 Oggi {{ fmtKwh(extraTodayFor(site)) }} ·
                 Domani {{ fmtKwh(extraTomorrowFor(site)) }} ·
                 BMS Max (reale) {{ fmtChargeDischarge(maxChargeLearnedFor(site), maxDischargeLearnedFor(site)) }} ·
@@ -566,6 +567,33 @@
               </span>
             </div>
           </div>
+        </div>
+        <div class="form" v-if="sp">
+          <h3 class="section">Consumi extra-safe (opzionali)</h3>
+          <div class="help">Queste entità (W) vengono escluse dal consumo casa per le logiche SAFE e dall'apprendimento.</div>
+          <details v-for="site in siteList" :key="`safe-admin-${site}`" class="set-section" open>
+            <summary class="section-title">{{ siteTitle(site) }}</summary>
+            <div class="field">
+              <label>Nuova entità extra-safe</label>
+              <div class="input-row">
+                <input type="text" v-model="newExtraSafe[site]" placeholder="sensor.xxx" />
+                <button class="ghost" @click="addExtraSafeEntity(site)">Aggiungi</button>
+              </div>
+              <div class="help">Inserisci l'`entity_id` completo (potenza W).</div>
+            </div>
+            <div class="entity-list" v-if="extraSafeList(site).length">
+              <div class="entity-row" v-for="item in extraSafeItems(site)" :key="`safe-admin-${site}-${item.entity_id}`">
+                <span class="entity-name">{{ item.entity_id }}</span>
+                <span class="state-flag" :class="item.enabled ? 'state-on' : 'state-off'">
+                  <input class="flag-checkbox" type="checkbox" :checked="item.enabled"
+                         @change="toggleExtraSafeEnabled(site, item.entity_id)"/>
+                  <span>{{ item.enabled ? 'ON' : 'OFF' }}</span>
+                </span>
+                <button class="ghost danger" @click="removeExtraSafeEntity(site, item.entity_id)">Rimuovi</button>
+              </div>
+            </div>
+            <div class="muted" v-else>Nessuna entità extra-safe.</div>
+          </details>
         </div>
         <div class="form" v-if="sp">
           <h3 class="section">Campi dedicati (diagramma istantaneo)</h3>
@@ -865,9 +893,50 @@ const historyModal = ref({ open: false, title: '', series: [], unit: '', samples
 const allEntitiesState = ref({ 1: [], 2: [], 3: [] })
 const adminStates = ref({})
 const newDatalog = ref({ 1: '', 2: '', 3: '' })
+const newExtraSafe = ref({ 1: '', 2: '', 3: '' })
 const flowStates = ref({})
 const extraStates = ref({})
 const adminFilter = ref({ 1: '', 2: '', 3: '' })
+
+const extraSafeList = (site) => {
+  return (sp.value?.automation?.extra_safe_entities || []).filter((e) => e.site === site)
+}
+const extraSafeItems = (site) => extraSafeList(site)
+const extraSafeLoadTodayFor = (site) => {
+  const row = (forecast.value?.sites || []).find((s) => s.site === site)
+  return row?.extra_safe_load_today_kwh ?? null
+}
+const addExtraSafeEntity = (site) => {
+  const eid = String(newExtraSafe.value[site] || '').trim()
+  if (!eid) return
+  if (!sp.value.automation.extra_safe_entities) {
+    sp.value.automation.extra_safe_entities = []
+  }
+  const list = sp.value.automation.extra_safe_entities
+  const exists = list.some((e) => e.site === site && e.entity_id === eid)
+  if (!exists) {
+    list.push({ site, entity_id: eid, enabled: true })
+    sp.value.automation.extra_safe_entities = list
+    saveConfig()
+  }
+  newExtraSafe.value[site] = ''
+}
+const removeExtraSafeEntity = (site, entity_id) => {
+  const list = sp.value?.automation?.extra_safe_entities || []
+  sp.value.automation.extra_safe_entities = list.filter((e) => !(e.site === site && e.entity_id === entity_id))
+  saveConfig()
+}
+const toggleExtraSafeEnabled = (site, entity_id) => {
+  const list = sp.value?.automation?.extra_safe_entities || []
+  const next = list.map((e) => {
+    if (e.site === site && e.entity_id === entity_id) {
+      return { ...e, enabled: !e.enabled }
+    }
+    return e
+  })
+  sp.value.automation.extra_safe_entities = next
+  saveConfig()
+}
 
 const apiUrl = (path) => {
   const safePath = String(path || '').replace(/^\/+/, '')
@@ -1759,6 +1828,9 @@ onMounted(async()=>{
       }
     }
   } catch {}
+  if (sp.value?.automation && !Array.isArray(sp.value.automation.extra_safe_entities)) {
+    sp.value.automation.extra_safe_entities = []
+  }
   startPolling()
 })
 watch(tab, (t) => {

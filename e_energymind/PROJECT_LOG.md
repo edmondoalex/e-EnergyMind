@@ -503,3 +503,6 @@ Data export: 2026-02-08 (Europe/Rome)
 - Forecast: pv_adjust live ogni 60s con intraday ratio e target SOC fisso 100% + margine 5%.
 - Extra safe: usa pv_adjust live e margine SOC per massimizzare autoconsumo senza compromettere batteria.
 - Versione add-on aggiornata a 2.1.69.
+## Aggiornamenti 2026-02-17
+- Automation: aggiunta sezione entità consumi extra-safe e consumo extra-safe kWh in forecast.
+- Versione add-on aggiornata a 2.1.70.

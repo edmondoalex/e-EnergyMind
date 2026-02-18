@@ -39,7 +39,8 @@ DEFAULT_CONFIG: Dict[str, Any] = {
             "s2": {"pv_a": "", "pv_b": "", "pv_total": "", "pv": "", "load_total": "", "load": "", "battery": "", "grid": "", "soc": "", "soc_min": "", "battery_v": "", "battery_a": "", "today_prod": "", "today_load": "", "today_house": "", "today_export": "", "today_charge": "", "today_discharge": "", "voltage": "", "frequency": ""},
             "s3": {"pv_a": "", "pv_b": "", "pv_total": "", "pv": "", "load_total": "", "load": "", "battery": "", "grid": "", "soc": "", "soc_min": "", "battery_v": "", "battery_a": "", "today_prod": "", "today_load": "", "today_house": "", "today_export": "", "today_charge": "", "today_discharge": "", "voltage": "", "frequency": ""},
         },
-        "extra_datalog_entities": []
+        "extra_datalog_entities": [],
+        "extra_safe_entities": []
     },
     "forecast": {
         "s1": {
@@ -182,6 +183,22 @@ def normalize_config(raw: Dict[str, Any]) -> Dict[str, Any]:
                     extra_list.append({"site": site, "entity_id": entity_id, "enabled": enabled})
         cfg["automation"]["extra_datalog_entities"] = extra_list
 
+        raw_safe = automation.get("extra_safe_entities", [])
+        safe_list = []
+        if isinstance(raw_safe, list):
+            for item in raw_safe:
+                if not isinstance(item, dict):
+                    continue
+                try:
+                    site = int(item.get("site") or 0)
+                except Exception:
+                    site = 0
+                entity_id = str(item.get("entity_id") or "").strip()
+                if site in (1, 2, 3) and entity_id:
+                    enabled = bool(item.get("enabled", True))
+                    safe_list.append({"site": site, "entity_id": entity_id, "enabled": enabled})
+        cfg["automation"]["extra_safe_entities"] = safe_list
+
     forecast = raw.get("forecast", {})
     if isinstance(forecast, dict):
         for key in ("s1", "s2", "s3"):
@@ -284,6 +301,22 @@ def apply_config(cfg: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any]
                     enabled = bool(item.get("enabled", True))
                     extra_list.append({"site": site, "entity_id": entity_id, "enabled": enabled})
                     cfg["automation"]["extra_datalog_entities"] = extra_list
+
+        if isinstance(automation.get("extra_safe_entities"), list):
+            raw_safe = automation.get("extra_safe_entities") or []
+            safe_list = []
+            for item in raw_safe:
+                if not isinstance(item, dict):
+                    continue
+                try:
+                    site = int(item.get("site") or 0)
+                except Exception:
+                    site = 0
+                entity_id = str(item.get("entity_id") or "").strip()
+                if site in (1, 2, 3) and entity_id:
+                    enabled = bool(item.get("enabled", True))
+                    safe_list.append({"site": site, "entity_id": entity_id, "enabled": enabled})
+                    cfg["automation"]["extra_safe_entities"] = safe_list
 
     forecast = payload.get("forecast", {})
     if isinstance(forecast, dict):

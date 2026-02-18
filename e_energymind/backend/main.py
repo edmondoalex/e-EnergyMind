@@ -582,6 +582,25 @@ def _hourly_profile(conn: sqlite3.Connection, entity_id: str, days: int = 7) -> 
     return out
 
 
+def _hourly_profile_multi(conn: sqlite3.Connection, entity_ids: list[str], days: int = 7) -> list[float]:
+    if not entity_ids:
+        return [0.0] * 24
+    acc = [0.0] * 24
+    for eid in entity_ids:
+        prof = _hourly_profile(conn, eid, days)
+        acc = [a + b for a, b in zip(acc, prof)]
+    return acc
+
+
+def _daily_energy_kwh_multi(conn: sqlite3.Connection, entity_ids: list[str], day_start: int, day_end: int) -> float:
+    if not entity_ids:
+        return 0.0
+    total = 0.0
+    for eid in entity_ids:
+        total += _daily_energy_kwh(conn, eid, day_start, day_end)
+    return round(total, 3)
+
+
 def _hourly_from_forecast_entity(entity_id: str | None, day_start: int) -> list[float] | None:
     if not entity_id:
         return None
@@ -1813,6 +1832,7 @@ async def forecast():
     cfg = load_config()
     ent_cfg = cfg.get("entities", {}) or {}
     forecast_cfg = cfg.get("forecast", {}) or {}
+    automation_cfg = cfg.get("automation", {}) or {}
     learned = cfg.get("runtime", {}).get("learned_rules", {}) if isinstance(cfg.get("runtime", {}), dict) else {}
     runtime = cfg.setdefault("runtime", {})
     pv_adjust_meta = runtime.get("pv_adjust_meta")
@@ -1866,6 +1886,7 @@ async def forecast():
             # Auto baselines from history (7 giorni)
             pv_days = []
             load_days = []
+            safe_days = []
             for d in range(1, 8):
                 day_start = today_start - d * 86400
                 day_end = day_start + 86400
@@ -1873,10 +1894,14 @@ async def forecast():
                     pv_days.append(_daily_energy_kwh(conn, pv_id, day_start, day_end))
                 if load_id:
                     load_days.append(_daily_energy_kwh(conn, load_id, day_start, day_end))
+                if safe_entities:
+                    safe_days.append(_daily_energy_kwh_multi(conn, safe_entities, day_start, day_end))
             pv_base = _median([v for v in pv_days if v > 0])
             load_base = _median([v for v in load_days if v > 0])
+            safe_base = _median([v for v in safe_days if v > 0]) if safe_days else 0.0
 
             pv_today_unit = _state_unit(pv_today_id)
+            safe_today_kwh = _daily_energy_kwh_multi(conn, safe_entities, today_start, now_ts) if safe_entities else 0.0
 
             # Correction factor if forecast entity present and history exists
             pv_factor = 1.0
@@ -2020,8 +2045,13 @@ async def forecast():
             # Forecast values (initial; may be updated after live pv_adjust)
             pv_today_kwh = (pv_fc_today * pv_factor) if pv_fc_today is not None else pv_base
             pv_tom_kwh = (pv_fc_tom * pv_factor) if pv_fc_tom is not None else pv_base
-            load_today_kwh = load_fc_today if load_fc_today is not None else load_base
+            load_today_kwh = (load_fc_today if load_fc_today is not None else load_base) or 0.0
             load_tom_kwh = load_today_kwh
+            if safe_base:
+                load_today_kwh = max(0.0, load_today_kwh - safe_base)
+                load_tom_kwh = max(0.0, load_tom_kwh - safe_base)
+            if safe_today_kwh:
+                load_today_kwh = max(0.0, load_today_kwh - safe_today_kwh)
 
             # Estimate surplus and end SOC (initial)
             surplus_today = None
@@ -2067,6 +2097,9 @@ async def forecast():
             if pv_id and load_id:
                 pv_profile = _hourly_from_forecast_entity(pv_fc_today_hourly_id, today_start) or _hourly_profile(conn, pv_id, 7)
                 load_profile = _hourly_profile(conn, load_id, 7)
+                if safe_entities:
+                    safe_profile = _hourly_profile_multi(conn, safe_entities, 7)
+                    load_profile = [max(0.0, a - b) for a, b in zip(load_profile, safe_profile)]
                 pv_sum = sum(pv_profile)
                 load_sum = sum(load_profile)
                 pv_scale = 1.0
@@ -2144,6 +2177,9 @@ async def forecast():
                 tomorrow_start = today_start + 86400
                 pv_profile_tom = _hourly_from_forecast_entity(pv_fc_tom_hourly_id, tomorrow_start) or _hourly_profile(conn, pv_id, 7)
                 load_profile_tom = _hourly_profile(conn, load_id, 7)
+                if safe_entities:
+                    safe_profile_tom = _hourly_profile_multi(conn, safe_entities, 7)
+                    load_profile_tom = [max(0.0, a - b) for a, b in zip(load_profile_tom, safe_profile_tom)]
                 pv_sum_tom = sum(pv_profile_tom)
                 load_sum_tom = sum(load_profile_tom)
                 pv_scale_tom = 1.0
@@ -2335,6 +2371,7 @@ async def forecast():
                 "pv_tomorrow_kwh": round(pv_tom_kwh, 2) if pv_tom_kwh is not None else None,
                 "load_today_kwh": round(load_today_kwh, 2) if load_today_kwh is not None else None,
                 "load_tomorrow_kwh": round(load_tom_kwh, 2) if load_tom_kwh is not None else None,
+                "extra_safe_load_today_kwh": round(safe_today_kwh, 2) if safe_today_kwh is not None else None,
                 "surplus_today_kwh": surplus_today,
                 "export_today_kwh": export_today,
                 "end_soc": round(end_soc_sim, 1) if end_soc_sim is not None else end_soc,
@@ -2768,3 +2805,20 @@ async def ha_debug():
     out["device_registry"] = await _probe_ws("config/device_registry/list")
     out["entity_registry"] = await _probe_ws("config/entity_registry/list")
     return JSONResponse(out)
+            raw_safe = automation_cfg.get("extra_safe_entities", [])
+            safe_entities = []
+            if isinstance(raw_safe, list):
+                for item in raw_safe:
+                    if not isinstance(item, dict):
+                        continue
+                    try:
+                        s = int(item.get("site") or 0)
+                    except Exception:
+                        s = 0
+                    if s != site:
+                        continue
+                    if not bool(item.get("enabled", True)):
+                        continue
+                    eid = str(item.get("entity_id") or "").strip()
+                    if eid:
+                        safe_entities.append(eid)
