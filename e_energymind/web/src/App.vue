@@ -102,6 +102,7 @@
                 <div class="f-label">PV Domani (stima)</div><div class="f-val">{{ fmtKwh(row.pv_tomorrow_kwh) }}</div>
                 <div class="f-label">Consumo Oggi (stima)</div><div class="f-val">{{ fmtKwh(row.load_today_kwh) }}</div>
                 <div class="f-label">Consumo Domani (stima)</div><div class="f-val">{{ fmtKwh(row.load_tomorrow_kwh) }}</div>
+                <div class="f-label">Extra-safe Consumi Oggi</div><div class="f-val">{{ fmtKwh(row.extra_safe_load_today_kwh) }}</div>
                 <div class="f-label">Surplus Oggi (stima)</div><div class="f-val">{{ fmtKwh(row.surplus_today_kwh) }}</div>
                 <div class="f-label">Export Oggi (stima)</div><div class="f-val">{{ fmtKwh(row.export_today_kwh) }}</div>
                 <div class="f-label">Export (sim)</div><div class="f-val">{{ fmtKwh(row.export_sim_today_kwh) }}</div>

@@ -512,3 +512,9 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-17
 - Fix: definizione extra_safe_entities mancante nel forecast (500 su /api/forecast).
 - Versione add-on aggiornata a 2.1.72.
+## Aggiornamenti 2026-02-17
+- User: mostrato Extra-safe consumi oggi nelle previsioni.
+- Versione add-on aggiornata a 2.1.73.
+## Aggiornamenti 2026-02-17
+- Extra-safe: log storico anche per le entità extra-safe (kWh cresce).
+- Versione add-on aggiornata a 2.1.74.
