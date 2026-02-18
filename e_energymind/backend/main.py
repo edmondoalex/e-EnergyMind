@@ -1883,6 +1883,24 @@ async def forecast():
             soc_now = _state_num(soc_id)
             export_limit = fc.get("export_limit_w") if fc.get("export_limit_w") is not None else _state_num(export_limit_id)
 
+            raw_safe = automation_cfg.get("extra_safe_entities", [])
+            safe_entities = []
+            if isinstance(raw_safe, list):
+                for item in raw_safe:
+                    if not isinstance(item, dict):
+                        continue
+                    try:
+                        s = int(item.get("site") or 0)
+                    except Exception:
+                        s = 0
+                    if s != site:
+                        continue
+                    if not bool(item.get("enabled", True)):
+                        continue
+                    eid = str(item.get("entity_id") or "").strip()
+                    if eid:
+                        safe_entities.append(eid)
+
             # Auto baselines from history (7 giorni)
             pv_days = []
             load_days = []

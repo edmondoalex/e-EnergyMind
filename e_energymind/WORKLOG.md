@@ -493,3 +493,6 @@
 ## 2026-02-17
 - Fix: rimosso blocco extra_safe_entities fuori funzione che causava crash startup.
 - Versione add-on aggiornata a 2.1.71.
+## 2026-02-17
+- Fix: definizione extra_safe_entities mancante nel forecast (500 su /api/forecast).
+- Versione add-on aggiornata a 2.1.72.
