@@ -518,3 +518,6 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-17
 - Extra-safe: log storico anche per le entità extra-safe (kWh cresce).
 - Versione add-on aggiornata a 2.1.74.
+## Aggiornamenti 2026-02-17
+- User: aggiunti Extra-safe consumo ora e label "Extra SAFE possibile".
+- Versione add-on aggiornata a 2.1.76.

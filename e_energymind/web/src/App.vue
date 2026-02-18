@@ -92,7 +92,7 @@
               <summary class="forecast-summary">
                 <strong>{{ row.name || siteTitle(row.site) }}</strong>
                 <span class="forecast-summary-meta">
-                  Extra Ora (safe) {{ fmtW(row.extra_safe_now_w ?? row.extra_now_w) }} ·
+                  Extra SAFE possibile {{ fmtW(row.extra_safe_now_w ?? row.extra_now_w) }} ·
                   Target SOC {{ fmtPct(row.target_soc) }} ·
                   Fine Carica {{ fmtHour(row.charge_complete_hour) }}
                 </span>
@@ -102,6 +102,7 @@
                 <div class="f-label">PV Domani (stima)</div><div class="f-val">{{ fmtKwh(row.pv_tomorrow_kwh) }}</div>
                 <div class="f-label">Consumo Oggi (stima)</div><div class="f-val">{{ fmtKwh(row.load_today_kwh) }}</div>
                 <div class="f-label">Consumo Domani (stima)</div><div class="f-val">{{ fmtKwh(row.load_tomorrow_kwh) }}</div>
+                <div class="f-label">Consumo Extra-safe Ora</div><div class="f-val">{{ fmtW(row.extra_safe_load_now_w) }}</div>
                 <div class="f-label">Extra-safe Consumi Oggi</div><div class="f-val">{{ fmtKwh(row.extra_safe_load_today_kwh) }}</div>
                 <div class="f-label">Surplus Oggi (stima)</div><div class="f-val">{{ fmtKwh(row.surplus_today_kwh) }}</div>
                 <div class="f-label">Export Oggi (stima)</div><div class="f-val">{{ fmtKwh(row.export_today_kwh) }}</div>
@@ -559,7 +560,8 @@
             <div class="entity-row" v-for="site in siteList" :key="`extra-set-${site}`">
               <span class="entity-name">{{ siteTitle(site) }}</span>
               <span class="entity-value">
-                Ora {{ fmtW(extraNowFor(site)) }} ·
+                Extra SAFE possibile {{ fmtW(extraNowFor(site)) }} ·
+                Consumo extra-safe ora {{ fmtW(extraSafeLoadNowFor(site)) }} ·
                 Extra-safe consumi oggi {{ fmtKwh(extraSafeLoadTodayFor(site)) }} ·
                 Oggi {{ fmtKwh(extraTodayFor(site)) }} ·
                 Domani {{ fmtKwh(extraTomorrowFor(site)) }} ·
@@ -906,6 +908,10 @@ const extraSafeItems = (site) => extraSafeList(site)
 const extraSafeLoadTodayFor = (site) => {
   const row = (forecast.value?.sites || []).find((s) => s.site === site)
   return row?.extra_safe_load_today_kwh ?? null
+}
+const extraSafeLoadNowFor = (site) => {
+  const row = (forecast.value?.sites || []).find((s) => s.site === site)
+  return row?.extra_safe_load_now_w ?? null
 }
 const addExtraSafeEntity = (site) => {
   const eid = String(newExtraSafe.value[site] || '').trim()

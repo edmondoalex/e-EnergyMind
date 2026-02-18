@@ -1933,6 +1933,14 @@ async def forecast():
 
             pv_today_unit = _state_unit(pv_today_id)
             safe_today_kwh = _daily_energy_kwh_multi(conn, safe_entities, today_start, now_ts) if safe_entities else 0.0
+            safe_now_w = None
+            if safe_entities:
+                total = 0.0
+                for eid in safe_entities:
+                    v = _state_num(eid)
+                    if v is not None:
+                        total += float(v)
+                safe_now_w = round(total, 1)
 
             # Correction factor if forecast entity present and history exists
             pv_factor = 1.0
@@ -2403,6 +2411,7 @@ async def forecast():
                 "load_today_kwh": round(load_today_kwh, 2) if load_today_kwh is not None else None,
                 "load_tomorrow_kwh": round(load_tom_kwh, 2) if load_tom_kwh is not None else None,
                 "extra_safe_load_today_kwh": round(safe_today_kwh, 2) if safe_today_kwh is not None else None,
+                "extra_safe_load_now_w": safe_now_w,
                 "surplus_today_kwh": surplus_today,
                 "export_today_kwh": export_today,
                 "end_soc": round(end_soc_sim, 1) if end_soc_sim is not None else end_soc,
