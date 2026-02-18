@@ -2577,6 +2577,25 @@ body{
   .grid{ grid-template-columns:1fr; }
   .row3{ grid-template-columns:1fr; }
   .flow-grid{ grid-template-columns:1fr; }
-  .top{ position:static; }
+  .top{ position:static; padding:10px 12px; }
+  .main{ padding:12px 12px 28px; }
+  .card{ padding:12px; }
+  .card.inner{ margin-top:10px; }
+  .top-actions{ gap:8px; }
+  .action-btn{ padding:8px 12px; font-size:13px; }
+  .tabs{ overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px; }
+  .tabs button{ flex:0 0 auto; font-size:12px; padding:6px 10px; }
+  .forecast-summary-meta{ font-size:11px; }
+  .hourly-row{ grid-template-columns: 1fr; }
+  .hourly-row > div{ white-space:normal; }
+  .iframe-wrap{ height:70vh; min-height:420px; }
+  .viewcard-iframe{ padding:10px; }
+}
+@media (max-width: 420px){
+  .brand{ font-size:18px; }
+  .action-btn{ padding:7px 10px; font-size:12px; }
+  .tabs button{ font-size:11px; padding:6px 8px; }
+  .forecast-summary{ gap:6px; }
+  .iframe-wrap{ height:60vh; min-height:360px; }
 }
 </style>

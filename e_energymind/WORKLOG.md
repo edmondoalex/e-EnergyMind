@@ -480,3 +480,6 @@
 ## 2026-02-17
 - View-Card: path `/dashboard-*` e `/lovelace/*` ora bypassano `ha_base_url` (fix panoramica in iframe).
 - Versione add-on aggiornata a 2.1.67.
+## 2026-02-17
+- UI: migliorata responsività mobile (padding, tabs scroll, iframe height).
+- Versione add-on aggiornata a 2.1.68.
