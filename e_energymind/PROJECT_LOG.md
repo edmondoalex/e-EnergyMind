@@ -524,3 +524,6 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-17
 - Legenda: aggiunti campi Extra SAFE possibile e consumi extra-safe.
 - Versione add-on aggiornata a 2.1.77.
+## Aggiornamenti 2026-02-17
+- Logiche apprese: consumo casa ora esclude entità extra-safe.
+- Versione add-on aggiornata a 2.1.78.

@@ -640,7 +640,7 @@ def _hourly_from_forecast_entity(entity_id: str | None, day_start: int) -> list[
     return out
 
 
-def _learn_rules_for_site(conn: sqlite3.Connection, site: int, ent_cfg: dict, export_positive: bool) -> dict:
+def _learn_rules_for_site(conn: sqlite3.Connection, site: int, ent_cfg: dict, export_positive: bool, safe_entities: list[str] | None = None) -> dict:
     def _eid(k: str) -> str | None:
         return ent_cfg.get(f"s{site}_{k}")
 
@@ -655,6 +655,10 @@ def _learn_rules_for_site(conn: sqlite3.Connection, site: int, ent_cfg: dict, ex
     since_ts = now - 48 * 3600
     pv_series = _load_history_series(conn, pv_id, since_ts)
     load_series = _load_history_series(conn, load_id, since_ts)
+    safe_series_list = []
+    if safe_entities:
+        for eid in safe_entities:
+            safe_series_list.append(_load_history_series(conn, eid, since_ts))
     grid_series = _load_history_series(conn, grid_id, since_ts)
     batt_series = _load_history_series(conn, batt_id, since_ts)
 
@@ -665,6 +669,13 @@ def _learn_rules_for_site(conn: sqlite3.Connection, site: int, ent_cfg: dict, ex
     discharge_powers = []
     for ts, pv in pv_series[:: max(1, len(pv_series) // 300 or 1)]:
         load = _nearest_value(load_series, ts)
+        if safe_series_list:
+            safe_load = 0.0
+            for s in safe_series_list:
+                v = _nearest_value(s, ts)
+                if v is not None:
+                    safe_load += float(v)
+            load = None if load is None else max(0.0, load - safe_load)
         grid = _nearest_value(grid_series, ts)
         batt = _nearest_value(batt_series, ts)
         if load is None or grid is None or batt is None:
@@ -726,10 +737,28 @@ def _learn_rules() -> None:
     cfg = load_config()
     ent_cfg = cfg.get("entities", {}) or {}
     export_positive = bool(cfg.get("runtime", {}).get("grid_export_positive", True))
+    automation_cfg = cfg.get("automation", {}) or {}
     rules = {"updated_at": int(time.time()), "export_positive": export_positive}
     with sqlite3.connect(DB_PATH) as conn:
         for site in (1, 2, 3):
-            rules[f"site{site}"] = _learn_rules_for_site(conn, site, ent_cfg, export_positive)
+            raw_safe = automation_cfg.get("extra_safe_entities", [])
+            safe_entities = []
+            if isinstance(raw_safe, list):
+                for item in raw_safe:
+                    if not isinstance(item, dict):
+                        continue
+                    try:
+                        s = int(item.get("site") or 0)
+                    except Exception:
+                        s = 0
+                    if s != site:
+                        continue
+                    if not bool(item.get("enabled", True)):
+                        continue
+                    eid = str(item.get("entity_id") or "").strip()
+                    if eid:
+                        safe_entities.append(eid)
+            rules[f"site{site}"] = _learn_rules_for_site(conn, site, ent_cfg, export_positive, safe_entities)
     cfg.setdefault("runtime", {})["learned_rules"] = rules
     save_config(cfg)
     _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} LEARN rules updated")
