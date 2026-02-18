@@ -527,3 +527,6 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-17
 - Logiche apprese: consumo casa ora esclude entità extra-safe.
 - Versione add-on aggiornata a 2.1.78.
+## Aggiornamenti 2026-02-17
+- Extra SAFE possibile: blend 80% reale + 20% forecast per "ora".
+- Versione add-on aggiornata a 2.1.79.

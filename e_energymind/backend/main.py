@@ -2320,6 +2320,11 @@ async def forecast():
                         hour_now = time.localtime(now_ts).tm_hour
                         if 0 <= hour_now < len(hourly):
                             extra_now_w = hourly[hour_now].get("extra_w")
+                # Real-time extra from current states (more reliable for "now")
+                pv_now = _state_num(pv_id) or 0.0
+                load_now = _state_num(load_id) or 0.0
+                surplus_now = max(0.0, pv_now - load_now)
+                extra_now_w = min(extra_now_w, surplus_now) if extra_now_w is not None else surplus_now
                 end_soc_sim = soc_sim
 
             if pv_id and load_id:
@@ -2422,6 +2427,14 @@ async def forecast():
                     hour_now = time.localtime(now_ts).tm_hour
                     if 0 <= hour_now < len(hourly_safe):
                         extra_safe_now_w = hourly_safe[hour_now].get("extra_safe_w")
+                # Blend real-time with forecast: mostly real, small forecast influence
+                pv_now = _state_num(pv_id) or 0.0
+                load_now = _state_num(load_id) or 0.0
+                surplus_now = max(0.0, pv_now - load_now)
+                if extra_safe_now_w is None:
+                    extra_safe_now_w = surplus_now
+                else:
+                    extra_safe_now_w = (0.8 * surplus_now) + (0.2 * extra_safe_now_w)
 
             meta = pv_adjust_meta.get(f"s{site}", {}) if isinstance(pv_adjust_meta.get(f"s{site}"), dict) else {}
             forecast_last_kwh = meta.get("forecast")
