@@ -60,6 +60,8 @@ RETENTION_DAYS = 90
 PARTIAL_EXPORT_MIN_W = 300
 PARTIAL_MIN_DURATION_S = 10
 LEARN_UPDATE_S = 7200
+PV_ADJUST_INTERVAL_S = 60
+SAFE_SOC_MARGIN_PCT = 5.0
 
 HOP_HEADERS = {
     "connection",
@@ -1878,6 +1880,7 @@ async def forecast():
 
             # Correction factor if forecast entity present and history exists
             pv_factor = 1.0
+            pv_factor_hist = None
             if pv_fc_today_id:
                 hist_fc = _load_history_raw_series(conn, pv_fc_today_id, today_start - 8 * 86400)
                 if hist_fc:
@@ -1913,7 +1916,8 @@ async def forecast():
                         if act_val and fc_val:
                             ratios.append(act_val / fc_val)
                     if ratios:
-                        pv_factor = max(0.6, min(1.4, _median(ratios) or 1.0))
+                        pv_factor_hist = max(0.6, min(1.4, _median(ratios) or 1.0))
+                        pv_factor = pv_factor_hist
                         # Log pv_adjust changes (once per day/site) for transparency
                         common_days = sorted(set(fc_map.keys()) & set(act_map.keys()))
                         if common_days:
@@ -2013,13 +2017,13 @@ async def forecast():
             if max_discharge_w is None:
                 max_discharge_w = learned_max_discharge
 
-            # Forecast values
+            # Forecast values (initial; may be updated after live pv_adjust)
             pv_today_kwh = (pv_fc_today * pv_factor) if pv_fc_today is not None else pv_base
             pv_tom_kwh = (pv_fc_tom * pv_factor) if pv_fc_tom is not None else pv_base
             load_today_kwh = load_fc_today if load_fc_today is not None else load_base
             load_tom_kwh = load_today_kwh
 
-            # Estimate surplus and end SOC
+            # Estimate surplus and end SOC (initial)
             surplus_today = None
             export_today = None
             end_soc = None
@@ -2067,11 +2071,6 @@ async def forecast():
                 load_sum = sum(load_profile)
                 pv_scale = 1.0
                 load_scale = 1.0
-                if pv_today_kwh is not None and pv_sum > 0:
-                    pv_scale = (pv_today_kwh * 1000.0) / pv_sum
-                # Only scale the load profile if the user explicitly provides a daily load target.
-                if (load_daily_id and not load_daily_is_today) and load_today_kwh is not None and load_sum > 0:
-                    load_scale = (load_today_kwh * 1000.0) / load_sum
 
                 # Intraday alignment (actual vs forecast so far)
                 try:
@@ -2087,10 +2086,60 @@ async def forecast():
                     intraday_forecast_kwh = round(forecast_wh / 1000.0, 3)
                     if intraday_forecast_kwh and intraday_forecast_kwh > 0:
                         intraday_error_pct = round((intraday_actual_kwh - intraday_forecast_kwh) / intraday_forecast_kwh * 100.0, 1)
+                        # Live pv_adjust based on intraday ratio (updated frequently)
+                        live_ratio = intraday_actual_kwh / intraday_forecast_kwh
+                        live_ratio = max(0.5, min(1.5, live_ratio))
+                        if pv_factor_hist is not None:
+                            pv_factor = max(0.6, min(1.4, (0.3 * pv_factor_hist) + (0.7 * live_ratio)))
+                        else:
+                            pv_factor = max(0.6, min(1.4, live_ratio))
+                        meta = pv_adjust_meta.get(f"s{site}", {}) if isinstance(pv_adjust_meta.get(f"s{site}"), dict) else {}
+                        last_ts = int(meta.get("last_ts") or 0)
+                        if (now_ts - last_ts) >= PV_ADJUST_INTERVAL_S:
+                            pv_adjust_meta[f"s{site}"] = {
+                                **(meta or {}),
+                                "pv_adjust": round(pv_factor, 3),
+                                "intraday_forecast_kwh": intraday_forecast_kwh,
+                                "intraday_actual_kwh": round(intraday_actual_kwh, 3),
+                                "intraday_error_pct": intraday_error_pct,
+                                "last_ts": now_ts,
+                            }
+                            pv_meta_dirty = True
                 except Exception:
                     intraday_actual_kwh = None
                     intraday_forecast_kwh = None
                     intraday_error_pct = None
+
+                # Forecast values (after live pv_adjust)
+                pv_today_kwh = (pv_fc_today * pv_factor) if pv_fc_today is not None else pv_base
+                pv_tom_kwh = (pv_fc_tom * pv_factor) if pv_fc_tom is not None else pv_base
+                load_today_kwh = load_fc_today if load_fc_today is not None else load_base
+                load_tom_kwh = load_today_kwh
+
+                if pv_today_kwh is not None and pv_sum > 0:
+                    pv_scale = (pv_today_kwh * 1000.0) / pv_sum
+                # Only scale the load profile if the user explicitly provides a daily load target.
+                if (load_daily_id and not load_daily_is_today) and load_today_kwh is not None and load_sum > 0:
+                    load_scale = (load_today_kwh * 1000.0) / load_sum
+
+                # Estimate surplus and end SOC (using adjusted forecast)
+                surplus_today = None
+                export_today = None
+                end_soc = None
+                if pv_today_kwh is not None and load_today_kwh is not None:
+                    surplus = pv_today_kwh - load_today_kwh
+                    surplus_today = round(surplus, 2)
+                    if cap_kwh and soc_now is not None:
+                        max_soc_eff = max_soc if max_soc is not None else 100.0
+                        min_soc_eff = min_soc if min_soc is not None else 0.0
+                        headroom_kwh = max(0.0, cap_kwh * max(0.0, (max_soc_eff - soc_now) / 100.0))
+                        charge_kwh = min(max(0.0, surplus), headroom_kwh)
+                        export_today = round(max(0.0, surplus - charge_kwh), 2)
+                        end_soc = soc_now + (charge_kwh / cap_kwh * 100.0) if cap_kwh else None
+                        if end_soc is not None:
+                            end_soc = round(max(min_soc_eff, min(max_soc_eff, end_soc)), 1)
+                    else:
+                        export_today = round(max(0.0, surplus), 2)
 
                 tomorrow_start = today_start + 86400
                 pv_profile_tom = _hourly_from_forecast_entity(pv_fc_tom_hourly_id, tomorrow_start) or _hourly_profile(conn, pv_id, 7)
@@ -2108,50 +2157,11 @@ async def forecast():
                 max_soc_eff = max_soc if max_soc is not None else 100.0
                 min_soc_eff = min_soc if min_soc is not None else 0.0
 
-                # Dynamic target SOC (per-utenza) based on tomorrow PV, night load and uncertainty
+                # Target SOC: fixed to max (100%) with a safety margin
                 if cap_kwh and soc_now is not None:
-                    pv_thresh_w = 50.0
-                    def _sun_hours(profile, scale):
-                        hours = [h for h in range(24) if (profile[h] * scale) >= pv_thresh_w]
-                        if not hours:
-                            return None, None
-                        return min(hours), max(hours)
-                    sunrise_tom, _ = _sun_hours(pv_profile_tom, pv_scale_tom)
-                    _, sunset_today = _sun_hours(pv_profile, pv_scale)
-                    if sunrise_tom is None:
-                        sunrise_tom = 8
-                    if sunset_today is None:
-                        sunset_today = 17
-
-                    night_kwh = 0.0
-                    for h in range(sunset_today + 1, 24):
-                        night_kwh += (load_profile[h] * load_scale) / 1000.0
-                    for h in range(0, sunrise_tom):
-                        night_kwh += (load_profile_tom[h] * load_scale_tom) / 1000.0
-
-                    pv_tom_val = pv_tom_kwh if pv_tom_kwh is not None else pv_base
-                    load_tom_val = load_tom_kwh if load_tom_kwh is not None else load_base
-                    ratio = (pv_tom_val / max(load_tom_val, 0.1)) if (pv_tom_val is not None and load_tom_val is not None) else 1.0
-
-                    buffer_pct = 5.0 + min(20.0, abs(1.0 - pv_factor) * 30.0)
-                    if pv_fc_tom is None:
-                        buffer_pct += 5.0
-
-                    base_target = 95.0
-                    if ratio >= 2.0:
-                        base_target = 75.0
-                    elif ratio >= 1.5:
-                        base_target = 85.0
-                    elif ratio >= 1.2:
-                        base_target = 90.0
-                    elif ratio <= 0.8:
-                        base_target = 100.0
-
-                    required_night = min_soc_eff + (night_kwh / cap_kwh * 100.0) + buffer_pct
-                    min_target = 65.0
-                    target_soc = max(base_target, required_night, min_target)
+                    target_soc = max_soc_eff if max_soc is not None else 100.0
                     target_soc = max(min_soc_eff, min(max_soc_eff, round(target_soc, 1)))
-                    target_reason = f"night_kwh={round(night_kwh,2)} buffer={round(buffer_pct,1)} ratio={round(ratio,2)}"
+                    target_reason = "fixed_target_100"
 
                 soc_sim = soc_now if (cap_kwh and soc_now is not None) else None
                 max_charge_eff = float(max_charge_w) if max_charge_w is not None else 1e9
@@ -2264,7 +2274,9 @@ async def forecast():
             # Safe extra simulation: surplus usable while still reaching target SOC
             if pv_id and load_id and target_soc is not None and cap_kwh and soc_now is not None:
                 soc_safe = soc_now
-                max_soc_safe = min(target_soc, max_soc if max_soc is not None else 100.0)
+                max_soc_safe = min(target_soc - SAFE_SOC_MARGIN_PCT, max_soc if max_soc is not None else 100.0)
+                if max_soc_safe < (min_soc if min_soc is not None else 0.0):
+                    max_soc_safe = min(target_soc, max_soc if max_soc is not None else 100.0)
                 min_soc_eff = min_soc if min_soc is not None else 0.0
                 max_charge_eff = float(max_charge_w) if max_charge_w is not None else 1e9
                 max_discharge_eff = float(max_discharge_w) if max_discharge_w is not None else 1e9

@@ -483,3 +483,7 @@
 ## 2026-02-17
 - UI: migliorata responsività mobile (padding, tabs scroll, iframe height).
 - Versione add-on aggiornata a 2.1.68.
+## 2026-02-17
+- Forecast: pv_adjust live ogni 60s con intraday ratio e target SOC fisso 100% + margine 5%.
+- Extra safe: usa pv_adjust live e margine SOC per massimizzare autoconsumo senza compromettere batteria.
+- Versione add-on aggiornata a 2.1.69.
