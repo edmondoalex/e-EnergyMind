@@ -525,3 +525,7 @@
 
 ## 2026-02-19
 - Log MQTT su startup + endpoint `/api/mqtt/status` per debug.
+
+## 2026-02-19
+- MQTT: aggiunti sensori Extra SAFE possibile (ora/oggi/domani) e consumi extra-safe oggi per utenza.
+- Cache forecast aggiornata periodicamente per pubblicazione MQTT.

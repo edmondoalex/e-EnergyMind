@@ -540,3 +540,6 @@ Data export: 2026-02-08 (Europe/Rome)
 
 ## 2026-02-19
 - Aggiunto log MQTT in startup + endpoint `/api/mqtt/status` per debug.
+
+## 2026-02-19
+- MQTT: sensori Extra SAFE possibile (ora/oggi/domani) + consumi extra-safe oggi per utenza.

@@ -49,6 +49,8 @@ proxy_session: aiohttp.ClientSession | None = None
 mqtt_client: MqttClient | None = None
 last_mqtt_publish: float = 0.0
 last_mqtt_values: dict[str, float] = {}
+last_forecast_cache: dict[int, dict[str, Any]] = {}
+last_forecast_ts: float = 0.0
 action_log: list[str] = []
 last_history_state: dict[str, tuple[str | None, int]] = {}
 last_report_date: str | None = None
@@ -67,6 +69,7 @@ LEARN_UPDATE_S = 7200
 PV_ADJUST_INTERVAL_S = 60
 SAFE_SOC_MARGIN_PCT = 5.0
 MQTT_PUBLISH_INTERVAL_S = 10
+FORECAST_CACHE_INTERVAL_S = 60
 
 HOP_HEADERS = {
     "connection",
@@ -168,11 +171,12 @@ def _mqtt_extra_safe_discovery(cfg: Dict[str, Any], mqtt_cfg: dict[str, Any]) ->
         if site > sites_count:
             continue
         site_name = _mqtt_site_name(cfg, site)
-        object_id = f"s{site}_extra_safe_now"
+        # Consumo extra-safe ora (reale)
+        object_id = f"s{site}_extra_safe_load_now"
         unique_id = f"e_energymind_{object_id}"
         topic = f"{discovery_prefix}/sensor/e_energymind/{object_id}/config"
-        state_topic = f"{base_topic}/state/extra_safe_now/s{site}"
-        payload = {
+        state_topic = f"{base_topic}/state/extra_safe_load_now/s{site}"
+        out.append((topic, {
             "name": f"{site_name} - Consumo Extra-safe Ora",
             "unique_id": unique_id,
             "state_topic": state_topic,
@@ -182,8 +186,71 @@ def _mqtt_extra_safe_discovery(cfg: Dict[str, Any], mqtt_cfg: dict[str, Any]) ->
             "device_class": "power",
             "state_class": "measurement",
             "icon": "mdi:flash",
-        }
-        out.append((topic, payload))
+        }))
+        # Consumi extra-safe oggi (kWh)
+        object_id = f"s{site}_extra_safe_load_today"
+        unique_id = f"e_energymind_{object_id}"
+        topic = f"{discovery_prefix}/sensor/e_energymind/{object_id}/config"
+        state_topic = f"{base_topic}/state/extra_safe_load_today/s{site}"
+        out.append((topic, {
+            "name": f"{site_name} - Extra-safe Consumi Oggi",
+            "unique_id": unique_id,
+            "state_topic": state_topic,
+            "availability_topic": f"{base_topic}/availability",
+            "device": _mqtt_device_info(),
+            "unit_of_measurement": "kWh",
+            "device_class": "energy",
+            "state_class": "measurement",
+            "icon": "mdi:chart-line",
+        }))
+        # Extra SAFE possibile ora (W)
+        object_id = f"s{site}_extra_safe_possible_now"
+        unique_id = f"e_energymind_{object_id}"
+        topic = f"{discovery_prefix}/sensor/e_energymind/{object_id}/config"
+        state_topic = f"{base_topic}/state/extra_safe_possible_now/s{site}"
+        out.append((topic, {
+            "name": f"{site_name} - Extra SAFE possibile ora",
+            "unique_id": unique_id,
+            "state_topic": state_topic,
+            "availability_topic": f"{base_topic}/availability",
+            "device": _mqtt_device_info(),
+            "unit_of_measurement": "W",
+            "device_class": "power",
+            "state_class": "measurement",
+            "icon": "mdi:flash",
+        }))
+        # Extra SAFE possibile oggi (kWh)
+        object_id = f"s{site}_extra_safe_possible_today"
+        unique_id = f"e_energymind_{object_id}"
+        topic = f"{discovery_prefix}/sensor/e_energymind/{object_id}/config"
+        state_topic = f"{base_topic}/state/extra_safe_possible_today/s{site}"
+        out.append((topic, {
+            "name": f"{site_name} - Extra SAFE possibile oggi",
+            "unique_id": unique_id,
+            "state_topic": state_topic,
+            "availability_topic": f"{base_topic}/availability",
+            "device": _mqtt_device_info(),
+            "unit_of_measurement": "kWh",
+            "device_class": "energy",
+            "state_class": "measurement",
+            "icon": "mdi:chart-line",
+        }))
+        # Extra SAFE possibile domani (kWh)
+        object_id = f"s{site}_extra_safe_possible_tomorrow"
+        unique_id = f"e_energymind_{object_id}"
+        topic = f"{discovery_prefix}/sensor/e_energymind/{object_id}/config"
+        state_topic = f"{base_topic}/state/extra_safe_possible_tomorrow/s{site}"
+        out.append((topic, {
+            "name": f"{site_name} - Extra SAFE possibile domani",
+            "unique_id": unique_id,
+            "state_topic": state_topic,
+            "availability_topic": f"{base_topic}/availability",
+            "device": _mqtt_device_info(),
+            "unit_of_measurement": "kWh",
+            "device_class": "energy",
+            "state_class": "measurement",
+            "icon": "mdi:chart-line",
+        }))
     return out
 
 
@@ -253,12 +320,63 @@ def _mqtt_publish_states(cfg: Dict[str, Any]) -> None:
     for site in (1, 2, 3):
         if site > sites_count:
             continue
+        # Consumo extra-safe ora (reale)
         value = _calc_extra_safe_now_w(cfg, site)
-        key = f"s{site}_extra_safe_now"
-        if last_mqtt_values.get(key) == value:
-            continue
-        last_mqtt_values[key] = value
-        mqtt_client.publish(f"{base_topic}/state/extra_safe_now/s{site}", value, retain=True)
+        key = f"s{site}_extra_safe_load_now"
+        if last_mqtt_values.get(key) != value:
+            last_mqtt_values[key] = value
+            mqtt_client.publish(f"{base_topic}/state/extra_safe_load_now/s{site}", value, retain=True)
+
+        row = last_forecast_cache.get(site) or {}
+        possible_now = row.get("extra_safe_now_w")
+        possible_today = row.get("extra_safe_today_kwh")
+        possible_tomorrow = row.get("extra_safe_tomorrow_kwh")
+        load_today = row.get("extra_safe_load_today_kwh")
+
+        if load_today is not None:
+            key = f"s{site}_extra_safe_load_today"
+            if last_mqtt_values.get(key) != load_today:
+                last_mqtt_values[key] = load_today
+                mqtt_client.publish(f"{base_topic}/state/extra_safe_load_today/s{site}", load_today, retain=True)
+        if possible_now is not None:
+            key = f"s{site}_extra_safe_possible_now"
+            if last_mqtt_values.get(key) != possible_now:
+                last_mqtt_values[key] = possible_now
+                mqtt_client.publish(f"{base_topic}/state/extra_safe_possible_now/s{site}", possible_now, retain=True)
+        if possible_today is not None:
+            key = f"s{site}_extra_safe_possible_today"
+            if last_mqtt_values.get(key) != possible_today:
+                last_mqtt_values[key] = possible_today
+                mqtt_client.publish(f"{base_topic}/state/extra_safe_possible_today/s{site}", possible_today, retain=True)
+        if possible_tomorrow is not None:
+            key = f"s{site}_extra_safe_possible_tomorrow"
+            if last_mqtt_values.get(key) != possible_tomorrow:
+                last_mqtt_values[key] = possible_tomorrow
+                mqtt_client.publish(f"{base_topic}/state/extra_safe_possible_tomorrow/s{site}", possible_tomorrow, retain=True)
+
+
+async def _refresh_forecast_cache() -> None:
+    global last_forecast_cache, last_forecast_ts
+    try:
+        resp = await forecast()
+        payload = json.loads(resp.body.decode("utf-8"))
+        sites = payload.get("sites", []) if isinstance(payload, dict) else []
+        cache: dict[int, dict[str, Any]] = {}
+        if isinstance(sites, list):
+            for row in sites:
+                if not isinstance(row, dict):
+                    continue
+                try:
+                    site = int(row.get("site") or 0)
+                except Exception:
+                    site = 0
+                if site in (1, 2, 3):
+                    cache[site] = row
+        if cache:
+            last_forecast_cache = cache
+            last_forecast_ts = time.time()
+    except Exception as exc:
+        _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} MQTT forecast cache error: {exc}")
 
 
 def _rewrite_location(location: str, base_url: str) -> str:
@@ -1181,6 +1299,8 @@ async def _logging_loop():
                 if deleted:
                     _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} PRUNE samples={deleted}")
                 last_prune = now
+            if mqtt_client is not None and (now - last_forecast_ts) >= FORECAST_CACHE_INTERVAL_S:
+                await _refresh_forecast_cache()
             if mqtt_client is not None and (now - last_mqtt_publish) >= MQTT_PUBLISH_INTERVAL_S:
                 cfg = load_config()
                 _mqtt_publish_states(cfg)
@@ -2349,6 +2469,7 @@ async def forecast():
             extra_now_w = None
             extra_safe_now_w = None
             extra_safe_today_kwh = None
+            extra_safe_tomorrow_kwh = None
             target_soc = None
             target_reason = None
             intraday_forecast_kwh = None
@@ -2615,10 +2736,10 @@ async def forecast():
                         "extra_safe_w": round(grid_export_w, 1),
                         "soc_target": round(soc_safe, 1) if soc_safe is not None else None,
                     })
-                if hourly_safe:
-                    hour_now = time.localtime(now_ts).tm_hour
-                    if 0 <= hour_now < len(hourly_safe):
-                        extra_safe_now_w = hourly_safe[hour_now].get("extra_safe_w")
+                    if hourly_safe:
+                        hour_now = time.localtime(now_ts).tm_hour
+                        if 0 <= hour_now < len(hourly_safe):
+                            extra_safe_now_w = hourly_safe[hour_now].get("extra_safe_w")
                 # Blend real-time with forecast: mostly real, small forecast influence
                 pv_now = _state_num(pv_id) or 0.0
                 load_now = _state_num(load_id) or 0.0
@@ -2627,6 +2748,38 @@ async def forecast():
                     extra_safe_now_w = surplus_now
                 else:
                     extra_safe_now_w = (0.8 * surplus_now) + (0.2 * extra_safe_now_w)
+
+                # Safe extra simulation for tomorrow (kWh)
+                extra_safe_tomorrow_kwh = 0.0
+                soc_safe_tom = end_soc_sim if end_soc_sim is not None else soc_now
+                for h in range(24):
+                    pv_w = pv_profile_tom[h] * pv_scale_tom
+                    load_w = load_profile_tom[h] * load_scale_tom
+                    surplus_w = pv_w - load_w
+                    batt_charge_w = 0.0
+                    batt_discharge_w = 0.0
+                    grid_export_w = 0.0
+                    grid_import_w = 0.0
+                    if soc_safe_tom is not None and cap_kwh:
+                        headroom_kwh = cap_kwh * max(0.0, (max_soc_safe - soc_safe_tom) / 100.0)
+                        avail_kwh = cap_kwh * max(0.0, (soc_safe_tom - min_soc_eff) / 100.0)
+                        if surplus_w >= 0:
+                            batt_charge_w = min(surplus_w, max_charge_eff, headroom_kwh * 1000.0)
+                            grid_export_w = max(0.0, surplus_w - batt_charge_w)
+                            soc_safe_tom += (batt_charge_w / 1000.0) / cap_kwh * 100.0
+                            soc_safe_tom = max(min_soc_eff, min(max_soc_safe, soc_safe_tom))
+                        else:
+                            deficit_w = -surplus_w
+                            batt_discharge_w = min(deficit_w, max_discharge_eff, avail_kwh * 1000.0)
+                            grid_import_w = max(0.0, deficit_w - batt_discharge_w)
+                            soc_safe_tom -= (batt_discharge_w / 1000.0) / cap_kwh * 100.0
+                            soc_safe_tom = max(min_soc_eff, min(max_soc_safe, soc_safe_tom))
+                    else:
+                        if surplus_w >= 0:
+                            grid_export_w = surplus_w
+                        else:
+                            grid_import_w = -surplus_w
+                    extra_safe_tomorrow_kwh += grid_export_w / 1000.0
 
             meta = pv_adjust_meta.get(f"s{site}", {}) if isinstance(pv_adjust_meta.get(f"s{site}"), dict) else {}
             forecast_last_kwh = meta.get("forecast")
@@ -2658,6 +2811,7 @@ async def forecast():
                 "charge_sim_today_kwh": round(charge_sim_kwh, 2),
                 "discharge_sim_today_kwh": round(discharge_sim_kwh, 2),
                 "extra_safe_today_kwh": round(extra_safe_today_kwh, 2) if extra_safe_today_kwh is not None else None,
+                "extra_safe_tomorrow_kwh": round(extra_safe_tomorrow_kwh, 2) if extra_safe_tomorrow_kwh is not None else None,
                 "export_sim_tomorrow_kwh": round(export_sim_kwh_tom, 2),
                 "import_sim_tomorrow_kwh": round(import_sim_kwh_tom, 2),
                 "charge_sim_tomorrow_kwh": round(charge_sim_kwh_tom, 2),
