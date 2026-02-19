@@ -537,3 +537,6 @@ Data export: 2026-02-08 (Europe/Rome)
 ## 2026-02-19
 - Aggiunta pubblicazione MQTT (discovery + stato) per sensori "Consumo Extra-safe Ora" per utenza.
 - Nuove opzioni add-on MQTT (host/port/credenziali/base_topic/discovery).
+
+## 2026-02-19
+- Aggiunto log MQTT in startup + endpoint `/api/mqtt/status` per debug.

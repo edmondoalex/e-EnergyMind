@@ -522,3 +522,6 @@
 - MQTT (opzionale): publish discovery + stati per sensore "Consumo Extra-safe Ora".
 - Nuove opzioni add-on per broker MQTT (host/port/utente/pwd/base_topic).
 - Pubblicazione periodica stato extra-safe per ogni utenza attiva.
+
+## 2026-02-19
+- Log MQTT su startup + endpoint `/api/mqtt/status` per debug.

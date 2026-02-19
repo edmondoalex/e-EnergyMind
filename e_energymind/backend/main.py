@@ -232,6 +232,16 @@ def _mqtt_publish_discovery(cfg: Dict[str, Any]) -> None:
         mqtt_client.publish(topic, payload, retain=True)
 
 
+def _mqtt_status_payload() -> dict[str, Any]:
+    cfg = _load_mqtt_options()
+    if not cfg.get("enabled"):
+        return {"enabled": False, "connected": False, "last_error": None}
+    if mqtt_client is None:
+        return {"enabled": True, "connected": False, "last_error": "client_not_initialized"}
+    st = mqtt_client.status()
+    return {"enabled": True, "connected": st.connected, "last_error": st.last_error}
+
+
 def _mqtt_publish_states(cfg: Dict[str, Any]) -> None:
     if mqtt_client is None:
         return
@@ -1458,6 +1468,10 @@ async def startup_event():
         _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} HA connect error: {exc}")
     mqtt_cfg = _load_mqtt_options()
     if mqtt_cfg.get("enabled"):
+        _log_action(
+            f"{time.strftime('%Y-%m-%d %H:%M:%S')} MQTT enabled {mqtt_cfg['host']}:{mqtt_cfg['port']} base={mqtt_cfg['base_topic']}"
+        )
+        print(f"[e-EnergyMind] MQTT enabled {mqtt_cfg['host']}:{mqtt_cfg['port']} base={mqtt_cfg['base_topic']}")
         mqtt_client = MqttClient(
             host=mqtt_cfg["host"],
             port=int(mqtt_cfg["port"]),
@@ -1468,6 +1482,10 @@ async def startup_event():
         mqtt_client.connect()
         mqtt_client.publish(f"{mqtt_cfg['base_topic']}/availability", "online", retain=True)
         _mqtt_publish_discovery(load_config())
+        st = mqtt_client.status()
+        print(f"[e-EnergyMind] MQTT status connected={st.connected} error={st.last_error}")
+    else:
+        print("[e-EnergyMind] MQTT disabled")
     log_task = asyncio.create_task(_logging_loop())
 
 
@@ -1487,6 +1505,11 @@ async def shutdown_event():
     if proxy_session and not proxy_session.closed:
         await proxy_session.close()
     await ha.close()
+
+
+@app.get("/api/mqtt/status")
+async def mqtt_status():
+    return JSONResponse(_mqtt_status_payload())
 
 
 @app.get("/api/status")
