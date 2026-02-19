@@ -536,3 +536,6 @@
 ## 2026-02-19
 - Admin: comandi MQTT per ripubblicare discovery e reset discovery/stati.
 - API: /api/mqtt/republish e /api/mqtt/clear.
+
+## 2026-02-19
+- Fix build: spostate funzioni MQTT fuori dal blocco CSS.

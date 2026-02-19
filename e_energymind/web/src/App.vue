@@ -1710,6 +1710,33 @@ async function runLoggingCheck(site = null){
     loggingCheck.value = await r.json()
   } catch {}
 }
+async function republishMqtt(){
+  try {
+    const r = await fetch(apiUrl('api/mqtt/republish'),{ method: 'POST' })
+    if (!r.ok) {
+      mqttAdminStatus.value = 'Republish fallito'
+      return
+    }
+    mqttAdminStatus.value = 'Discovery MQTT ripubblicata'
+  } catch {
+    mqttAdminStatus.value = 'Republish fallito'
+  }
+}
+async function clearMqtt(){
+  const ok = window.confirm('Cancellare discovery/stati MQTT? Le entità verranno rimosse da HA.')
+  if (!ok) return
+  try {
+    const r = await fetch(apiUrl('api/mqtt/clear'),{ method: 'POST' })
+    if (!r.ok) {
+      mqttAdminStatus.value = 'Clear fallito'
+      return
+    }
+    const data = await r.json()
+    mqttAdminStatus.value = `Clear MQTT ok (${data.cleared || 0} topic)`
+  } catch {
+    mqttAdminStatus.value = 'Clear fallito'
+  }
+}
 async function loadAll(){
   await loadConfig()
   await loadEntities()
@@ -2098,33 +2125,6 @@ body{
 .f-val{
   text-align:right;
   font-weight:600;
-}
-async function republishMqtt(){
-  try {
-    const r = await fetch(apiUrl('api/mqtt/republish'),{ method: 'POST' })
-    if (!r.ok) {
-      mqttAdminStatus.value = 'Republish fallito'
-      return
-    }
-    mqttAdminStatus.value = 'Discovery MQTT ripubblicata'
-  } catch {
-    mqttAdminStatus.value = 'Republish fallito'
-  }
-}
-async function clearMqtt(){
-  const ok = window.confirm('Cancellare discovery/stati MQTT? Le entità verranno rimosse da HA.')
-  if (!ok) return
-  try {
-    const r = await fetch(apiUrl('api/mqtt/clear'),{ method: 'POST' })
-    if (!r.ok) {
-      mqttAdminStatus.value = 'Clear fallito'
-      return
-    }
-    const data = await r.json()
-    mqttAdminStatus.value = `Clear MQTT ok (${data.cleared || 0} topic)`
-  } catch {
-    mqttAdminStatus.value = 'Clear fallito'
-  }
 }
 .f-label.emph{
   color:#b8f2d3;

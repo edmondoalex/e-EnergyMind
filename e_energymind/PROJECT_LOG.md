@@ -549,3 +549,6 @@ Data export: 2026-02-08 (Europe/Rome)
 
 ## 2026-02-19
 - Admin: pulsanti MQTT (ripubblica discovery / reset) + endpoint dedicati.
+
+## 2026-02-19
+- Fix build: funzioni MQTT spostate correttamente nel blocco script.
