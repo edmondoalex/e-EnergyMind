@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse, FileResponse, StreamingResponse, Red
 from starlette.background import BackgroundTask
 
 from .ha_client import HAClient
+from .mqtt_client import MqttClient
 from .storage import load_config, save_config, apply_config, apply_entities, ENERGY_ENTITY_KEYS
 
 
@@ -45,6 +46,9 @@ ha = HAClient()
 ha_task: asyncio.Task | None = None
 log_task: asyncio.Task | None = None
 proxy_session: aiohttp.ClientSession | None = None
+mqtt_client: MqttClient | None = None
+last_mqtt_publish: float = 0.0
+last_mqtt_values: dict[str, float] = {}
 action_log: list[str] = []
 last_history_state: dict[str, tuple[str | None, int]] = {}
 last_report_date: str | None = None
@@ -62,6 +66,7 @@ PARTIAL_MIN_DURATION_S = 10
 LEARN_UPDATE_S = 7200
 PV_ADJUST_INTERVAL_S = 60
 SAFE_SOC_MARGIN_PCT = 5.0
+MQTT_PUBLISH_INTERVAL_S = 10
 
 HOP_HEADERS = {
     "connection",
@@ -103,6 +108,147 @@ def _ha_access_token() -> str | None:
         except Exception:
             pass
     return None
+
+
+def _load_mqtt_options() -> dict[str, Any]:
+    options_path = Path("/data/options.json")
+    cfg: dict[str, Any] = {
+        "enabled": False,
+        "host": "core-mosquitto",
+        "port": 1883,
+        "username": "",
+        "password": "",
+        "base_topic": "energymind",
+        "discovery_prefix": "homeassistant",
+        "client_id": "energymind-addon",
+    }
+    if not options_path.exists():
+        return cfg
+    try:
+        data = json.loads(options_path.read_text(encoding="utf-8"))
+        mqtt = data.get("mqtt") or {}
+        if isinstance(mqtt, dict):
+            cfg["enabled"] = bool(mqtt.get("enabled", False))
+            cfg["host"] = str(mqtt.get("host") or cfg["host"])
+            cfg["port"] = int(mqtt.get("port") or cfg["port"])
+            cfg["username"] = str(mqtt.get("username") or "")
+            cfg["password"] = str(mqtt.get("password") or "")
+            cfg["base_topic"] = str(mqtt.get("base_topic") or cfg["base_topic"]).rstrip("/")
+            cfg["discovery_prefix"] = str(mqtt.get("discovery_prefix") or cfg["discovery_prefix"]).rstrip("/")
+            cfg["client_id"] = str(mqtt.get("client_id") or cfg["client_id"])
+    except Exception:
+        pass
+    return cfg
+
+
+def _mqtt_device_info() -> dict[str, Any]:
+    return {
+        "identifiers": ["e_energymind"],
+        "name": "e-EnergyMind",
+        "manufacturer": "EA SAS",
+        "model": "e-EnergyMind",
+        "sw_version": APP_VERSION,
+    }
+
+
+def _mqtt_site_name(cfg: Dict[str, Any], site: int) -> str:
+    devices = cfg.get("devices", {}) if isinstance(cfg.get("devices", {}), dict) else {}
+    name = ""
+    if isinstance(devices.get(f"s{site}"), dict):
+        name = str(devices.get(f"s{site}", {}).get("name") or "").strip()
+    return name or f"Utenza {site}"
+
+
+def _mqtt_extra_safe_discovery(cfg: Dict[str, Any], mqtt_cfg: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
+    out = []
+    sites_count = int(cfg.get("runtime", {}).get("sites_count", 2))
+    base_topic = mqtt_cfg["base_topic"]
+    discovery_prefix = mqtt_cfg["discovery_prefix"]
+    for site in (1, 2, 3):
+        if site > sites_count:
+            continue
+        site_name = _mqtt_site_name(cfg, site)
+        object_id = f"s{site}_extra_safe_now"
+        unique_id = f"e_energymind_{object_id}"
+        topic = f"{discovery_prefix}/sensor/e_energymind/{object_id}/config"
+        state_topic = f"{base_topic}/state/extra_safe_now/s{site}"
+        payload = {
+            "name": f"{site_name} - Consumo Extra-safe Ora",
+            "unique_id": unique_id,
+            "state_topic": state_topic,
+            "availability_topic": f"{base_topic}/availability",
+            "device": _mqtt_device_info(),
+            "unit_of_measurement": "W",
+            "device_class": "power",
+            "state_class": "measurement",
+            "icon": "mdi:flash",
+        }
+        out.append((topic, payload))
+    return out
+
+
+def _extra_safe_entities_for_site(cfg: Dict[str, Any], site: int) -> list[str]:
+    automation_cfg = cfg.get("automation", {}) or {}
+    raw_safe = automation_cfg.get("extra_safe_entities", [])
+    safe_entities = []
+    if isinstance(raw_safe, list):
+        for item in raw_safe:
+            if not isinstance(item, dict):
+                continue
+            try:
+                s = int(item.get("site") or 0)
+            except Exception:
+                s = 0
+            if s != site:
+                continue
+            if not bool(item.get("enabled", True)):
+                continue
+            eid = str(item.get("entity_id") or "").strip()
+            if eid:
+                safe_entities.append(eid)
+    return safe_entities
+
+
+def _calc_extra_safe_now_w(cfg: Dict[str, Any], site: int) -> float:
+    total = 0.0
+    found = False
+    for eid in _extra_safe_entities_for_site(cfg, site):
+        v = _state_num(eid)
+        if v is not None:
+            total += float(v)
+            found = True
+    if not found:
+        return 0.0
+    return round(total, 1)
+
+
+def _mqtt_publish_discovery(cfg: Dict[str, Any]) -> None:
+    if mqtt_client is None:
+        return
+    mqtt_cfg = _load_mqtt_options()
+    if not mqtt_cfg.get("enabled"):
+        return
+    for topic, payload in _mqtt_extra_safe_discovery(cfg, mqtt_cfg):
+        mqtt_client.publish(topic, payload, retain=True)
+
+
+def _mqtt_publish_states(cfg: Dict[str, Any]) -> None:
+    if mqtt_client is None:
+        return
+    mqtt_cfg = _load_mqtt_options()
+    if not mqtt_cfg.get("enabled"):
+        return
+    base_topic = mqtt_cfg["base_topic"]
+    sites_count = int(cfg.get("runtime", {}).get("sites_count", 2))
+    for site in (1, 2, 3):
+        if site > sites_count:
+            continue
+        value = _calc_extra_safe_now_w(cfg, site)
+        key = f"s{site}_extra_safe_now"
+        if last_mqtt_values.get(key) == value:
+            continue
+        last_mqtt_values[key] = value
+        mqtt_client.publish(f"{base_topic}/state/extra_safe_now/s{site}", value, retain=True)
 
 
 def _rewrite_location(location: str, base_url: str) -> str:
@@ -1004,6 +1150,7 @@ async def _logging_loop():
     _db_init()
     last_prune = 0.0
     last_history = 0.0
+    global last_mqtt_publish
     while True:
         try:
             now = time.time()
@@ -1024,6 +1171,10 @@ async def _logging_loop():
                 if deleted:
                     _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} PRUNE samples={deleted}")
                 last_prune = now
+            if mqtt_client is not None and (now - last_mqtt_publish) >= MQTT_PUBLISH_INTERVAL_S:
+                cfg = load_config()
+                _mqtt_publish_states(cfg)
+                last_mqtt_publish = now
         except Exception as exc:
             _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} LOG error: {exc}")
         await asyncio.sleep(LOG_INTERVAL_S)
@@ -1297,7 +1448,7 @@ async def _ha_ws_tunnel(websocket: WebSocket, path: str):
 
 @app.on_event("startup")
 async def startup_event():
-    global ha_task, log_task, proxy_session
+    global ha_task, log_task, proxy_session, mqtt_client
     proxy_session = await _ensure_proxy_session()
     try:
         await ha.start()
@@ -1305,16 +1456,34 @@ async def startup_event():
         _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} HA connected")
     except Exception as exc:
         _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} HA connect error: {exc}")
+    mqtt_cfg = _load_mqtt_options()
+    if mqtt_cfg.get("enabled"):
+        mqtt_client = MqttClient(
+            host=mqtt_cfg["host"],
+            port=int(mqtt_cfg["port"]),
+            username=mqtt_cfg["username"],
+            password=mqtt_cfg["password"],
+            client_id=mqtt_cfg["client_id"],
+        )
+        mqtt_client.connect()
+        mqtt_client.publish(f"{mqtt_cfg['base_topic']}/availability", "online", retain=True)
+        _mqtt_publish_discovery(load_config())
     log_task = asyncio.create_task(_logging_loop())
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    global proxy_session
+    global proxy_session, mqtt_client
     if ha_task:
         ha_task.cancel()
     if log_task:
         log_task.cancel()
+    if mqtt_client is not None:
+        mqtt_cfg = _load_mqtt_options()
+        if mqtt_cfg.get("enabled"):
+            mqtt_client.publish(f"{mqtt_cfg['base_topic']}/availability", "offline", retain=True)
+        mqtt_client.disconnect()
+        mqtt_client = None
     if proxy_session and not proxy_session.closed:
         await proxy_session.close()
     await ha.close()
@@ -2535,6 +2704,7 @@ async def set_config(payload: Dict[str, Any]):
     cfg = apply_config(cfg, payload)
     save_config(cfg)
     _log_action(f"{time.strftime('%Y-%m-%d %H:%M:%S')} SAVE config")
+    _mqtt_publish_discovery(cfg)
     return JSONResponse({"ok": True})
 
 

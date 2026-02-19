@@ -1,7 +1,7 @@
 name: e-EnergyMind
 slug: e_energymind
 description: "Gestione energetica fotovoltaica con UI Admin/User (Vue)"
-version: "2.1.80"
+version: "2.1.81"
 arch: [amd64, aarch64, armv7]
 init: false
 startup: services
@@ -24,8 +24,26 @@ options:
   pdc_enabled: false
   ha_url: "http://homeassistant:8123"
   ha_token: ""
+  mqtt:
+    enabled: false
+    host: "core-mosquitto"
+    port: 1883
+    username: ""
+    password: ""
+    base_topic: "energymind"
+    discovery_prefix: "homeassistant"
+    client_id: "energymind-addon"
 schema:
   log_level: list(trace|debug|info|warning|error)
   pdc_enabled: bool
   ha_url: str
   ha_token: str
+  mqtt:
+    enabled: bool
+    host: str
+    port: port
+    username: str?
+    password: password?
+    base_topic: str
+    discovery_prefix: str
+    client_id: str

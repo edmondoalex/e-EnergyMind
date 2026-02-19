@@ -517,3 +517,8 @@
 ## 2026-02-17
 - UI: evidenziati i valori extra-safe nella tabella previsioni.
 - Versione add-on aggiornata a 2.1.80.
+
+## 2026-02-19
+- MQTT (opzionale): publish discovery + stati per sensore "Consumo Extra-safe Ora".
+- Nuove opzioni add-on per broker MQTT (host/port/utente/pwd/base_topic).
+- Pubblicazione periodica stato extra-safe per ogni utenza attiva.

@@ -533,3 +533,7 @@ Data export: 2026-02-08 (Europe/Rome)
 ## Aggiornamenti 2026-02-17
 - UI: evidenziati i valori extra-safe nella tabella previsioni.
 - Versione add-on aggiornata a 2.1.80.
+
+## 2026-02-19
+- Aggiunta pubblicazione MQTT (discovery + stato) per sensori "Consumo Extra-safe Ora" per utenza.
+- Nuove opzioni add-on MQTT (host/port/credenziali/base_topic/discovery).
