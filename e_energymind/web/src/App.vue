@@ -102,12 +102,12 @@
                 <div class="f-label">PV Domani (stima)</div><div class="f-val">{{ fmtKwh(row.pv_tomorrow_kwh) }}</div>
                 <div class="f-label">Consumo Oggi (stima)</div><div class="f-val">{{ fmtKwh(row.load_today_kwh) }}</div>
                 <div class="f-label">Consumo Domani (stima)</div><div class="f-val">{{ fmtKwh(row.load_tomorrow_kwh) }}</div>
-                <div class="f-label">Consumo Extra-safe Ora</div><div class="f-val">{{ fmtW(row.extra_safe_load_now_w) }}</div>
-                <div class="f-label">Extra-safe Consumi Oggi</div><div class="f-val">{{ fmtKwh(row.extra_safe_load_today_kwh) }}</div>
+                <div class="f-label emph">Consumo Extra-safe Ora</div><div class="f-val emph">{{ fmtW(row.extra_safe_load_now_w) }}</div>
+                <div class="f-label emph">Extra-safe Consumi Oggi</div><div class="f-val emph">{{ fmtKwh(row.extra_safe_load_today_kwh) }}</div>
                 <div class="f-label">Surplus Oggi (stima)</div><div class="f-val">{{ fmtKwh(row.surplus_today_kwh) }}</div>
                 <div class="f-label">Export Oggi (stima)</div><div class="f-val">{{ fmtKwh(row.export_today_kwh) }}</div>
                 <div class="f-label">Export (sim)</div><div class="f-val">{{ fmtKwh(row.export_sim_today_kwh) }}</div>
-                <div class="f-label">Extra (safe) Oggi (stima)</div><div class="f-val">{{ fmtKwh(row.extra_safe_today_kwh ?? row.export_sim_today_kwh) }}</div>
+                <div class="f-label emph">Extra (safe) Oggi (stima)</div><div class="f-val emph">{{ fmtKwh(row.extra_safe_today_kwh ?? row.export_sim_today_kwh) }}</div>
                 <div class="f-label">Extra (sim) Domani</div><div class="f-val">{{ fmtKwh(row.export_sim_tomorrow_kwh) }}</div>
                 <div class="f-label">Extra Ora (safe) (stima)</div><div class="f-val">{{ fmtW(row.extra_safe_now_w ?? row.extra_now_w) }}</div>
                 <div class="f-label">Extra Ora (sim)</div><div class="f-val">{{ fmtW(row.extra_now_w) }}</div>
@@ -2086,6 +2086,13 @@ body{
 .f-val{
   text-align:right;
   font-weight:600;
+}
+.f-label.emph{
+  color:#b8f2d3;
+}
+.f-val.emph{
+  color:#63e6be;
+  font-weight:700;
 }
 .forecast-row{
   display:grid;

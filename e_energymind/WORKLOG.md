@@ -514,3 +514,6 @@
 ## 2026-02-17
 - Extra SAFE possibile: blend 80% reale + 20% forecast per "ora".
 - Versione add-on aggiornata a 2.1.79.
+## 2026-02-17
+- UI: evidenziati i valori extra-safe nella tabella previsioni.
+- Versione add-on aggiornata a 2.1.80.
