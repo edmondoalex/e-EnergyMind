@@ -532,3 +532,7 @@
 
 ## 2026-02-19
 - UI: aggiunta riga "PV Adjust" con fattore e percentuale nella tabella previsioni.
+
+## 2026-02-19
+- Admin: comandi MQTT per ripubblicare discovery e reset discovery/stati.
+- API: /api/mqtt/republish e /api/mqtt/clear.

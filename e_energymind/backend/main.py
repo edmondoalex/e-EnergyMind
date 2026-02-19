@@ -162,6 +162,23 @@ def _mqtt_site_name(cfg: Dict[str, Any], site: int) -> str:
     return name or f"Utenza {site}"
 
 
+def _mqtt_state_topics(cfg: Dict[str, Any], mqtt_cfg: dict[str, Any]) -> list[str]:
+    topics = []
+    base_topic = mqtt_cfg["base_topic"]
+    sites_count = int(cfg.get("runtime", {}).get("sites_count", 2))
+    for site in (1, 2, 3):
+        if site > sites_count:
+            continue
+        topics.extend([
+            f"{base_topic}/state/extra_safe_load_now/s{site}",
+            f"{base_topic}/state/extra_safe_load_today/s{site}",
+            f"{base_topic}/state/extra_safe_possible_now/s{site}",
+            f"{base_topic}/state/extra_safe_possible_today/s{site}",
+            f"{base_topic}/state/extra_safe_possible_tomorrow/s{site}",
+        ])
+    return topics
+
+
 def _mqtt_extra_safe_discovery(cfg: Dict[str, Any], mqtt_cfg: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
     out = []
     sites_count = int(cfg.get("runtime", {}).get("sites_count", 2))
@@ -297,6 +314,22 @@ def _mqtt_publish_discovery(cfg: Dict[str, Any]) -> None:
         return
     for topic, payload in _mqtt_extra_safe_discovery(cfg, mqtt_cfg):
         mqtt_client.publish(topic, payload, retain=True)
+
+
+def _mqtt_clear(cfg: Dict[str, Any]) -> dict[str, int]:
+    if mqtt_client is None:
+        return {"cleared": 0}
+    mqtt_cfg = _load_mqtt_options()
+    if not mqtt_cfg.get("enabled"):
+        return {"cleared": 0}
+    cleared = 0
+    for topic, _ in _mqtt_extra_safe_discovery(cfg, mqtt_cfg):
+        mqtt_client.publish(topic, "", retain=True)
+        cleared += 1
+    for topic in _mqtt_state_topics(cfg, mqtt_cfg):
+        mqtt_client.publish(topic, "", retain=True)
+        cleared += 1
+    return {"cleared": cleared}
 
 
 def _mqtt_status_payload() -> dict[str, Any]:
@@ -1630,6 +1663,20 @@ async def shutdown_event():
 @app.get("/api/mqtt/status")
 async def mqtt_status():
     return JSONResponse(_mqtt_status_payload())
+
+
+@app.post("/api/mqtt/republish")
+async def mqtt_republish():
+    cfg = load_config()
+    _mqtt_publish_discovery(cfg)
+    return JSONResponse({"ok": True})
+
+
+@app.post("/api/mqtt/clear")
+async def mqtt_clear():
+    cfg = load_config()
+    info = _mqtt_clear(cfg)
+    return JSONResponse({"ok": True, **info})
 
 
 @app.get("/api/status")

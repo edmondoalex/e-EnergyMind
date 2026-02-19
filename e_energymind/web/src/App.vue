@@ -339,6 +339,11 @@
             <button class="ghost" @click="generateReport">Genera report ora</button>
           </div>
           <div class="actions">
+            <button class="ghost" @click="republishMqtt">MQTT: ripubblica discovery</button>
+            <button class="ghost danger" @click="clearMqtt">MQTT: reset discovery</button>
+            <span class="muted" v-if="mqttAdminStatus">{{ mqttAdminStatus }}</span>
+          </div>
+          <div class="actions">
             <label class="muted">Verifica logging (ore):</label>
             <input type="number" min="1" max="168" v-model.number="loggingHours" style="width:90px" />
             <button class="ghost" @click="runLoggingCheck()">Verifica logging</button>
@@ -878,6 +883,7 @@ const reportStatus = ref(null)
 const insights = ref({ global: null, sites: [] })
 const forecast = ref(null)
 const showLegend = ref(false)
+const mqttAdminStatus = ref('')
   const viewCardSlots = computed(() => {
     const cfg = sp.value?.view_card || {}
     const count = Number(cfg.count || 0)
@@ -2092,6 +2098,33 @@ body{
 .f-val{
   text-align:right;
   font-weight:600;
+}
+async function republishMqtt(){
+  try {
+    const r = await fetch(apiUrl('api/mqtt/republish'),{ method: 'POST' })
+    if (!r.ok) {
+      mqttAdminStatus.value = 'Republish fallito'
+      return
+    }
+    mqttAdminStatus.value = 'Discovery MQTT ripubblicata'
+  } catch {
+    mqttAdminStatus.value = 'Republish fallito'
+  }
+}
+async function clearMqtt(){
+  const ok = window.confirm('Cancellare discovery/stati MQTT? Le entità verranno rimosse da HA.')
+  if (!ok) return
+  try {
+    const r = await fetch(apiUrl('api/mqtt/clear'),{ method: 'POST' })
+    if (!r.ok) {
+      mqttAdminStatus.value = 'Clear fallito'
+      return
+    }
+    const data = await r.json()
+    mqttAdminStatus.value = `Clear MQTT ok (${data.cleared || 0} topic)`
+  } catch {
+    mqttAdminStatus.value = 'Clear fallito'
+  }
 }
 .f-label.emph{
   color:#b8f2d3;

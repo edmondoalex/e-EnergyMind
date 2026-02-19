@@ -546,3 +546,6 @@ Data export: 2026-02-08 (Europe/Rome)
 
 ## 2026-02-19
 - UI: aggiunta riga "PV Adjust" (x e %) nella tabella previsioni.
+
+## 2026-02-19
+- Admin: pulsanti MQTT (ripubblica discovery / reset) + endpoint dedicati.
