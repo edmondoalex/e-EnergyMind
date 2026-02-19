@@ -122,6 +122,7 @@
                 <div class="f-label">Allineamento PV (intraday)</div><div class="f-val">{{ fmtPctSigned(row.factors?.intraday_error_pct) }}</div>
                 <div class="f-label">PV Intraday Reale vs Forecast (kWh)</div><div class="f-val">{{ fmtKwhPair(row.factors?.intraday_actual_kwh, row.factors?.intraday_forecast_kwh) }}</div>
                 <div class="f-label">Fattore PV (stimato)</div><div class="f-val">{{ fmtFactor(row.factors?.pv_adjust) }}</div>
+                <div class="f-label">PV Adjust</div><div class="f-val">{{ fmtFactor(row.factors?.pv_adjust) }} · {{ fmtPctSigned(pvAdjustPct(row.factors?.pv_adjust)) }}</div>
               </div>
             </details>
           </div>
@@ -153,6 +154,7 @@
               <div class="legend-item"><strong>Allineamento PV (intraday)</strong>: confronto parziale fino ad ora.</div>
               <div class="legend-item"><strong>PV Intraday Reale vs Forecast (kWh)</strong>: kWh parziali reale/forecast.</div>
               <div class="legend-item"><strong>Fattore PV (stimato)</strong>: pv_adjust applicato alle previsioni.</div>
+              <div class="legend-item"><strong>PV Adjust</strong>: fattore di correzione (x) e variazione % rispetto al forecast.</div>
             </div>
           </div>
         </div>
@@ -1087,6 +1089,10 @@ const fmtChargeDischarge = (c, d) => {
 const fmtFactor = (v) => {
   if (v === null || v === undefined || Number.isNaN(Number(v))) return 'n/d'
   return `${Number(v).toFixed(2)}x`
+}
+const pvAdjustPct = (v) => {
+  if (v === null || v === undefined || Number.isNaN(Number(v))) return null
+  return (Number(v) - 1) * 100
 }
 const fmtPctSigned = (v) => {
   if (v === null || v === undefined || Number.isNaN(Number(v))) return 'n/d'

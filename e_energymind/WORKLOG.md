@@ -529,3 +529,6 @@
 ## 2026-02-19
 - MQTT: aggiunti sensori Extra SAFE possibile (ora/oggi/domani) e consumi extra-safe oggi per utenza.
 - Cache forecast aggiornata periodicamente per pubblicazione MQTT.
+
+## 2026-02-19
+- UI: aggiunta riga "PV Adjust" con fattore e percentuale nella tabella previsioni.

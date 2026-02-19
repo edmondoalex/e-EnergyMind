@@ -543,3 +543,6 @@ Data export: 2026-02-08 (Europe/Rome)
 
 ## 2026-02-19
 - MQTT: sensori Extra SAFE possibile (ora/oggi/domani) + consumi extra-safe oggi per utenza.
+
+## 2026-02-19
+- UI: aggiunta riga "PV Adjust" (x e %) nella tabella previsioni.
