@@ -572,3 +572,6 @@ Data export: 2026-02-08 (Europe/Rome)
 
 ## 2026-02-20
 - UI: fascia extra-safe con percentuale.
+
+## 2026-02-20
+- Fix: toggle scheduler extra-safe gestito con computed (no undefined).

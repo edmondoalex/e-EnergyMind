@@ -618,7 +618,7 @@
           <div class="help">Imposta la correzione % dell’Extra SAFE aggiuntivo per fasce orarie (prudente → neutra → permissiva).</div>
           <div class="field">
             <label class="toggle">
-              <input type="checkbox" v-model="sp.automation.extra_safe_schedule.enabled" @change="saveConfig">
+              <input type="checkbox" v-model="safeScheduleEnabled" @change="saveConfig">
               <span>Abilita scheduler extra-safe</span>
             </label>
           </div>
@@ -957,6 +957,16 @@ const scheduleDays = [
   { key: 'sat', label: 'Sab' },
   { key: 'sun', label: 'Dom' },
 ]
+const safeScheduleEnabled = computed({
+  get() {
+    ensureExtraSafeSchedule()
+    return !!sp.value?.automation?.extra_safe_schedule?.enabled
+  },
+  set(v) {
+    ensureExtraSafeSchedule()
+    sp.value.automation.extra_safe_schedule.enabled = !!v
+  }
+})
 
 const extraSafeList = (site) => {
   return (sp.value?.automation?.extra_safe_entities || []).filter((e) => e.site === site)
@@ -1595,6 +1605,7 @@ async function loadConfig(){
   if (!Array.isArray(sp.value.automation.extra_datalog_entities)) {
     sp.value.automation.extra_datalog_entities = []
   }
+  ensureExtraSafeSchedule()
   if (!sp.value.devices) {
     sp.value.devices = { s1: { name: '', id: '' }, s2: { name: '', id: '' }, s3: { name: '', id: '' } }
   } else {

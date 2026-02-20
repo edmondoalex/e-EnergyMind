@@ -559,3 +559,6 @@
 
 ## 2026-02-20
 - UI: fascia extra-safe mostra anche percentuale.
+
+## 2026-02-20
+- Fix: scheduler extra-safe toggle usa computed safe per evitare undefined.
