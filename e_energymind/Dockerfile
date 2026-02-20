@@ -1,7 +1,7 @@
 ARG BUILD_FROM=ghcr.io/hassio-addons/base-python:14.0.2
 FROM ${BUILD_FROM}
 
-RUN apk add --no-cache nodejs npm
+RUN apk add --no-cache nodejs npm tzdata
 
 WORKDIR /opt/web
 COPY web /opt/web

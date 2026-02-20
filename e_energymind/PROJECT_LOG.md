@@ -590,3 +590,6 @@ Data export: 2026-02-08 (Europe/Rome)
 
 ## 2026-02-20
 - Config: scheduler extra-safe non viene sovrascritto se mancante nel payload.
+
+## 2026-02-20
+- Timezone configurabile in Admin, usata dallo scheduler.

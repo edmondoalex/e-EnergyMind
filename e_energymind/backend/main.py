@@ -4,6 +4,7 @@ import time
 import sqlite3
 import mimetypes
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from typing import Any, Dict
 
@@ -96,7 +97,19 @@ def _extra_safe_schedule_info(cfg: Dict[str, Any], now_ts: int) -> dict[str, Any
     days = sched.get("days", {})
     if not isinstance(days, dict):
         return {"percent": 0.0, "day": None, "start": None, "end": None}
-    lt = time.localtime(now_ts)
+    tz_name = None
+    try:
+        tz_name = (cfg.get("runtime", {}) or {}).get("timezone")
+    except Exception:
+        tz_name = None
+    if isinstance(tz_name, str) and tz_name.strip():
+        try:
+            lt_dt = datetime.fromtimestamp(now_ts, ZoneInfo(tz_name.strip()))
+            lt = lt_dt.timetuple()
+        except Exception:
+            lt = time.localtime(now_ts)
+    else:
+        lt = time.localtime(now_ts)
     day_map = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
     day_key = day_map[lt.tm_wday] if 0 <= lt.tm_wday < len(day_map) else "mon"
     slots = days.get(day_key, [])

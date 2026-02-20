@@ -383,6 +383,11 @@
             </select>
             <div class="help">Imposta la convenzione di segno del sensore rete.</div>
           </div>
+          <div v-if="sp" class="field">
+            <label>Timezone server</label>
+            <input type="text" v-model="sp.runtime.timezone" placeholder="Europe/Rome" @change="saveConfig"/>
+            <div class="help">Esempio: Europe/Rome. Usata dallo scheduler.</div>
+          </div>
         </div>
 
         <div class="form" v-if="sp">

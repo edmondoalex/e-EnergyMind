@@ -578,3 +578,7 @@
 
 ## 2026-02-20
 - Config: non sovrascrivere scheduler se non presente nel payload.
+
+## 2026-02-20
+- Aggiunta configurazione timezone (Admin) usata dallo scheduler.
+- Installato tzdata in Dockerfile.
