@@ -587,3 +587,6 @@ Data export: 2026-02-08 (Europe/Rome)
 
 ## 2026-02-20
 - Scheduler: save su input (time/percent) per evitare reset.
+
+## 2026-02-20
+- Config: scheduler extra-safe non viene sovrascritto se mancante nel payload.

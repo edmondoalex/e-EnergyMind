@@ -40,7 +40,19 @@ DEFAULT_CONFIG: Dict[str, Any] = {
             "s3": {"pv_a": "", "pv_b": "", "pv_total": "", "pv": "", "load_total": "", "load": "", "battery": "", "grid": "", "soc": "", "soc_min": "", "battery_v": "", "battery_a": "", "today_prod": "", "today_load": "", "today_house": "", "today_export": "", "today_charge": "", "today_discharge": "", "voltage": "", "frequency": ""},
         },
         "extra_datalog_entities": [],
-        "extra_safe_entities": []
+        "extra_safe_entities": [],
+        "extra_safe_schedule": {
+            "enabled": True,
+            "days": {
+                "mon": [{"start": "06:00", "end": "10:00", "percent": -30}, {"start": "10:00", "end": "14:00", "percent": -10}, {"start": "14:00", "end": "18:00", "percent": 0}],
+                "tue": [{"start": "06:00", "end": "10:00", "percent": -30}, {"start": "10:00", "end": "14:00", "percent": -10}, {"start": "14:00", "end": "18:00", "percent": 0}],
+                "wed": [{"start": "06:00", "end": "10:00", "percent": -30}, {"start": "10:00", "end": "14:00", "percent": -10}, {"start": "14:00", "end": "18:00", "percent": 0}],
+                "thu": [{"start": "06:00", "end": "10:00", "percent": -30}, {"start": "10:00", "end": "14:00", "percent": -10}, {"start": "14:00", "end": "18:00", "percent": 0}],
+                "fri": [{"start": "06:00", "end": "10:00", "percent": -30}, {"start": "10:00", "end": "14:00", "percent": -10}, {"start": "14:00", "end": "18:00", "percent": 0}],
+                "sat": [{"start": "06:00", "end": "10:00", "percent": -30}, {"start": "10:00", "end": "14:00", "percent": -10}, {"start": "14:00", "end": "18:00", "percent": 0}],
+                "sun": [{"start": "06:00", "end": "10:00", "percent": -30}, {"start": "10:00", "end": "14:00", "percent": -10}, {"start": "14:00", "end": "18:00", "percent": 0}],
+            },
+        },
     },
     "forecast": {
         "s1": {
@@ -199,6 +211,32 @@ def normalize_config(raw: Dict[str, Any]) -> Dict[str, Any]:
                     safe_list.append({"site": site, "entity_id": entity_id, "enabled": enabled})
         cfg["automation"]["extra_safe_entities"] = safe_list
 
+        if "extra_safe_schedule" in automation:
+            sched = automation.get("extra_safe_schedule", {})
+        else:
+            sched = None
+        if isinstance(sched, dict):
+            enabled = bool(sched.get("enabled", False))
+            days = sched.get("days", {})
+            safe_days = {k: [] for k in ("mon","tue","wed","thu","fri","sat","sun")}
+            if isinstance(days, dict):
+                for k in safe_days.keys():
+                    items = days.get(k, [])
+                    if not isinstance(items, list):
+                        continue
+                    for item in items:
+                        if not isinstance(item, dict):
+                            continue
+                        start = str(item.get("start") or "").strip()
+                        end = str(item.get("end") or "").strip()
+                        try:
+                            pct = float(item.get("percent") or 0)
+                        except Exception:
+                            pct = 0.0
+                        if start and end:
+                            safe_days[k].append({"start": start, "end": end, "percent": pct})
+            cfg["automation"]["extra_safe_schedule"] = {"enabled": enabled, "days": safe_days}
+
     forecast = raw.get("forecast", {})
     if isinstance(forecast, dict):
         for key in ("s1", "s2", "s3"):
@@ -317,6 +355,32 @@ def apply_config(cfg: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any]
                     enabled = bool(item.get("enabled", True))
                     safe_list.append({"site": site, "entity_id": entity_id, "enabled": enabled})
                     cfg["automation"]["extra_safe_entities"] = safe_list
+
+        if "extra_safe_schedule" in automation:
+            sched = automation.get("extra_safe_schedule", {})
+        else:
+            sched = None
+        if isinstance(sched, dict):
+            enabled = bool(sched.get("enabled", False))
+            days = sched.get("days", {})
+            safe_days = {k: [] for k in ("mon","tue","wed","thu","fri","sat","sun")}
+            if isinstance(days, dict):
+                for k in safe_days.keys():
+                    items = days.get(k, [])
+                    if not isinstance(items, list):
+                        continue
+                    for item in items:
+                        if not isinstance(item, dict):
+                            continue
+                        start = str(item.get("start") or "").strip()
+                        end = str(item.get("end") or "").strip()
+                        try:
+                            pct = float(item.get("percent") or 0)
+                        except Exception:
+                            pct = 0.0
+                        if start and end:
+                            safe_days[k].append({"start": start, "end": end, "percent": pct})
+            cfg["automation"]["extra_safe_schedule"] = {"enabled": enabled, "days": safe_days}
 
     forecast = payload.get("forecast", {})
     if isinstance(forecast, dict):

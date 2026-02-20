@@ -575,3 +575,6 @@
 
 ## 2026-02-20
 - Scheduler: salvataggio immediato su input (time/percent) per evitare reset dopo refresh.
+
+## 2026-02-20
+- Config: non sovrascrivere scheduler se non presente nel payload.
