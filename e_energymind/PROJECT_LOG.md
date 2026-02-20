@@ -559,3 +559,6 @@ Data export: 2026-02-08 (Europe/Rome)
 
 ## 2026-02-20
 - UI: evidenziati Extra SAFE aggiuntivo/totale.
+
+## 2026-02-20
+- MQTT: aggiornamenti più rapidi (publish 5s, cache 10s).

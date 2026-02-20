@@ -546,3 +546,6 @@
 
 ## 2026-02-20
 - UI: evidenziati Extra SAFE aggiuntivo/totale nei riepiloghi e tabella previsioni.
+
+## 2026-02-20
+- MQTT: ridotti intervalli publish e cache forecast (5s/10s) per aggiornamenti più rapidi.
