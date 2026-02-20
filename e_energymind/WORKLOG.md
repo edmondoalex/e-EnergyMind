@@ -553,3 +553,6 @@
 ## 2026-02-20
 - Scheduler extra-safe: banda prudente/neutra/permissiva mostrata in User.
 - Fix mapping giorni scheduler (lun=0).
+
+## 2026-02-20
+- UI: fascia prudente/neutra/permissiva mostrata anche nel riepilogo "Extra disponibile ora".

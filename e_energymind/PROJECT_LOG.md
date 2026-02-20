@@ -566,3 +566,6 @@ Data export: 2026-02-08 (Europe/Rome)
 ## 2026-02-20
 - Scheduler extra-safe: fascia prudente/neutra/permissiva visibile in User.
 - Fix mapping giorni scheduler.
+
+## 2026-02-20
+- UI: fascia prudente/neutra/permissiva nel riepilogo "Extra disponibile ora".
