@@ -596,3 +596,6 @@ Data export: 2026-02-08 (Europe/Rome)
 
 ## 2026-02-20
 - Scheduler: salvataggio dedicato con debounce, senza reload.
+
+## 2026-02-20
+- Scheduler: pulsante "Salva scheduler".

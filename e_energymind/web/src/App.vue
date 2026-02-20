@@ -429,6 +429,7 @@
           </div>
           <div class="actions">
             <button class="ghost" @click="resetScheduleDefaults">Ripristina fasce default</button>
+            <button class="ghost" @click="saveSchedule">Salva scheduler</button>
           </div>
           <div class="schedule-grid">
             <div class="schedule-day" v-for="day in scheduleDays" :key="`safe-sched-admin-${day.key}`">

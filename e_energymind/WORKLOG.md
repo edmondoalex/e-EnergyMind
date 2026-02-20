@@ -585,3 +585,6 @@
 
 ## 2026-02-20
 - Scheduler: salvataggio dedicato e debounce (no reload) per evitare lentezza/rollback.
+
+## 2026-02-20
+- Scheduler: aggiunto pulsante "Salva scheduler".
