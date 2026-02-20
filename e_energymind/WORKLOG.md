@@ -556,3 +556,6 @@
 
 ## 2026-02-20
 - UI: fascia prudente/neutra/permissiva mostrata anche nel riepilogo "Extra disponibile ora".
+
+## 2026-02-20
+- UI: fascia extra-safe mostra anche percentuale.

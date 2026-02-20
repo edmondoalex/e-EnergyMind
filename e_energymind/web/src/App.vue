@@ -985,9 +985,11 @@ const extraSafeBand = (row) => {
   const pct = row?.extra_safe_schedule_pct
   if (pct === null || pct === undefined || Number.isNaN(Number(pct))) return 'n/d'
   const n = Number(pct)
-  if (n <= -20) return 'prudente'
-  if (n < 0) return 'neutra'
-  return 'permissiva'
+  let label = 'permissiva'
+  if (n <= -20) label = 'prudente'
+  else if (n < 0) label = 'neutra'
+  const sign = n > 0 ? '+' : ''
+  return `${label} ${sign}${n.toFixed(0)}%`
 }
 const siteRow = (site) => {
   return (forecast.value?.sites || []).find((s) => s.site === site) || {}

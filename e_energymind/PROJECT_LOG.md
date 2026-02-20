@@ -569,3 +569,6 @@ Data export: 2026-02-08 (Europe/Rome)
 
 ## 2026-02-20
 - UI: fascia prudente/neutra/permissiva nel riepilogo "Extra disponibile ora".
+
+## 2026-02-20
+- UI: fascia extra-safe con percentuale.
