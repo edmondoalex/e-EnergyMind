@@ -572,3 +572,6 @@
 ## 2026-02-20
 - Scheduler: aggiunta info fascia attiva (start/end) nei dati forecast.
 - UI: fascia mostra anche orario attivo.
+
+## 2026-02-20
+- Scheduler: salvataggio immediato su input (time/percent) per evitare reset dopo refresh.

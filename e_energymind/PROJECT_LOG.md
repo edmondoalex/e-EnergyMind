@@ -584,3 +584,6 @@ Data export: 2026-02-08 (Europe/Rome)
 
 ## 2026-02-20
 - Scheduler: fascia attiva (orario) esposta e mostrata in UI.
+
+## 2026-02-20
+- Scheduler: save su input (time/percent) per evitare reset.

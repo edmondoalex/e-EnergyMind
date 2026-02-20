@@ -436,10 +436,10 @@
               </div>
               <div class="schedule-slots" v-if="extraSafeSchedule(day.key).length">
                 <div class="schedule-slot" v-for="(slot, idx) in extraSafeSchedule(day.key)" :key="`safe-slot-admin-${day.key}-${idx}`">
-                  <input type="time" v-model="slot.start" @change="saveConfig">
+                  <input type="time" v-model="slot.start" @input="saveConfig">
                   <span class="arrow">→</span>
-                  <input type="time" v-model="slot.end" @change="saveConfig">
-                  <input type="number" step="1" v-model.number="slot.percent" @change="saveConfig" class="pct-input">
+                  <input type="time" v-model="slot.end" @input="saveConfig">
+                  <input type="number" step="1" v-model.number="slot.percent" @input="saveConfig" class="pct-input">
                   <span class="pct-label">%</span>
                   <button class="ghost danger" @click="removeScheduleSlot(day.key, idx)">Rimuovi</button>
                 </div>
