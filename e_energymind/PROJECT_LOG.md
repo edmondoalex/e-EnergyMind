@@ -578,3 +578,6 @@ Data export: 2026-02-08 (Europe/Rome)
 
 ## 2026-02-20
 - Fix: render scheduler solo quando config pronta.
+
+## 2026-02-20
+- Scheduler: default fasce auto-compilate + reset button.

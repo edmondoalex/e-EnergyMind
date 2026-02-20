@@ -565,3 +565,6 @@
 
 ## 2026-02-20
 - Fix: scheduler render protetto se config non pronta.
+
+## 2026-02-20
+- Scheduler: default fasce auto-compilate se vuote + pulsante ripristina.

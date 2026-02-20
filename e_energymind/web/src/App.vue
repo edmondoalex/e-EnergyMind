@@ -385,6 +385,70 @@
           </div>
         </div>
 
+        <div class="form" v-if="sp">
+          <h3 class="section">Consumi extra-safe (opzionali)</h3>
+          <div class="help">Queste entità (W) vengono escluse dal consumo casa per le logiche SAFE e dall'apprendimento.</div>
+          <details v-for="site in siteList" :key="`safe-admin-${site}`" class="set-section" open>
+            <summary class="section-title">{{ siteTitle(site) }}</summary>
+            <div class="field">
+              <label>Nuova entità extra-safe</label>
+              <div class="input-row">
+                <input type="text" v-model="newExtraSafe[site]" placeholder="sensor.xxx" />
+                <button class="ghost" @click="addExtraSafeEntity(site)">Aggiungi</button>
+              </div>
+              <div class="help">Inserisci l'`entity_id` completo (potenza W).</div>
+            </div>
+            <div class="entity-list" v-if="extraSafeList(site).length">
+              <div class="entity-row" v-for="item in extraSafeItems(site)" :key="`safe-admin-${site}-${item.entity_id}`">
+                <span class="entity-name">{{ item.entity_id }}</span>
+                <span class="state-flag" :class="item.enabled ? 'state-on' : 'state-off'">
+                  <input class="flag-checkbox" type="checkbox" :checked="item.enabled"
+                         @change="toggleExtraSafeEnabled(site, item.entity_id)"/>
+                  <span>{{ item.enabled ? 'ON' : 'OFF' }}</span>
+                </span>
+                <button class="ghost danger" @click="removeExtraSafeEntity(site, item.entity_id)">Rimuovi</button>
+              </div>
+            </div>
+            <div class="muted" v-else>Nessuna entità extra-safe.</div>
+          </details>
+        </div>
+
+        <div class="form" v-if="sp && sp.automation && sp.automation.extra_safe_schedule">
+          <h3 class="section">Scheduler Extra SAFE</h3>
+          <div class="help">Imposta la correzione % dell’Extra SAFE aggiuntivo per fasce orarie (prudente → neutra → permissiva).</div>
+          <div class="field">
+            <label class="toggle">
+              <input type="checkbox" v-model="safeScheduleEnabled" @change="saveConfig">
+              <span>Abilita scheduler extra-safe</span>
+            </label>
+          </div>
+          <div class="actions">
+            <button class="ghost" @click="resetScheduleDefaults">Ripristina fasce default</button>
+          </div>
+          <div class="schedule-grid">
+            <div class="schedule-day" v-for="day in scheduleDays" :key="`safe-sched-admin-${day.key}`">
+              <div class="schedule-head">
+                <strong>{{ day.label }}</strong>
+                <div class="schedule-actions">
+                  <button class="ghost" @click="copyScheduleToAll(day.key)">Copia su tutti</button>
+                  <button class="ghost" @click="addScheduleSlot(day.key)">+ Fascia</button>
+                </div>
+              </div>
+              <div class="schedule-slots" v-if="extraSafeSchedule(day.key).length">
+                <div class="schedule-slot" v-for="(slot, idx) in extraSafeSchedule(day.key)" :key="`safe-slot-admin-${day.key}-${idx}`">
+                  <input type="time" v-model="slot.start" @change="saveConfig">
+                  <span class="arrow">→</span>
+                  <input type="time" v-model="slot.end" @change="saveConfig">
+                  <input type="number" step="1" v-model.number="slot.percent" @change="saveConfig" class="pct-input">
+                  <span class="pct-label">%</span>
+                  <button class="ghost danger" @click="removeScheduleSlot(day.key, idx)">Rimuovi</button>
+                </div>
+              </div>
+              <div class="muted" v-else>Nessuna fascia.</div>
+            </div>
+          </div>
+        </div>
+
         <div class="form" v-if="ent">
           <div class="section">Sensori energia (read-only)</div>
           <div class="field">
@@ -1015,6 +1079,17 @@ const ensureExtraSafeSchedule = () => {
   for (const d of scheduleDays) {
     if (!Array.isArray(sched.days[d.key])) sched.days[d.key] = []
   }
+  const allEmpty = scheduleDays.every(d => (sched.days[d.key] || []).length === 0)
+  if (allEmpty) {
+    const defaults = [
+      { start: '06:00', end: '10:00', percent: -30 },
+      { start: '10:00', end: '14:00', percent: -10 },
+      { start: '14:00', end: '18:00', percent: 0 },
+    ]
+    for (const d of scheduleDays) {
+      sched.days[d.key] = defaults.map(s => ({ ...s }))
+    }
+  }
 }
 const extraSafeSchedule = (dayKey) => {
   ensureExtraSafeSchedule()
@@ -1037,6 +1112,18 @@ const copyScheduleToAll = (dayKey) => {
   const src = sp.value.automation.extra_safe_schedule.days[dayKey] || []
   for (const d of scheduleDays) {
     sp.value.automation.extra_safe_schedule.days[d.key] = src.map(s => ({ ...s }))
+  }
+  saveConfig()
+}
+const resetScheduleDefaults = () => {
+  ensureExtraSafeSchedule()
+  const defaults = [
+    { start: '06:00', end: '10:00', percent: -30 },
+    { start: '10:00', end: '14:00', percent: -10 },
+    { start: '14:00', end: '18:00', percent: 0 },
+  ]
+  for (const d of scheduleDays) {
+    sp.value.automation.extra_safe_schedule.days[d.key] = defaults.map(s => ({ ...s }))
   }
   saveConfig()
 }
