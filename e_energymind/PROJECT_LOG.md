@@ -581,3 +581,6 @@ Data export: 2026-02-08 (Europe/Rome)
 
 ## 2026-02-20
 - Scheduler: default fasce auto-compilate + reset button.
+
+## 2026-02-20
+- Scheduler: fascia attiva (orario) esposta e mostrata in UI.

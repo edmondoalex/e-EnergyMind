@@ -86,22 +86,22 @@ def _parse_hhmm(value: str) -> int | None:
         return None
 
 
-def _extra_safe_schedule_pct(cfg: Dict[str, Any], now_ts: int) -> float:
+def _extra_safe_schedule_info(cfg: Dict[str, Any], now_ts: int) -> dict[str, Any]:
     automation = cfg.get("automation", {}) if isinstance(cfg.get("automation", {}), dict) else {}
     sched = automation.get("extra_safe_schedule", {})
     if not isinstance(sched, dict):
-        return 0.0
+        return {"percent": 0.0, "day": None, "start": None, "end": None}
     if not bool(sched.get("enabled", False)):
-        return 0.0
+        return {"percent": 0.0, "day": None, "start": None, "end": None}
     days = sched.get("days", {})
     if not isinstance(days, dict):
-        return 0.0
+        return {"percent": 0.0, "day": None, "start": None, "end": None}
     lt = time.localtime(now_ts)
     day_map = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
     day_key = day_map[lt.tm_wday] if 0 <= lt.tm_wday < len(day_map) else "mon"
     slots = days.get(day_key, [])
     if not isinstance(slots, list):
-        return 0.0
+        return {"percent": 0.0, "day": day_key, "start": None, "end": None}
     now_min = lt.tm_hour * 60 + lt.tm_min
     for item in slots:
         if not isinstance(item, dict):
@@ -114,10 +114,11 @@ def _extra_safe_schedule_pct(cfg: Dict[str, Any], now_ts: int) -> float:
             continue
         if start <= now_min < end:
             try:
-                return float(item.get("percent") or 0.0)
+                pct = float(item.get("percent") or 0.0)
             except Exception:
-                return 0.0
-    return 0.0
+                pct = 0.0
+            return {"percent": pct, "day": day_key, "start": str(item.get("start") or ""), "end": str(item.get("end") or "")}
+    return {"percent": 0.0, "day": day_key, "start": None, "end": None}
 
 HOP_HEADERS = {
     "connection",
@@ -2596,7 +2597,8 @@ async def forecast():
             intraday_forecast_kwh = None
             intraday_actual_kwh = None
             intraday_error_pct = None
-            schedule_pct = _extra_safe_schedule_pct(cfg, now_ts)
+            schedule_info = _extra_safe_schedule_info(cfg, now_ts)
+            schedule_pct = float(schedule_info.get("percent") or 0.0)
             if pv_id and load_id:
                 pv_profile = _hourly_from_forecast_entity(pv_fc_today_hourly_id, today_start) or _hourly_profile(conn, pv_id, 7)
                 load_profile = _hourly_profile(conn, load_id, 7)
@@ -2931,6 +2933,7 @@ async def forecast():
                 "extra_now_w": extra_now_w,
                 "extra_safe_now_w": extra_safe_now_w,
                 "extra_safe_schedule_pct": schedule_pct,
+                "extra_safe_schedule": schedule_info,
                 "export_sim_today_kwh": round(export_sim_kwh, 2),
                 "import_sim_today_kwh": round(import_sim_kwh, 2),
                 "charge_sim_today_kwh": round(charge_sim_kwh, 2),

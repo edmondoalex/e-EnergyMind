@@ -568,3 +568,7 @@
 
 ## 2026-02-20
 - Scheduler: default fasce auto-compilate se vuote + pulsante ripristina.
+
+## 2026-02-20
+- Scheduler: aggiunta info fascia attiva (start/end) nei dati forecast.
+- UI: fascia mostra anche orario attivo.

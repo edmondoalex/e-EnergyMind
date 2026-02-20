@@ -1056,14 +1056,17 @@ const extraSafeTotalNowFor = (site) => {
   return extraSafeTotalNow(row)
 }
 const extraSafeBand = (row) => {
-  const pct = row?.extra_safe_schedule_pct
+  const pct = row?.extra_safe_schedule?.percent ?? row?.extra_safe_schedule_pct
   if (pct === null || pct === undefined || Number.isNaN(Number(pct))) return 'n/d'
   const n = Number(pct)
   let label = 'permissiva'
   if (n <= -20) label = 'prudente'
   else if (n < 0) label = 'neutra'
   const sign = n > 0 ? '+' : ''
-  return `${label} ${sign}${n.toFixed(0)}%`
+  const start = row?.extra_safe_schedule?.start
+  const end = row?.extra_safe_schedule?.end
+  const range = start && end ? ` (${start}-${end})` : ''
+  return `${label} ${sign}${n.toFixed(0)}%${range}`
 }
 const siteRow = (site) => {
   return (forecast.value?.sites || []).find((s) => s.site === site) || {}
