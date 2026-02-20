@@ -552,3 +552,7 @@ Data export: 2026-02-08 (Europe/Rome)
 
 ## 2026-02-19
 - Fix build: funzioni MQTT spostate correttamente nel blocco script.
+
+## 2026-02-20
+- UI: aggiunto "Extra SAFE totale ora" e rinominato aggiuntivo.
+- MQTT: sensore Extra SAFE totale ora per utenza.

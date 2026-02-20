@@ -539,3 +539,7 @@
 
 ## 2026-02-19
 - Fix build: spostate funzioni MQTT fuori dal blocco CSS.
+
+## 2026-02-20
+- UI: rinomina Extra SAFE possibile -> aggiuntivo e mostra Extra SAFE totale ora.
+- MQTT: aggiunto sensore Extra SAFE totale ora per utenza.

@@ -173,6 +173,7 @@ def _mqtt_state_topics(cfg: Dict[str, Any], mqtt_cfg: dict[str, Any]) -> list[st
             f"{base_topic}/state/extra_safe_load_now/s{site}",
             f"{base_topic}/state/extra_safe_load_today/s{site}",
             f"{base_topic}/state/extra_safe_possible_now/s{site}",
+            f"{base_topic}/state/extra_safe_total_now/s{site}",
             f"{base_topic}/state/extra_safe_possible_today/s{site}",
             f"{base_topic}/state/extra_safe_possible_tomorrow/s{site}",
         ])
@@ -226,7 +227,23 @@ def _mqtt_extra_safe_discovery(cfg: Dict[str, Any], mqtt_cfg: dict[str, Any]) ->
         topic = f"{discovery_prefix}/sensor/e_energymind/{object_id}/config"
         state_topic = f"{base_topic}/state/extra_safe_possible_now/s{site}"
         out.append((topic, {
-            "name": f"{site_name} - Extra SAFE possibile ora",
+            "name": f"{site_name} - Extra SAFE aggiuntivo ora",
+            "unique_id": unique_id,
+            "state_topic": state_topic,
+            "availability_topic": f"{base_topic}/availability",
+            "device": _mqtt_device_info(),
+            "unit_of_measurement": "W",
+            "device_class": "power",
+            "state_class": "measurement",
+            "icon": "mdi:flash",
+        }))
+        # Extra SAFE totale ora (W)
+        object_id = f"s{site}_extra_safe_total_now"
+        unique_id = f"e_energymind_{object_id}"
+        topic = f"{discovery_prefix}/sensor/e_energymind/{object_id}/config"
+        state_topic = f"{base_topic}/state/extra_safe_total_now/s{site}"
+        out.append((topic, {
+            "name": f"{site_name} - Extra SAFE totale ora",
             "unique_id": unique_id,
             "state_topic": state_topic,
             "availability_topic": f"{base_topic}/availability",
@@ -371,6 +388,15 @@ def _mqtt_publish_states(cfg: Dict[str, Any]) -> None:
             if last_mqtt_values.get(key) != load_today:
                 last_mqtt_values[key] = load_today
                 mqtt_client.publish(f"{base_topic}/state/extra_safe_load_today/s{site}", load_today, retain=True)
+        if possible_now is not None:
+            total_now = None
+            if value is not None:
+                total_now = round(float(possible_now) + float(value), 1)
+            if total_now is not None:
+                key = f"s{site}_extra_safe_total_now"
+                if last_mqtt_values.get(key) != total_now:
+                    last_mqtt_values[key] = total_now
+                    mqtt_client.publish(f"{base_topic}/state/extra_safe_total_now/s{site}", total_now, retain=True)
         if possible_now is not None:
             key = f"s{site}_extra_safe_possible_now"
             if last_mqtt_values.get(key) != possible_now:

@@ -92,7 +92,7 @@
               <summary class="forecast-summary">
                 <strong>{{ row.name || siteTitle(row.site) }}</strong>
                 <span class="forecast-summary-meta">
-                  Extra SAFE possibile {{ fmtW(row.extra_safe_now_w ?? row.extra_now_w) }} ·
+                  Extra SAFE aggiuntivo {{ fmtW(row.extra_safe_now_w ?? row.extra_now_w) }} ·
                   Target SOC {{ fmtPct(row.target_soc) }} ·
                   Fine Carica {{ fmtHour(row.charge_complete_hour) }}
                 </span>
@@ -109,7 +109,8 @@
                 <div class="f-label">Export (sim)</div><div class="f-val">{{ fmtKwh(row.export_sim_today_kwh) }}</div>
                 <div class="f-label emph">Extra (safe) Oggi (stima)</div><div class="f-val emph">{{ fmtKwh(row.extra_safe_today_kwh ?? row.export_sim_today_kwh) }}</div>
                 <div class="f-label">Extra (sim) Domani</div><div class="f-val">{{ fmtKwh(row.export_sim_tomorrow_kwh) }}</div>
-                <div class="f-label">Extra Ora (safe) (stima)</div><div class="f-val">{{ fmtW(row.extra_safe_now_w ?? row.extra_now_w) }}</div>
+                <div class="f-label">Extra SAFE aggiuntivo ora</div><div class="f-val">{{ fmtW(row.extra_safe_now_w ?? row.extra_now_w) }}</div>
+                <div class="f-label">Extra SAFE totale ora</div><div class="f-val">{{ fmtW(extraSafeTotalNow(row)) }}</div>
                 <div class="f-label">Extra Ora (sim)</div><div class="f-val">{{ fmtW(row.extra_now_w) }}</div>
                 <div class="f-label">Fine Carica Oggi (stima)</div><div class="f-val">{{ fmtHour(row.charge_complete_hour) }}</div>
                 <div class="f-label">Fine Carica Domani (stima)</div><div class="f-val">{{ fmtHour(row.charge_complete_hour_tomorrow) }}</div>
@@ -142,7 +143,8 @@
               <div class="legend-item"><strong>Export (sim)</strong>: export simulato con profilo orario e limiti C/D.</div>
               <div class="legend-item"><strong>Extra (safe)</strong>: extra sicuro senza compromettere il target SOC.</div>
               <div class="legend-item"><strong>Extra Ora</strong>: extra disponibile adesso (W).</div>
-              <div class="legend-item"><strong>Extra SAFE possibile</strong>: potenza accendibile ora (W) stimata per massimizzare autoconsumo senza compromettere la batteria.</div>
+              <div class="legend-item"><strong>Extra SAFE aggiuntivo</strong>: potenza accendibile in più ora (W), senza compromettere la batteria.</div>
+              <div class="legend-item"><strong>Extra SAFE totale</strong>: aggiuntivo + consumi extra-safe già attivi (W).</div>
               <div class="legend-item"><strong>Consumo Extra-safe Ora</strong>: somma istantanea (W) delle entità extra-safe.</div>
               <div class="legend-item"><strong>Extra-safe Consumi Oggi</strong>: energia (kWh) consumata oggi dalle entità extra-safe.</div>
               <div class="legend-item"><strong>Fine Carica</strong>: ora stimata raggiungimento target SOC.</div>
@@ -570,7 +572,8 @@
             <div class="entity-row" v-for="site in siteList" :key="`extra-set-${site}`">
               <span class="entity-name">{{ siteTitle(site) }}</span>
               <span class="entity-value">
-                Extra SAFE possibile {{ fmtW(extraNowFor(site)) }} ·
+                Extra SAFE aggiuntivo {{ fmtW(extraNowFor(site)) }} ·
+                Extra SAFE totale {{ fmtW(extraSafeTotalNowFor(site)) }} ·
                 Consumo extra-safe ora {{ fmtW(extraSafeLoadNowFor(site)) }} ·
                 Extra-safe consumi oggi {{ fmtKwh(extraSafeLoadTodayFor(site)) }} ·
                 Oggi {{ fmtKwh(extraTodayFor(site)) }} ·
@@ -923,6 +926,17 @@ const extraSafeLoadTodayFor = (site) => {
 const extraSafeLoadNowFor = (site) => {
   const row = (forecast.value?.sites || []).find((s) => s.site === site)
   return row?.extra_safe_load_now_w ?? null
+}
+const extraSafeTotalNow = (row) => {
+  const add = row?.extra_safe_now_w ?? row?.extra_now_w
+  const load = row?.extra_safe_load_now_w
+  if (add === null || add === undefined || Number.isNaN(Number(add))) return null
+  if (load === null || load === undefined || Number.isNaN(Number(load))) return null
+  return Number(add) + Number(load)
+}
+const extraSafeTotalNowFor = (site) => {
+  const row = (forecast.value?.sites || []).find((s) => s.site === site)
+  return extraSafeTotalNow(row)
 }
 const addExtraSafeEntity = (site) => {
   const eid = String(newExtraSafe.value[site] || '').trim()
