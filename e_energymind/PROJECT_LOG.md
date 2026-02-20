@@ -562,3 +562,7 @@ Data export: 2026-02-08 (Europe/Rome)
 
 ## 2026-02-20
 - MQTT: aggiornamenti più rapidi (publish 5s, cache 10s).
+
+## 2026-02-20
+- Scheduler extra-safe: fascia prudente/neutra/permissiva visibile in User.
+- Fix mapping giorni scheduler.

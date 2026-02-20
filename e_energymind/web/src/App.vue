@@ -93,6 +93,7 @@
                 <strong>{{ row.name || siteTitle(row.site) }}</strong>
                 <span class="forecast-summary-meta">
                   <span class="emph-inline">Extra SAFE aggiuntivo {{ fmtW(row.extra_safe_now_w ?? row.extra_now_w) }}</span> ·
+                  <span class="muted">Fascia {{ extraSafeBand(row) }}</span> ·
                   Target SOC {{ fmtPct(row.target_soc) }} ·
                   Fine Carica {{ fmtHour(row.charge_complete_hour) }}
                 </span>
@@ -937,6 +938,14 @@ const extraSafeTotalNow = (row) => {
 const extraSafeTotalNowFor = (site) => {
   const row = (forecast.value?.sites || []).find((s) => s.site === site)
   return extraSafeTotalNow(row)
+}
+const extraSafeBand = (row) => {
+  const pct = row?.extra_safe_schedule_pct
+  if (pct === null || pct === undefined || Number.isNaN(Number(pct))) return 'n/d'
+  const n = Number(pct)
+  if (n <= -20) return 'prudente'
+  if (n < 0) return 'neutra'
+  return 'permissiva'
 }
 const addExtraSafeEntity = (site) => {
   const eid = String(newExtraSafe.value[site] || '').trim()

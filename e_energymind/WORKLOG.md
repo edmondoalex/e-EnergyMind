@@ -549,3 +549,7 @@
 
 ## 2026-02-20
 - MQTT: ridotti intervalli publish e cache forecast (5s/10s) per aggiornamenti più rapidi.
+
+## 2026-02-20
+- Scheduler extra-safe: banda prudente/neutra/permissiva mostrata in User.
+- Fix mapping giorni scheduler (lun=0).

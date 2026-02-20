@@ -71,6 +71,54 @@ SAFE_SOC_MARGIN_PCT = 5.0
 MQTT_PUBLISH_INTERVAL_S = 5
 FORECAST_CACHE_INTERVAL_S = 10
 
+
+def _parse_hhmm(value: str) -> int | None:
+    try:
+        parts = value.strip().split(":")
+        if len(parts) != 2:
+            return None
+        h = int(parts[0])
+        m = int(parts[1])
+        if h < 0 or h > 23 or m < 0 or m > 59:
+            return None
+        return h * 60 + m
+    except Exception:
+        return None
+
+
+def _extra_safe_schedule_pct(cfg: Dict[str, Any], now_ts: int) -> float:
+    automation = cfg.get("automation", {}) if isinstance(cfg.get("automation", {}), dict) else {}
+    sched = automation.get("extra_safe_schedule", {})
+    if not isinstance(sched, dict):
+        return 0.0
+    if not bool(sched.get("enabled", False)):
+        return 0.0
+    days = sched.get("days", {})
+    if not isinstance(days, dict):
+        return 0.0
+    lt = time.localtime(now_ts)
+    day_map = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+    day_key = day_map[lt.tm_wday] if 0 <= lt.tm_wday < len(day_map) else "mon"
+    slots = days.get(day_key, [])
+    if not isinstance(slots, list):
+        return 0.0
+    now_min = lt.tm_hour * 60 + lt.tm_min
+    for item in slots:
+        if not isinstance(item, dict):
+            continue
+        start = _parse_hhmm(str(item.get("start") or ""))
+        end = _parse_hhmm(str(item.get("end") or ""))
+        if start is None or end is None:
+            continue
+        if end <= start:
+            continue
+        if start <= now_min < end:
+            try:
+                return float(item.get("percent") or 0.0)
+            except Exception:
+                return 0.0
+    return 0.0
+
 HOP_HEADERS = {
     "connection",
     "keep-alive",
@@ -2548,6 +2596,7 @@ async def forecast():
             intraday_forecast_kwh = None
             intraday_actual_kwh = None
             intraday_error_pct = None
+            schedule_pct = _extra_safe_schedule_pct(cfg, now_ts)
             if pv_id and load_id:
                 pv_profile = _hourly_from_forecast_entity(pv_fc_today_hourly_id, today_start) or _hourly_profile(conn, pv_id, 7)
                 load_profile = _hourly_profile(conn, load_id, 7)
@@ -2821,6 +2870,8 @@ async def forecast():
                     extra_safe_now_w = surplus_now
                 else:
                     extra_safe_now_w = (0.8 * surplus_now) + (0.2 * extra_safe_now_w)
+                if extra_safe_now_w is not None and schedule_pct:
+                    extra_safe_now_w = max(0.0, extra_safe_now_w * (1.0 + (schedule_pct / 100.0)))
 
                 # Safe extra simulation for tomorrow (kWh)
                 extra_safe_tomorrow_kwh = 0.0
@@ -2879,6 +2930,7 @@ async def forecast():
                 "charge_complete_hour_tomorrow": charge_complete_h_tom,
                 "extra_now_w": extra_now_w,
                 "extra_safe_now_w": extra_safe_now_w,
+                "extra_safe_schedule_pct": schedule_pct,
                 "export_sim_today_kwh": round(export_sim_kwh, 2),
                 "import_sim_today_kwh": round(import_sim_kwh, 2),
                 "charge_sim_today_kwh": round(charge_sim_kwh, 2),
