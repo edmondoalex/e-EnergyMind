@@ -92,7 +92,7 @@
               <summary class="forecast-summary">
                 <strong>{{ row.name || siteTitle(row.site) }}</strong>
                 <span class="forecast-summary-meta">
-                  Extra SAFE aggiuntivo {{ fmtW(row.extra_safe_now_w ?? row.extra_now_w) }} ·
+                  <span class="emph-inline">Extra SAFE aggiuntivo {{ fmtW(row.extra_safe_now_w ?? row.extra_now_w) }}</span> ·
                   Target SOC {{ fmtPct(row.target_soc) }} ·
                   Fine Carica {{ fmtHour(row.charge_complete_hour) }}
                 </span>
@@ -109,8 +109,8 @@
                 <div class="f-label">Export (sim)</div><div class="f-val">{{ fmtKwh(row.export_sim_today_kwh) }}</div>
                 <div class="f-label emph">Extra (safe) Oggi (stima)</div><div class="f-val emph">{{ fmtKwh(row.extra_safe_today_kwh ?? row.export_sim_today_kwh) }}</div>
                 <div class="f-label">Extra (sim) Domani</div><div class="f-val">{{ fmtKwh(row.export_sim_tomorrow_kwh) }}</div>
-                <div class="f-label">Extra SAFE aggiuntivo ora</div><div class="f-val">{{ fmtW(row.extra_safe_now_w ?? row.extra_now_w) }}</div>
-                <div class="f-label">Extra SAFE totale ora</div><div class="f-val">{{ fmtW(extraSafeTotalNow(row)) }}</div>
+                <div class="f-label emph">Extra SAFE aggiuntivo ora</div><div class="f-val emph">{{ fmtW(row.extra_safe_now_w ?? row.extra_now_w) }}</div>
+                <div class="f-label emph">Extra SAFE totale ora</div><div class="f-val emph">{{ fmtW(extraSafeTotalNow(row)) }}</div>
                 <div class="f-label">Extra Ora (sim)</div><div class="f-val">{{ fmtW(row.extra_now_w) }}</div>
                 <div class="f-label">Fine Carica Oggi (stima)</div><div class="f-val">{{ fmtHour(row.charge_complete_hour) }}</div>
                 <div class="f-label">Fine Carica Domani (stima)</div><div class="f-val">{{ fmtHour(row.charge_complete_hour_tomorrow) }}</div>
@@ -572,8 +572,8 @@
             <div class="entity-row" v-for="site in siteList" :key="`extra-set-${site}`">
               <span class="entity-name">{{ siteTitle(site) }}</span>
               <span class="entity-value">
-                Extra SAFE aggiuntivo {{ fmtW(extraNowFor(site)) }} ·
-                Extra SAFE totale {{ fmtW(extraSafeTotalNowFor(site)) }} ·
+                <span class="emph-inline">Extra SAFE aggiuntivo {{ fmtW(extraNowFor(site)) }}</span> ·
+                <span class="emph-inline">Extra SAFE totale {{ fmtW(extraSafeTotalNowFor(site)) }}</span> ·
                 Consumo extra-safe ora {{ fmtW(extraSafeLoadNowFor(site)) }} ·
                 Extra-safe consumi oggi {{ fmtKwh(extraSafeLoadTodayFor(site)) }} ·
                 Oggi {{ fmtKwh(extraTodayFor(site)) }} ·
@@ -2144,6 +2144,10 @@ body{
   color:#b8f2d3;
 }
 .f-val.emph{
+  color:#63e6be;
+  font-weight:700;
+}
+.emph-inline{
   color:#63e6be;
   font-weight:700;
 }

@@ -556,3 +556,6 @@ Data export: 2026-02-08 (Europe/Rome)
 ## 2026-02-20
 - UI: aggiunto "Extra SAFE totale ora" e rinominato aggiuntivo.
 - MQTT: sensore Extra SAFE totale ora per utenza.
+
+## 2026-02-20
+- UI: evidenziati Extra SAFE aggiuntivo/totale.

@@ -543,3 +543,6 @@
 ## 2026-02-20
 - UI: rinomina Extra SAFE possibile -> aggiuntivo e mostra Extra SAFE totale ora.
 - MQTT: aggiunto sensore Extra SAFE totale ora per utenza.
+
+## 2026-02-20
+- UI: evidenziati Extra SAFE aggiuntivo/totale nei riepiloghi e tabella previsioni.
