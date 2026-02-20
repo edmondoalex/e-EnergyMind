@@ -562,3 +562,6 @@
 
 ## 2026-02-20
 - Fix: scheduler extra-safe toggle usa computed safe per evitare undefined.
+
+## 2026-02-20
+- Fix: scheduler render protetto se config non pronta.

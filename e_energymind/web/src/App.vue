@@ -613,7 +613,7 @@
             <div class="muted" v-else>Nessuna entità extra-safe.</div>
           </details>
         </div>
-        <div class="form" v-if="sp">
+        <div class="form" v-if="sp && sp.automation && sp.automation.extra_safe_schedule">
           <h3 class="section">Scheduler Extra SAFE</h3>
           <div class="help">Imposta la correzione % dell’Extra SAFE aggiuntivo per fasce orarie (prudente → neutra → permissiva).</div>
           <div class="field">
