@@ -423,7 +423,7 @@
           <div class="help">Imposta la correzione % dell’Extra SAFE aggiuntivo per fasce orarie (prudente → neutra → permissiva).</div>
           <div class="field">
             <label class="toggle">
-              <input type="checkbox" v-model="safeScheduleEnabled" @change="saveConfig">
+              <input type="checkbox" v-model="safeScheduleEnabled" @change="saveSchedule">
               <span>Abilita scheduler extra-safe</span>
             </label>
           </div>
@@ -441,10 +441,10 @@
               </div>
               <div class="schedule-slots" v-if="extraSafeSchedule(day.key).length">
                 <div class="schedule-slot" v-for="(slot, idx) in extraSafeSchedule(day.key)" :key="`safe-slot-admin-${day.key}-${idx}`">
-                  <input type="time" v-model="slot.start" @input="saveConfig">
+                  <input type="time" v-model="slot.start" @focus="onFocus" @blur="onBlur" @input="queueScheduleSave">
                   <span class="arrow">→</span>
-                  <input type="time" v-model="slot.end" @input="saveConfig">
-                  <input type="number" step="1" v-model.number="slot.percent" @input="saveConfig" class="pct-input">
+                  <input type="time" v-model="slot.end" @focus="onFocus" @blur="onBlur" @input="queueScheduleSave">
+                  <input type="number" step="1" v-model.number="slot.percent" @focus="onFocus" @blur="onBlur" @input="queueScheduleSave" class="pct-input">
                   <span class="pct-label">%</span>
                   <button class="ghost danger" @click="removeScheduleSlot(day.key, idx)">Rimuovi</button>
                 </div>
@@ -1005,6 +1005,7 @@ const loggingCheck = ref(null)
 const loggingHours = ref(24)
 let pollTimer = null
 const editingCount = ref(0)
+let scheduleSaveTimer = null
 const dirtyEnt = ref({})
 const showAll = ref(true)
 const overwriteMap = ref({ 1: false, 2: false, 3: false })
@@ -1107,13 +1108,13 @@ const addScheduleSlot = (dayKey) => {
   ensureExtraSafeSchedule()
   const list = sp.value.automation.extra_safe_schedule.days[dayKey]
   list.push({ start: '06:00', end: '10:00', percent: -30 })
-  saveConfig()
+  saveSchedule()
 }
 const removeScheduleSlot = (dayKey, idx) => {
   ensureExtraSafeSchedule()
   const list = sp.value.automation.extra_safe_schedule.days[dayKey]
   list.splice(idx, 1)
-  saveConfig()
+  saveSchedule()
 }
 const copyScheduleToAll = (dayKey) => {
   ensureExtraSafeSchedule()
@@ -1121,7 +1122,7 @@ const copyScheduleToAll = (dayKey) => {
   for (const d of scheduleDays) {
     sp.value.automation.extra_safe_schedule.days[d.key] = src.map(s => ({ ...s }))
   }
-  saveConfig()
+  saveSchedule()
 }
 const resetScheduleDefaults = () => {
   ensureExtraSafeSchedule()
@@ -1133,7 +1134,7 @@ const resetScheduleDefaults = () => {
   for (const d of scheduleDays) {
     sp.value.automation.extra_safe_schedule.days[d.key] = defaults.map(s => ({ ...s }))
   }
-  saveConfig()
+  saveSchedule()
 }
 const addExtraSafeEntity = (site) => {
   const eid = String(newExtraSafe.value[site] || '').trim()
@@ -1721,6 +1722,15 @@ async function loadConfig(){
 async function saveConfig(){
   await fetch(apiUrl('api/config'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(sp.value)})
   await loadConfig()
+}
+async function saveSchedule(){
+  if (!sp.value?.automation?.extra_safe_schedule) return
+  const payload = { automation: { extra_safe_schedule: sp.value.automation.extra_safe_schedule } }
+  await fetch(apiUrl('api/config'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+}
+function queueScheduleSave(){
+  if (scheduleSaveTimer) clearTimeout(scheduleSaveTimer)
+  scheduleSaveTimer = setTimeout(()=>{ saveSchedule() }, 400)
 }
 async function loadEntities(){
   if (editingCount.value > 0) return

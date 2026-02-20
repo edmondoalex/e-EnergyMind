@@ -593,3 +593,6 @@ Data export: 2026-02-08 (Europe/Rome)
 
 ## 2026-02-20
 - Timezone configurabile in Admin, usata dallo scheduler.
+
+## 2026-02-20
+- Scheduler: salvataggio dedicato con debounce, senza reload.

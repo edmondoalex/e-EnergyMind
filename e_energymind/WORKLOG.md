@@ -582,3 +582,6 @@
 ## 2026-02-20
 - Aggiunta configurazione timezone (Admin) usata dallo scheduler.
 - Installato tzdata in Dockerfile.
+
+## 2026-02-20
+- Scheduler: salvataggio dedicato e debounce (no reload) per evitare lentezza/rollback.
