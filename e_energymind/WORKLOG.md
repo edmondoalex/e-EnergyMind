@@ -588,3 +588,7 @@
 
 ## 2026-02-20
 - Scheduler: aggiunto pulsante "Salva scheduler".
+
+## 2026-02-20
+- Previsioni: aggiunta descrizione sotto ogni campo della tabella forecast.
+

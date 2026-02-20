@@ -99,32 +99,11 @@
                 </span>
               </summary>
               <div class="forecast-grid">
-                <div class="f-label">PV Oggi (stima)</div><div class="f-val">{{ fmtKwh(row.pv_today_kwh) }}</div>
-                <div class="f-label">PV Domani (stima)</div><div class="f-val">{{ fmtKwh(row.pv_tomorrow_kwh) }}</div>
-                <div class="f-label">Consumo Oggi (stima)</div><div class="f-val">{{ fmtKwh(row.load_today_kwh) }}</div>
-                <div class="f-label">Consumo Domani (stima)</div><div class="f-val">{{ fmtKwh(row.load_tomorrow_kwh) }}</div>
-                <div class="f-label emph">Consumo Extra-safe Ora</div><div class="f-val emph">{{ fmtW(row.extra_safe_load_now_w) }}</div>
-                <div class="f-label emph">Extra-safe Consumi Oggi</div><div class="f-val emph">{{ fmtKwh(row.extra_safe_load_today_kwh) }}</div>
-                <div class="f-label">Surplus Oggi (stima)</div><div class="f-val">{{ fmtKwh(row.surplus_today_kwh) }}</div>
-                <div class="f-label">Export Oggi (stima)</div><div class="f-val">{{ fmtKwh(row.export_today_kwh) }}</div>
-                <div class="f-label">Export (sim)</div><div class="f-val">{{ fmtKwh(row.export_sim_today_kwh) }}</div>
-                <div class="f-label emph">Extra (safe) Oggi (stima)</div><div class="f-val emph">{{ fmtKwh(row.extra_safe_today_kwh ?? row.export_sim_today_kwh) }}</div>
-                <div class="f-label">Extra (sim) Domani</div><div class="f-val">{{ fmtKwh(row.export_sim_tomorrow_kwh) }}</div>
-                <div class="f-label emph">Extra SAFE aggiuntivo ora</div><div class="f-val emph">{{ fmtW(row.extra_safe_now_w ?? row.extra_now_w) }}</div>
-                <div class="f-label emph">Extra SAFE totale ora</div><div class="f-val emph">{{ fmtW(extraSafeTotalNow(row)) }}</div>
-                <div class="f-label">Extra Ora (sim)</div><div class="f-val">{{ fmtW(row.extra_now_w) }}</div>
-                <div class="f-label">Fine Carica Oggi (stima)</div><div class="f-val">{{ fmtHour(row.charge_complete_hour) }}</div>
-                <div class="f-label">Fine Carica Domani (stima)</div><div class="f-val">{{ fmtHour(row.charge_complete_hour_tomorrow) }}</div>
-                <div class="f-label">SOC Fine (sim)</div><div class="f-val">{{ fmtPct(row.end_soc) }}</div>
-                <div class="f-label">Cap. kWh (stimata)</div><div class="f-val">{{ fmtNum(row.capacity_kwh) }}</div>
-                <div class="f-label">Max C/D W (reale)</div><div class="f-val">{{ fmtChargeDischarge(row.max_charge_w_learned, row.max_discharge_w_learned) }}</div>
-                <div class="f-label">Max C/D W (usato)</div><div class="f-val">{{ fmtChargeDischarge(row.max_charge_w, row.max_discharge_w) }}</div>
-                <div class="f-label">Allineamento PV (reale)</div><div class="f-val">{{ fmtPctSigned(row.factors?.error_pct) }}</div>
-                <div class="f-label">PV Reale vs Forecast (kWh)</div><div class="f-val">{{ fmtKwhPair(row.factors?.actual_last_kwh, row.factors?.forecast_last_kwh) }}</div>
-                <div class="f-label">Allineamento PV (intraday)</div><div class="f-val">{{ fmtPctSigned(row.factors?.intraday_error_pct) }}</div>
-                <div class="f-label">PV Intraday Reale vs Forecast (kWh)</div><div class="f-val">{{ fmtKwhPair(row.factors?.intraday_actual_kwh, row.factors?.intraday_forecast_kwh) }}</div>
-                <div class="f-label">Fattore PV (stimato)</div><div class="f-val">{{ fmtFactor(row.factors?.pv_adjust) }}</div>
-                <div class="f-label">PV Adjust</div><div class="f-val">{{ fmtFactor(row.factors?.pv_adjust) }} · {{ fmtPctSigned(pvAdjustPct(row.factors?.pv_adjust)) }}</div>
+                <div class="f-item" v-for="item in forecastFieldRows(row)" :key="item.key">
+                  <div class="f-label" :class="item.emph ? 'emph' : ''">{{ item.label }}</div>
+                  <div class="f-val" :class="item.emph ? 'emph' : ''">{{ item.value }}</div>
+                  <div class="f-desc">{{ item.desc }}</div>
+                </div>
               </div>
             </details>
           </div>
@@ -1078,6 +1057,34 @@ const extraSafeBand = (row) => {
 const siteRow = (site) => {
   return (forecast.value?.sites || []).find((s) => s.site === site) || {}
 }
+const forecastFieldRows = (row) => ([
+  { key: 'pv_today', label: 'PV Oggi (stima)', value: fmtKwh(row.pv_today_kwh), desc: 'Energia FV prevista oggi, corretta dal fattore PV.' },
+  { key: 'pv_tom', label: 'PV Domani (stima)', value: fmtKwh(row.pv_tomorrow_kwh), desc: 'Energia FV prevista domani, corretta dal fattore PV.' },
+  { key: 'load_today', label: 'Consumo Oggi (stima)', value: fmtKwh(row.load_today_kwh), desc: 'Consumo previsto oggi (profilo storico/target), esclusi extra-safe.' },
+  { key: 'load_tom', label: 'Consumo Domani (stima)', value: fmtKwh(row.load_tomorrow_kwh), desc: 'Consumo previsto domani (profilo storico/target), esclusi extra-safe.' },
+  { key: 'safe_now', label: 'Consumo Extra-safe Ora', value: fmtW(row.extra_safe_load_now_w), desc: 'Somma istantanea dei carichi extra-safe attivi (W).', emph: true },
+  { key: 'safe_today', label: 'Extra-safe Consumi Oggi', value: fmtKwh(row.extra_safe_load_today_kwh), desc: 'Energia extra-safe consumata oggi (kWh).', emph: true },
+  { key: 'surplus_today', label: 'Surplus Oggi (stima)', value: fmtKwh(row.surplus_today_kwh), desc: 'PV − consumo previsto (kWh).' },
+  { key: 'export_today', label: 'Export Oggi (stima)', value: fmtKwh(row.export_today_kwh), desc: 'Energia esportabile dopo carica batteria al target.' },
+  { key: 'export_sim', label: 'Export (sim)', value: fmtKwh(row.export_sim_today_kwh), desc: 'Export simulato con profilo orario e limiti C/D.' },
+  { key: 'extra_safe_today', label: 'Extra (safe) Oggi (stima)', value: fmtKwh(row.extra_safe_today_kwh ?? row.export_sim_today_kwh), desc: 'Extra sicuro oggi senza compromettere il target SOC.', emph: true },
+  { key: 'extra_sim_tom', label: 'Extra (sim) Domani', value: fmtKwh(row.export_sim_tomorrow_kwh), desc: 'Extra simulato domani da profilo orario.' },
+  { key: 'extra_add_now', label: 'Extra SAFE aggiuntivo ora', value: fmtW(row.extra_safe_now_w ?? row.extra_now_w), desc: 'Potenza aggiuntiva accendibile ora.', emph: true },
+  { key: 'extra_total_now', label: 'Extra SAFE totale ora', value: fmtW(extraSafeTotalNow(row)), desc: 'Totale sostenibile ora = aggiuntivo + consumi extra-safe.', emph: true },
+  { key: 'extra_now_sim', label: 'Extra Ora (sim)', value: fmtW(row.extra_now_w), desc: 'Extra istantaneo simulato dal profilo.' },
+  { key: 'charge_today', label: 'Fine Carica Oggi (stima)', value: fmtHour(row.charge_complete_hour), desc: 'Ora stimata in cui si raggiunge il target SOC.' },
+  { key: 'charge_tom', label: 'Fine Carica Domani (stima)', value: fmtHour(row.charge_complete_hour_tomorrow), desc: 'Ora stimata di fine carica domani.' },
+  { key: 'soc_end', label: 'SOC Fine (sim)', value: fmtPct(row.end_soc), desc: 'SOC stimato a fine giornata.' },
+  { key: 'cap', label: 'Cap. kWh (stimata)', value: fmtNum(row.capacity_kwh), desc: 'Capacità batteria usata nei calcoli.' },
+  { key: 'max_cd_real', label: 'Max C/D W (reale)', value: fmtChargeDischarge(row.max_charge_w_learned, row.max_discharge_w_learned), desc: 'Massimi reali stimati da storico.' },
+  { key: 'max_cd_used', label: 'Max C/D W (usato)', value: fmtChargeDischarge(row.max_charge_w, row.max_discharge_w), desc: 'Limiti carica/scarica usati nelle simulazioni.' },
+  { key: 'align_real', label: 'Allineamento PV (reale)', value: fmtPctSigned(row.factors?.error_pct), desc: 'Errore % tra reale e forecast giornaliero.' },
+  { key: 'real_vs_fc', label: 'PV Reale vs Forecast (kWh)', value: fmtKwhPair(row.factors?.actual_last_kwh, row.factors?.forecast_last_kwh), desc: 'Confronto kWh reale/forecast (oggi).' },
+  { key: 'align_intra', label: 'Allineamento PV (intraday)', value: fmtPctSigned(row.factors?.intraday_error_pct), desc: 'Errore % fino ad ora (intraday).' },
+  { key: 'intra_vs_fc', label: 'PV Intraday Reale vs Forecast (kWh)', value: fmtKwhPair(row.factors?.intraday_actual_kwh, row.factors?.intraday_forecast_kwh), desc: 'Confronto kWh reale/forecast fino ad ora.' },
+  { key: 'pv_factor', label: 'Fattore PV (stimato)', value: fmtFactor(row.factors?.pv_adjust), desc: 'Moltiplicatore applicato alle previsioni.' },
+  { key: 'pv_adjust', label: 'PV Adjust', value: `${fmtFactor(row.factors?.pv_adjust)} · ${fmtPctSigned(pvAdjustPct(row.factors?.pv_adjust))}`, desc: 'Correzione PV in fattore e %.' },
+])
 const ensureExtraSafeSchedule = () => {
   if (!sp.value?.automation) return
   if (!sp.value.automation.extra_safe_schedule) {
@@ -2335,10 +2342,23 @@ body{
 .forecast-grid{
   margin:6px 0 0;
   display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap:6px 10px;
+  grid-template-columns: repeat(2, minmax(240px, 1fr));
+  gap:14px 18px;
   font-size:12px;
   padding:0 12px 10px;
+}
+.f-item{
+  display:grid;
+  grid-template-columns: 1.4fr minmax(90px, 1fr);
+  gap:6px 10px;
+  padding-bottom:8px;
+  border-bottom:1px solid rgba(31,42,56,0.6);
+}
+.f-desc{
+  grid-column:1 / -1;
+  color:#8ea0b7;
+  font-size:11.5px;
+  line-height:1.35;
 }
 .f-label{
   color:var(--muted);

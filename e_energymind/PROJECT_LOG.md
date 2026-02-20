@@ -599,3 +599,7 @@ Data export: 2026-02-08 (Europe/Rome)
 
 ## 2026-02-20
 - Scheduler: pulsante "Salva scheduler".
+
+## 2026-02-20
+- UI Previsioni: descrizione sotto ogni campo in tabella forecast.
+
