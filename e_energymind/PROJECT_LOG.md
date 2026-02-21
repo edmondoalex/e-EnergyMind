@@ -603,3 +603,7 @@ Data export: 2026-02-08 (Europe/Rome)
 ## 2026-02-20
 - UI Previsioni: descrizione sotto ogni campo in tabella forecast.
 
+
+## 2026-02-20
+- UI: aggiunti tooltip esplicativi in Regole apprese e campi chiave forecast.
+

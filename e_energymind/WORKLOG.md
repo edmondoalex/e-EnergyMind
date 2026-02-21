@@ -592,3 +592,7 @@
 ## 2026-02-20
 - Previsioni: aggiunta descrizione sotto ogni campo della tabella forecast.
 
+
+## 2026-02-20
+- UI: tooltip di spiegazione in Regole apprese e su campi Export/Surplus/Extra SAFE.
+

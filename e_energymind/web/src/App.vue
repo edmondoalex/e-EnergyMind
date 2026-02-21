@@ -46,7 +46,13 @@
           </div>
         </div>
         <div class="card inner" v-if="insights?.learned_rules">
-          <div class="row"><strong>Regole apprese</strong></div>
+          <div class="row">
+            <strong>Regole apprese</strong>
+            <span
+              class="help-icon"
+              title="Export/Surplus sono soglie oltre le quali il sistema si aspetta che la batteria carichi. Durata = tempo minimo per confermare l’evento. Carica tipica = quota media di surplus che va in batteria."
+            >?</span>
+          </div>
           <div class="muted" v-if="!insights.learned_rules.updated_at">In attesa aggiornamento...</div>
           <div class="entity-list" v-else>
             <div class="entity-row">
@@ -100,7 +106,10 @@
               </summary>
               <div class="forecast-grid">
                 <div class="f-item" v-for="item in forecastFieldRows(row)" :key="item.key">
-                  <div class="f-label" :class="item.emph ? 'emph' : ''">{{ item.label }}</div>
+                  <div class="f-label" :class="item.emph ? 'emph' : ''">
+                    {{ item.label }}
+                    <span v-if="item.help" class="help-icon inline" :title="item.help">?</span>
+                  </div>
                   <div class="f-val" :class="item.emph ? 'emph' : ''">{{ item.value }}</div>
                   <div class="f-desc">{{ item.desc }}</div>
                 </div>
@@ -1064,13 +1073,52 @@ const forecastFieldRows = (row) => ([
   { key: 'load_tom', label: 'Consumo Domani (stima)', value: fmtKwh(row.load_tomorrow_kwh), desc: 'Consumo previsto domani (profilo storico/target), esclusi extra-safe.' },
   { key: 'safe_now', label: 'Consumo Extra-safe Ora', value: fmtW(row.extra_safe_load_now_w), desc: 'Somma istantanea dei carichi extra-safe attivi (W).', emph: true },
   { key: 'safe_today', label: 'Extra-safe Consumi Oggi', value: fmtKwh(row.extra_safe_load_today_kwh), desc: 'Energia extra-safe consumata oggi (kWh).', emph: true },
-  { key: 'surplus_today', label: 'Surplus Oggi (stima)', value: fmtKwh(row.surplus_today_kwh), desc: 'PV − consumo previsto (kWh).' },
-  { key: 'export_today', label: 'Export Oggi (stima)', value: fmtKwh(row.export_today_kwh), desc: 'Energia esportabile dopo carica batteria al target.' },
-  { key: 'export_sim', label: 'Export (sim)', value: fmtKwh(row.export_sim_today_kwh), desc: 'Export simulato con profilo orario e limiti C/D.' },
-  { key: 'extra_safe_today', label: 'Extra (safe) Oggi (stima)', value: fmtKwh(row.extra_safe_today_kwh ?? row.export_sim_today_kwh), desc: 'Extra sicuro oggi senza compromettere il target SOC.', emph: true },
+  {
+    key: 'surplus_today',
+    label: 'Surplus Oggi (stima)',
+    value: fmtKwh(row.surplus_today_kwh),
+    desc: 'PV − consumo previsto (kWh).',
+    help: 'Surplus stimato prima di considerare i vincoli della batteria.',
+  },
+  {
+    key: 'export_today',
+    label: 'Export Oggi (stima)',
+    value: fmtKwh(row.export_today_kwh),
+    desc: 'Energia esportabile dopo carica batteria al target.',
+    help: 'Quanto finirebbe in rete se non accendi carichi extra.',
+  },
+  {
+    key: 'export_sim',
+    label: 'Export (sim)',
+    value: fmtKwh(row.export_sim_today_kwh),
+    desc: 'Export simulato con profilo orario e limiti C/D.',
+    help: 'Export calcolato con simulazione oraria e limiti carica/scarica.',
+  },
+  {
+    key: 'extra_safe_today',
+    label: 'Extra (safe) Oggi (stima)',
+    value: fmtKwh(row.extra_safe_today_kwh ?? row.export_sim_today_kwh),
+    desc: 'Extra sicuro oggi senza compromettere il target SOC.',
+    help: 'Quota di energia che puoi usare in extra‑safe senza rischiare il target SOC.',
+    emph: true,
+  },
   { key: 'extra_sim_tom', label: 'Extra (sim) Domani', value: fmtKwh(row.export_sim_tomorrow_kwh), desc: 'Extra simulato domani da profilo orario.' },
-  { key: 'extra_add_now', label: 'Extra SAFE aggiuntivo ora', value: fmtW(row.extra_safe_now_w ?? row.extra_now_w), desc: 'Potenza aggiuntiva accendibile ora.', emph: true },
-  { key: 'extra_total_now', label: 'Extra SAFE totale ora', value: fmtW(extraSafeTotalNow(row)), desc: 'Totale sostenibile ora = aggiuntivo + consumi extra-safe.', emph: true },
+  {
+    key: 'extra_add_now',
+    label: 'Extra SAFE aggiuntivo ora',
+    value: fmtW(row.extra_safe_now_w ?? row.extra_now_w),
+    desc: 'Potenza aggiuntiva accendibile ora.',
+    help: 'Quanto puoi aggiungere ORA senza compromettere il target SOC.',
+    emph: true,
+  },
+  {
+    key: 'extra_total_now',
+    label: 'Extra SAFE totale ora',
+    value: fmtW(extraSafeTotalNow(row)),
+    desc: 'Totale sostenibile ora = aggiuntivo + consumi extra-safe.',
+    help: 'Somma di consumi extra-safe già attivi + aggiuntivo disponibile.',
+    emph: true,
+  },
   { key: 'extra_now_sim', label: 'Extra Ora (sim)', value: fmtW(row.extra_now_w), desc: 'Extra istantaneo simulato dal profilo.' },
   { key: 'charge_today', label: 'Fine Carica Oggi (stima)', value: fmtHour(row.charge_complete_hour), desc: 'Ora stimata in cui si raggiunge il target SOC.' },
   { key: 'charge_tom', label: 'Fine Carica Domani (stima)', value: fmtHour(row.charge_complete_hour_tomorrow), desc: 'Ora stimata di fine carica domani.' },
@@ -2379,6 +2427,26 @@ body{
 .emph-inline{
   color:#63e6be;
   font-weight:700;
+}
+.help-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:18px;
+  height:18px;
+  margin-left:8px;
+  border-radius:999px;
+  border:1px solid rgba(99,230,190,0.45);
+  color:#63e6be;
+  font-size:12px;
+  font-weight:700;
+  cursor:help;
+}
+.help-icon.inline{
+  width:16px;
+  height:16px;
+  margin-left:6px;
+  font-size:11px;
 }
 .forecast-row{
   display:grid;
