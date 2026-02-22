@@ -2593,6 +2593,7 @@ async def forecast():
             charge_complete_h = None
             charge_complete_h_tom = None
             end_soc_sim = None
+            target_reachable = None
             export_sim_kwh = 0.0
             import_sim_kwh = 0.0
             charge_sim_kwh = 0.0
@@ -2888,6 +2889,12 @@ async def forecast():
                 if extra_safe_now_w is not None and schedule_pct:
                     extra_safe_now_w = max(0.0, extra_safe_now_w * (1.0 + (schedule_pct / 100.0)))
 
+                target_reachable = None
+                if end_soc_sim is not None and target_soc is not None:
+                    target_reachable = end_soc_sim >= (target_soc - 0.1)
+                    if not target_reachable:
+                        extra_safe_now_w = 0.0
+
                 # Safe extra simulation for tomorrow (kWh)
                 extra_safe_tomorrow_kwh = 0.0
                 soc_safe_tom = end_soc_sim if end_soc_sim is not None else soc_now
@@ -2969,6 +2976,8 @@ async def forecast():
                 "export_limit_w": export_limit,
                 "target_soc": target_soc,
                 "target_reason": target_reason,
+                "target_reachable": target_reachable,
+                "target_gap_pct": round(max(0.0, (target_soc or 0) - (end_soc_sim or 0)), 1) if (target_soc is not None and end_soc_sim is not None) else None,
                 "factors": {
                     "pv_adjust": round(pv_factor, 3),
                     "forecast_last_kwh": forecast_last_kwh,

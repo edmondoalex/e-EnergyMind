@@ -104,6 +104,9 @@
                   Fine Carica {{ fmtHour(row.charge_complete_hour) }}
                 </span>
               </summary>
+              <div v-if="row.target_reachable === false" class="forecast-warning">
+                Oggi 100% NON raggiungibile con PV attuale
+              </div>
               <div class="forecast-grid">
                 <div class="f-item" v-for="item in forecastFieldRows(row)" :key="item.key">
                   <div class="f-label" :class="item.emph ? 'emph' : ''">
@@ -2386,6 +2389,16 @@ body{
 }
 .forecast-card[open] .forecast-summary{
   border-bottom:1px solid var(--line);
+}
+.forecast-warning{
+  margin:6px 12px 0;
+  padding:6px 10px;
+  border-radius:8px;
+  background:rgba(255, 193, 7, 0.12);
+  border:1px solid rgba(255, 193, 7, 0.35);
+  color:#ffd166;
+  font-size:12.5px;
+  font-weight:600;
 }
 .forecast-grid{
   margin:6px 0 0;

@@ -607,3 +607,5 @@ Data export: 2026-02-08 (Europe/Rome)
 ## 2026-02-20
 - UI: aggiunti tooltip esplicativi in Regole apprese e campi chiave forecast.
 
+## 2026-02-22
+- Extra SAFE: blocco extra aggiuntivo quando il target non è raggiungibile; avviso UI nelle previsioni.
