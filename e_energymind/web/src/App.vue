@@ -128,10 +128,10 @@
               <button class="ghost" @click="showLegend = false">Chiudi</button>
             </div>
             <div class="modal-body">
-              <div class="legend-item"><strong>PV Oggi/Domani (stima)</strong>: energia FV prevista (kWh), corretta da pv_adjust.</div>
-              <div class="legend-item"><strong>Consumo Oggi/Domani (stima)</strong>: consumo previsto (kWh) da profilo storico o target.</div>
-              <div class="legend-item"><strong>Surplus Oggi (stima)</strong>: PV − Consumo (kWh).</div>
-              <div class="legend-item"><strong>Export Oggi (stima)</strong>: energia esportabile dopo carica batteria al target.</div>
+              <div class="legend-item"><strong>PV Oggi (reale)</strong>: energia FV misurata oggi (kWh). <strong>PV Domani (stima)</strong>: previsione corretta da pv_adjust.</div>
+              <div class="legend-item"><strong>Consumo Oggi (reale)</strong>: consumo misurato oggi (kWh). <strong>Consumo Domani (stima)</strong>: profilo storico/target.</div>
+              <div class="legend-item"><strong>Surplus Oggi (reale)</strong>: PV − Consumo (kWh) su dati reali.</div>
+              <div class="legend-item"><strong>Export Oggi (reale)</strong>: derivato dai dati reali di oggi.</div>
               <div class="legend-item"><strong>Export (sim)</strong>: export simulato con profilo orario e limiti C/D.</div>
               <div class="legend-item"><strong>Extra (safe)</strong>: extra sicuro senza compromettere il target SOC.</div>
               <div class="legend-item"><strong>Extra Ora</strong>: extra disponibile adesso (W).</div>
@@ -1070,25 +1070,25 @@ const siteRow = (site) => {
   return (forecast.value?.sites || []).find((s) => s.site === site) || {}
 }
 const forecastFieldRows = (row) => ([
-  { key: 'pv_today', label: 'PV Oggi (stima)', value: fmtKwh(row.pv_today_kwh), desc: 'Energia FV prevista oggi, corretta dal fattore PV.' },
+  { key: 'pv_today', label: 'PV Oggi (reale)', value: fmtKwh(row.pv_today_kwh), desc: 'Energia FV misurata oggi (finora).' },
   { key: 'pv_tom', label: 'PV Domani (stima)', value: fmtKwh(row.pv_tomorrow_kwh), desc: 'Energia FV prevista domani, corretta dal fattore PV.' },
-  { key: 'load_today', label: 'Consumo Oggi (stima)', value: fmtKwh(row.load_today_kwh), desc: 'Consumo previsto oggi (profilo storico/target), esclusi extra-safe.' },
+  { key: 'load_today', label: 'Consumo Oggi (reale)', value: fmtKwh(row.load_today_kwh), desc: 'Consumo misurato oggi (finora), esclusi extra-safe.' },
   { key: 'load_tom', label: 'Consumo Domani (stima)', value: fmtKwh(row.load_tomorrow_kwh), desc: 'Consumo previsto domani (profilo storico/target), esclusi extra-safe.' },
   { key: 'safe_now', label: 'Consumo Extra-safe Ora', value: fmtW(row.extra_safe_load_now_w), desc: 'Somma istantanea dei carichi extra-safe attivi (W).', emph: true },
   { key: 'safe_today', label: 'Extra-safe Consumi Oggi', value: fmtKwh(row.extra_safe_load_today_kwh), desc: 'Energia extra-safe consumata oggi (kWh).', emph: true },
   {
     key: 'surplus_today',
-    label: 'Surplus Oggi (stima)',
+    label: 'Surplus Oggi (reale)',
     value: fmtKwh(row.surplus_today_kwh),
-    desc: 'PV − consumo previsto (kWh).',
-    help: 'Surplus stimato prima di considerare i vincoli della batteria.',
+    desc: 'PV − consumo reale (kWh) fino ad ora.',
+    help: 'Surplus calcolato da dati reali di oggi.',
   },
   {
     key: 'export_today',
-    label: 'Export Oggi (stima)',
+    label: 'Export Oggi (reale)',
     value: fmtKwh(row.export_today_kwh),
-    desc: 'Energia esportabile dopo carica batteria al target.',
-    help: 'Quanto finirebbe in rete se non accendi carichi extra.',
+    desc: 'Energia esportabile stimata su dati reali (finora).',
+    help: 'Derivato dai dati reali di oggi; non usa forecast.',
   },
   {
     key: 'export_sim',

@@ -2557,10 +2557,12 @@ async def forecast():
             if max_discharge_w is None:
                 max_discharge_w = learned_max_discharge
 
-            # Forecast values (initial; may be updated after live pv_adjust)
-            pv_today_kwh = (pv_fc_today * pv_factor) if pv_fc_today is not None else pv_base
+            # Today: prefer real measured energy; Tomorrow: forecast corrected by pv_adjust
+            pv_today_real_kwh = _daily_energy_kwh(conn, pv_id, today_start, now_ts) if pv_id else None
+            load_today_real_kwh = _daily_energy_kwh(conn, load_id, today_start, now_ts) if load_id else None
+            pv_today_kwh = pv_today_real_kwh if pv_today_real_kwh is not None else ((pv_fc_today * pv_factor) if pv_fc_today is not None else pv_base)
             pv_tom_kwh = (pv_fc_tom * pv_factor) if pv_fc_tom is not None else pv_base
-            load_today_kwh = (load_fc_today if load_fc_today is not None else load_base) or 0.0
+            load_today_kwh = load_today_real_kwh if load_today_real_kwh is not None else ((load_fc_today if load_fc_today is not None else load_base) or 0.0)
             load_tom_kwh = load_today_kwh
             if safe_base:
                 load_today_kwh = max(0.0, load_today_kwh - safe_base)
@@ -2662,10 +2664,10 @@ async def forecast():
                     intraday_forecast_kwh = None
                     intraday_error_pct = None
 
-                # Forecast values (after live pv_adjust)
-                pv_today_kwh = (pv_fc_today * pv_factor) if pv_fc_today is not None else pv_base
+                # Today: real; Tomorrow: forecast corrected by pv_adjust
+                pv_today_kwh = pv_today_real_kwh if pv_today_real_kwh is not None else ((pv_fc_today * pv_factor) if pv_fc_today is not None else pv_base)
                 pv_tom_kwh = (pv_fc_tom * pv_factor) if pv_fc_tom is not None else pv_base
-                load_today_kwh = load_fc_today if load_fc_today is not None else load_base
+                load_today_kwh = load_today_real_kwh if load_today_real_kwh is not None else (load_fc_today if load_fc_today is not None else load_base)
                 load_tom_kwh = load_today_kwh
 
                 if pv_today_kwh is not None and pv_sum > 0:

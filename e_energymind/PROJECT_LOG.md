@@ -609,3 +609,5 @@ Data export: 2026-02-08 (Europe/Rome)
 
 ## 2026-02-22
 - Extra SAFE: blocco extra aggiuntivo quando il target non è raggiungibile; avviso UI nelle previsioni.
+## 2026-02-22
+- Forecast: oggi basato su dati reali; domani resta forecast corretto da pv_adjust.

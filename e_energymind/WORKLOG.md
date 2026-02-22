@@ -599,3 +599,5 @@
 ## 2026-02-22
 - Extra SAFE: se target SOC non raggiungibile, extra aggiuntivo ora viene forzato a 0.
 - UI: avviso "Oggi 100% NON raggiungibile con PV attuale" nelle previsioni.
+## 2026-02-22
+- Oggi: PV/Consumo/Surplus/Export calcolati da dati reali (senza forecast). Domani resta forecast corretto da pv_adjust.
