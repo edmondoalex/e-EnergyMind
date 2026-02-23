@@ -1793,10 +1793,16 @@ async def mqtt_clear():
 @app.get("/api/status")
 async def get_status():
     cfg = load_config()
+    now_ts = int(time.time())
+    tz_name = time.tzname[0] if time.tzname else "local"
+    utc_offset_min = int((time.mktime(time.localtime(now_ts)) - time.mktime(time.gmtime(now_ts))) / 60)
     return {
         "version": APP_VERSION,
         "runtime_mode": cfg.get("runtime", {}).get("mode", "dry-run"),
         "ha_connected": bool(ha._session) and ha.enabled,
+        "server_time": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now_ts)),
+        "server_tz": tz_name,
+        "server_utc_offset_min": utc_offset_min,
     }
 
 
