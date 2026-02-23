@@ -880,10 +880,32 @@ def _integrate_energy_kwh(series: list[tuple[int, float]]) -> float:
     return total
 
 
+def _get_runtime_tz_name() -> str | None:
+    try:
+        cfg = load_config()
+        tz_name = (cfg.get("runtime", {}) or {}).get("timezone")
+    except Exception:
+        tz_name = None
+    if isinstance(tz_name, str) and tz_name.strip():
+        return tz_name.strip()
+    return None
+
+
+def _local_dt(ts: int, tz_name: str | None = None) -> datetime:
+    if tz_name:
+        try:
+            return datetime.fromtimestamp(ts, ZoneInfo(tz_name))
+        except Exception:
+            pass
+    return datetime.fromtimestamp(ts)
+
+
 def _day_start(ts: int | None = None) -> int:
     base = ts or int(time.time())
-    lt = time.localtime(base)
-    return int(time.mktime((lt.tm_year, lt.tm_mon, lt.tm_mday, 0, 0, 0, lt.tm_wday, lt.tm_yday, lt.tm_isdst)))
+    tz_name = _get_runtime_tz_name()
+    dt = _local_dt(base, tz_name)
+    day_start = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+    return int(day_start.timestamp())
 
 
 def _load_history_power_series(conn: sqlite3.Connection, entity_id: str, start_ts: int, end_ts: int) -> list[tuple[int, float]]:
@@ -924,6 +946,7 @@ def _median(values: list[float]) -> float | None:
 def _hourly_profile(conn: sqlite3.Connection, entity_id: str, days: int = 7) -> list[float]:
     now = int(time.time())
     start_ts = now - days * 86400
+    tz_name = _get_runtime_tz_name()
     cur = conn.execute(
         "SELECT ts, raw, value, unit FROM history WHERE entity_id = ? AND ts >= ? ORDER BY ts ASC",
         (entity_id, start_ts),
@@ -952,8 +975,9 @@ def _hourly_profile(conn: sqlite3.Connection, entity_id: str, days: int = 7) -> 
         seg_start = t0
         seg_end = t1
         while seg_start < seg_end:
-            lt = time.localtime(seg_start)
-            hour_start = int(time.mktime((lt.tm_year, lt.tm_mon, lt.tm_mday, lt.tm_hour, 0, 0, lt.tm_wday, lt.tm_yday, lt.tm_isdst)))
+            dt = _local_dt(seg_start, tz_name)
+            hour_start_dt = dt.replace(minute=0, second=0, microsecond=0)
+            hour_start = int(hour_start_dt.timestamp())
             hour_end = hour_start + 3600
             chunk_end = min(seg_end, hour_end)
             dt = chunk_end - seg_start
@@ -966,7 +990,7 @@ def _hourly_profile(conn: sqlite3.Connection, entity_id: str, days: int = 7) -> 
             v_start = v0 + (v1 - v0) * r0
             v_end = v0 + (v1 - v0) * r1
             avg_v = (v_start + v_end) / 2.0
-            h = lt.tm_hour
+            h = dt.hour
             sums_ws[h] += avg_v * dt
             sums_s[h] += dt
             seg_start = chunk_end
@@ -984,6 +1008,7 @@ def _hourly_profile_today(conn: sqlite3.Connection, entity_id: str, day_start: i
     series = _load_history_power_series(conn, entity_id, day_start, now_ts)
     if len(series) < 2:
         return [None] * 24
+    tz_name = _get_runtime_tz_name()
 
     sums_ws = [0.0] * 24
     sums_s = [0.0] * 24
@@ -995,8 +1020,9 @@ def _hourly_profile_today(conn: sqlite3.Connection, entity_id: str, day_start: i
         seg_start = t0
         seg_end = t1
         while seg_start < seg_end:
-            lt = time.localtime(seg_start)
-            hour_start = int(time.mktime((lt.tm_year, lt.tm_mon, lt.tm_mday, lt.tm_hour, 0, 0, lt.tm_wday, lt.tm_yday, lt.tm_isdst)))
+            dt = _local_dt(seg_start, tz_name)
+            hour_start_dt = dt.replace(minute=0, second=0, microsecond=0)
+            hour_start = int(hour_start_dt.timestamp())
             hour_end = hour_start + 3600
             chunk_end = min(seg_end, hour_end)
             dt = chunk_end - seg_start
@@ -1008,7 +1034,7 @@ def _hourly_profile_today(conn: sqlite3.Connection, entity_id: str, day_start: i
             v_start = v0 + (v1 - v0) * r0
             v_end = v0 + (v1 - v0) * r1
             avg_v = (v_start + v_end) / 2.0
-            h = lt.tm_hour
+            h = dt.hour
             sums_ws[h] += avg_v * dt
             sums_s[h] += dt
             seg_start = chunk_end
@@ -1304,10 +1330,11 @@ def _solar_window_today_real(conn: sqlite3.Connection, pv_entity_id: str | None,
         return None, None
     min_ts = min(hits)
     max_ts = max(hits)
-    lt_min = time.localtime(min_ts)
-    lt_max = time.localtime(max_ts)
-    start = lt_min.tm_hour + (lt_min.tm_min / 60.0)
-    end = lt_max.tm_hour + (lt_max.tm_min / 60.0)
+    tz_name = _get_runtime_tz_name()
+    dt_min = _local_dt(min_ts, tz_name)
+    dt_max = _local_dt(max_ts, tz_name)
+    start = dt_min.hour + (dt_min.minute / 60.0)
+    end = dt_max.hour + (dt_max.minute / 60.0)
     return start, end
 
 
@@ -2819,9 +2846,9 @@ async def forecast():
                 # Intraday alignment (actual vs forecast so far)
                 try:
                     intraday_actual_kwh = _daily_energy_kwh(conn, pv_id, today_start, now_ts)
-                    now_lt = time.localtime(now_ts)
-                    h_now = now_lt.tm_hour
-                    frac = (now_lt.tm_min + (now_lt.tm_sec / 60.0)) / 60.0
+                    now_lt = _local_dt(now_ts, _get_runtime_tz_name())
+                    h_now = now_lt.hour
+                    frac = (now_lt.minute + (now_lt.second / 60.0)) / 60.0
                     forecast_wh = 0.0
                     for h in range(0, min(24, h_now)):
                         forecast_wh += pv_profile_fc[h]
@@ -2869,8 +2896,8 @@ async def forecast():
                 pv_profile_fc = [v * pv_scale_fc for v in pv_profile_fc]
 
                 # Merge real hours for today (up to current hour) with scaled forecast for remaining hours.
-                now_lt = time.localtime(now_ts)
-                h_now = now_lt.tm_hour
+                now_lt = _local_dt(now_ts, _get_runtime_tz_name())
+                h_now = now_lt.hour
                 pv_profile = []
                 load_profile = []
                 for h in range(24):
@@ -3022,7 +3049,7 @@ async def forecast():
                         "extra_w": round(extra_w, 1),
                     })
                     if hourly:
-                        hour_now = time.localtime(now_ts).tm_hour
+                        hour_now = _local_dt(now_ts, _get_runtime_tz_name()).hour
                         if 0 <= hour_now < len(hourly):
                             extra_now_w = hourly[hour_now].get("extra_w")
                 # Real-time extra from current states (more reliable for "now")
