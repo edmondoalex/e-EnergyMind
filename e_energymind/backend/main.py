@@ -69,6 +69,7 @@ PARTIAL_MIN_DURATION_S = 10
 LEARN_UPDATE_S = 7200
 PV_ADJUST_INTERVAL_S = 60
 SAFE_SOC_MARGIN_PCT = 5.0
+SOLAR_END_W_THRESHOLD = 100.0
 MQTT_PUBLISH_INTERVAL_S = 5
 FORECAST_CACHE_INTERVAL_S = 10
 
@@ -2760,6 +2761,13 @@ async def forecast():
                 if (load_daily_id and not load_daily_is_today) and load_today_kwh is not None and load_sum > 0:
                     load_scale = (load_today_kwh * 1000.0) / load_sum
 
+                solar_end_hour = None
+                if pv_profile:
+                    for h in range(23, -1, -1):
+                        if (pv_profile[h] * pv_scale) >= SOLAR_END_W_THRESHOLD:
+                            solar_end_hour = h
+                            break
+
                 # Estimate surplus and end SOC (using adjusted forecast)
                 surplus_today = None
                 export_today = None
@@ -2862,7 +2870,10 @@ async def forecast():
                 load_now = _state_num(load_id) or 0.0
                 surplus_now = max(0.0, pv_now - load_now)
                 extra_now_w = min(extra_now_w, surplus_now) if extra_now_w is not None else surplus_now
-                end_soc_sim = soc_sim
+                end_soc_solar = None
+                if solar_end_hour is not None and 0 <= solar_end_hour < len(hourly):
+                    end_soc_solar = hourly[solar_end_hour].get("soc")
+                end_soc_sim = end_soc_solar if end_soc_solar is not None else soc_sim
 
             if pv_id and load_id:
                 soc_sim_tom = end_soc_sim if (cap_kwh and end_soc_sim is not None) else (soc_now if (cap_kwh and soc_now is not None) else None)
@@ -2978,7 +2989,22 @@ async def forecast():
                 target_reachable = None
                 if end_soc_sim is not None and target_soc is not None:
                     target_reachable = end_soc_sim >= (target_soc - 0.1)
+                    # Allow extra if battery is already near target and charging with real surplus
+                    override_reachable = False
                     if not target_reachable:
+                        batt_now = _state_num(batt_id) if batt_id else None
+                        if (
+                            soc_now is not None
+                            and target_soc is not None
+                            and batt_now is not None
+                            and soc_now >= (target_soc - 1.0)
+                            and batt_now < 0
+                            and surplus_now > 0
+                        ):
+                            override_reachable = True
+                    if target_reachable or override_reachable:
+                        target_reachable = True
+                    else:
                         extra_safe_now_w = 0.0
 
                 # Safe extra simulation for tomorrow (kWh)
@@ -3034,6 +3060,8 @@ async def forecast():
                 "surplus_today_kwh": surplus_today,
                 "export_today_kwh": export_today,
                 "end_soc": round(end_soc_sim, 1) if end_soc_sim is not None else end_soc,
+                "end_soc_solar": round(end_soc_solar, 1) if end_soc_solar is not None else None,
+                "solar_end_hour": solar_end_hour,
                 "charge_complete_hour": charge_complete_h,
                 "charge_complete_hour_tomorrow": charge_complete_h_tom,
                 "extra_now_w": extra_now_w,

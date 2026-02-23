@@ -140,7 +140,7 @@
               <div class="legend-item"><strong>Consumo Extra-safe Ora</strong>: somma istantanea (W) delle entità extra-safe.</div>
               <div class="legend-item"><strong>Extra-safe Consumi Oggi</strong>: energia (kWh) consumata oggi dalle entità extra-safe.</div>
               <div class="legend-item"><strong>Fine Carica</strong>: ora stimata raggiungimento target SOC.</div>
-              <div class="legend-item"><strong>SOC Fine (sim)</strong>: SOC stimato a fine giornata.</div>
+              <div class="legend-item"><strong>SOC Fine (sim)</strong>: SOC stimato a fine produzione solare.</div>
               <div class="legend-item"><strong>Cap. kWh</strong>: capacità batteria usata nei calcoli.</div>
               <div class="legend-item"><strong>Max C/D W</strong>: max carica/scarica reale stimata vs usata.</div>
               <div class="legend-item"><strong>Allineamento PV (reale)</strong>: differenza % tra reale e forecast giornaliero.</div>
@@ -1198,7 +1198,7 @@ const forecastFieldRows = (row) => ([
   { key: 'extra_now_sim', label: 'Extra Ora (sim)', value: fmtW(row.extra_now_w), desc: 'Extra istantaneo simulato dal profilo.' },
   { key: 'charge_today', label: 'Fine Carica Oggi (stima)', value: fmtHour(row.charge_complete_hour), desc: 'Ora stimata in cui si raggiunge il target SOC.' },
   { key: 'charge_tom', label: 'Fine Carica Domani (stima)', value: fmtHour(row.charge_complete_hour_tomorrow), desc: 'Ora stimata di fine carica domani.' },
-  { key: 'soc_end', label: 'SOC Fine (sim)', value: fmtPct(row.end_soc), desc: 'SOC stimato a fine giornata.' },
+  { key: 'soc_end', label: 'SOC Fine (sim)', value: fmtPct(row.end_soc), desc: 'SOC stimato a fine produzione solare.' },
   { key: 'cap', label: 'Cap. kWh (stimata)', value: fmtNum(row.capacity_kwh), desc: 'Capacità batteria usata nei calcoli.' },
   { key: 'max_cd_real', label: 'Max C/D W (reale)', value: fmtChargeDischarge(row.max_charge_w_learned, row.max_discharge_w_learned), desc: 'Massimi reali stimati da storico.' },
   { key: 'max_cd_used', label: 'Max C/D W (usato)', value: fmtChargeDischarge(row.max_charge_w, row.max_discharge_w), desc: 'Limiti carica/scarica usati nelle simulazioni.' },

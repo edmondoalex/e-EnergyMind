@@ -613,3 +613,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Forecast: oggi basato su dati reali; domani resta forecast corretto da pv_adjust.
 ## 2026-02-22
 - Storico BMS in UI (tabella+grafico) con endpoint dedicato.
+## 2026-02-22
+- SOC fine simulato ora riferito alla fine produzione solare.
