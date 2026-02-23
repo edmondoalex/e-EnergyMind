@@ -605,3 +605,5 @@
 - BMS: endpoint /api/bms_history e UI con tabella + grafico storico (max C/D, carica tipica, surplus/export medi).
 ## 2026-02-22
 - Target 100% valutato alla fine produzione solare (soc fine sim) invece che a fine giornata.
+## 2026-02-22
+- UI: mostrata Fine Produzione Solare stimata nelle previsioni.

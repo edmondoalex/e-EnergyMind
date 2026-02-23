@@ -615,3 +615,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Storico BMS in UI (tabella+grafico) con endpoint dedicato.
 ## 2026-02-22
 - SOC fine simulato ora riferito alla fine produzione solare.
+## 2026-02-22
+- UI: aggiunta ora stimata fine produzione solare.
