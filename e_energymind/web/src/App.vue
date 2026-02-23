@@ -142,8 +142,8 @@
               <div class="legend-item"><strong>Extra-safe Consumi Oggi</strong>: energia (kWh) consumata oggi dalle entità extra-safe.</div>
               <div class="legend-item"><strong>Fine Carica</strong>: ora stimata raggiungimento target SOC.</div>
               <div class="legend-item"><strong>SOC Fine (sim)</strong>: SOC stimato a fine produzione solare.</div>
-              <div class="legend-item"><strong>Inizio Produzione Solare</strong>: stimata dallo storico PV (mediana ultimi 7 giorni).</div>
-              <div class="legend-item"><strong>Fine Produzione Solare</strong>: stimata dallo storico PV (mediana ultimi 7 giorni).</div>
+              <div class="legend-item"><strong>Inizio Produzione Solare</strong>: reale (oggi) quando PV supera 40W.</div>
+              <div class="legend-item"><strong>Fine Produzione Solare</strong>: reale (oggi) quando PV scende sotto 40W.</div>
               <div class="legend-item"><strong>Cap. kWh</strong>: capacità batteria usata nei calcoli.</div>
               <div class="legend-item"><strong>Max C/D W</strong>: max carica/scarica reale stimata vs usata.</div>
               <div class="legend-item"><strong>Allineamento PV (reale)</strong>: differenza % tra reale e forecast giornaliero.</div>
@@ -1226,8 +1226,8 @@ const forecastFieldRows = (row) => ([
   { key: 'charge_today', label: 'Fine Carica Oggi (stima)', value: fmtHour(row.charge_complete_hour), desc: 'Ora stimata in cui si raggiunge il target SOC.' },
   { key: 'charge_tom', label: 'Fine Carica Domani (stima)', value: fmtHour(row.charge_complete_hour_tomorrow), desc: 'Ora stimata di fine carica domani.' },
   { key: 'soc_end', label: 'SOC Fine (sim)', value: fmtPct(row.end_soc), desc: 'SOC stimato a fine produzione solare.' },
-  { key: 'solar_start', label: 'Inizio Produzione Solare (stima)', value: fmtHour(row.solar_start_hour), desc: 'Derivata dallo storico PV (mediana ultimi 7 giorni).' },
-  { key: 'solar_end', label: 'Fine Produzione Solare (stima)', value: fmtHour(row.solar_end_hour), desc: 'Derivata dallo storico PV (mediana ultimi 7 giorni).' },
+  { key: 'solar_start', label: 'Inizio Produzione Solare (reale)', value: fmtHour(row.solar_start_hour), desc: 'Prima ora PV > 40W (oggi, dati reali).' },
+  { key: 'solar_end', label: 'Fine Produzione Solare (reale)', value: fmtHour(row.solar_end_hour), desc: 'Ultima ora PV > 40W (oggi, dati reali).' },
   { key: 'cap', label: 'Cap. kWh (stimata)', value: fmtNum(row.capacity_kwh), desc: 'Capacità batteria usata nei calcoli.' },
   { key: 'max_cd_real', label: 'Max C/D W (reale)', value: fmtChargeDischarge(row.max_charge_w_learned, row.max_discharge_w_learned), desc: 'Massimi reali stimati da storico.' },
   { key: 'max_cd_used', label: 'Max C/D W (usato)', value: fmtChargeDischarge(row.max_charge_w, row.max_discharge_w), desc: 'Limiti carica/scarica usati nelle simulazioni.' },

@@ -615,3 +615,5 @@
 - UI: aggiunta pagina "Spiegazioni" con logiche e fonti per ogni voce forecast.
 ## 2026-02-23
 - Forecast hourly: applicato offset +1h per allineare i timestamp del sensore (Europe/Rome).
+## 2026-02-23
+- Finestra solare oggi basata su dati reali (PV > 40W). Domani resta da forecast.

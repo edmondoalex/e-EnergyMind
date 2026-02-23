@@ -71,6 +71,7 @@ PV_ADJUST_INTERVAL_S = 60
 SAFE_SOC_MARGIN_PCT = 5.0
 SOLAR_END_W_THRESHOLD = 100.0
 SOLAR_START_END_PCT = 0.05
+SOLAR_REAL_MIN_W = 40.0
 MQTT_PUBLISH_INTERVAL_S = 5
 FORECAST_CACHE_INTERVAL_S = 10
 
@@ -1235,46 +1236,18 @@ def _nearest_value(series: list[tuple[int, float]], ts: int, max_delta_s: int = 
     return best[1]
 
 
-def _learn_solar_window(conn: sqlite3.Connection, pv_entity_id: str | None, now_ts: int, days: int = 7) -> tuple[int | None, int | None]:
+def _solar_window_today_real(conn: sqlite3.Connection, pv_entity_id: str | None, now_ts: int) -> tuple[int | None, int | None]:
     if not pv_entity_id:
         return None, None
-    start_hours = []
-    end_hours = []
-    for d in range(1, days + 1):
-        day_start = _day_start(now_ts - (d * 86400))
-        day_end = day_start + 86400
-        series = _load_history_power_series(conn, pv_entity_id, day_start, day_end)
-        if not series:
-            continue
-        hourly = [0.0] * 24
-        counts = [0] * 24
-        for ts, v in series:
-            h = time.localtime(ts).tm_hour
-            hourly[h] += v
-            counts[h] += 1
-        for h in range(24):
-            if counts[h] > 0:
-                hourly[h] /= counts[h]
-        max_v = max(hourly)
-        if max_v <= 0:
-            continue
-        thr = max_v * SOLAR_START_END_PCT
-        s = None
-        e = None
-        for h in range(0, 24):
-            if hourly[h] >= thr:
-                s = h
-                break
-        for h in range(23, -1, -1):
-            if hourly[h] >= thr:
-                e = h
-                break
-        if s is not None and e is not None:
-            start_hours.append(s)
-            end_hours.append(e)
-    if not start_hours or not end_hours:
+    day_start = _day_start(now_ts)
+    day_end = day_start + 86400
+    series = _load_history_power_series(conn, pv_entity_id, day_start, day_end)
+    if not series:
         return None, None
-    return int(round(_median(start_hours))), int(round(_median(end_hours)))
+    hours = [time.localtime(ts).tm_hour for ts, v in series if v >= SOLAR_REAL_MIN_W]
+    if not hours:
+        return None, None
+    return min(hours), max(hours)
 
 
 def _collect_rows() -> list[tuple]:
@@ -2807,10 +2780,10 @@ async def forecast():
 
                 solar_start_hour = None
                 solar_end_hour = None
-                learned_start, learned_end = _learn_solar_window(conn, pv_id, now_ts, days=7)
-                if learned_start is not None and learned_end is not None:
-                    solar_start_hour = learned_start
-                    solar_end_hour = learned_end
+                real_start, real_end = _solar_window_today_real(conn, pv_id, now_ts)
+                if real_start is not None and real_end is not None:
+                    solar_start_hour = real_start
+                    solar_end_hour = real_end
                 elif pv_profile:
                     for h in range(0, 24):
                         if (pv_profile[h] * pv_scale) >= SOLAR_END_W_THRESHOLD:
@@ -2858,10 +2831,7 @@ async def forecast():
 
                 solar_start_hour_tom = None
                 solar_end_hour_tom = None
-                if learned_start is not None and learned_end is not None:
-                    solar_start_hour_tom = learned_start
-                    solar_end_hour_tom = learned_end
-                elif pv_profile_tom:
+                if pv_profile_tom:
                     for h in range(0, 24):
                         if (pv_profile_tom[h] * pv_scale_tom) >= SOLAR_END_W_THRESHOLD:
                             solar_start_hour_tom = h

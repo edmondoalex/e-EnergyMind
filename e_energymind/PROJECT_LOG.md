@@ -625,3 +625,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - UI: pagina Spiegazioni con dettaglio calcoli e sorgenti dati.
 ## 2026-02-23
 - Forecast orario: offset +1h sui timestamp per allineamento timezone.
+## 2026-02-23
+- Inizio/fine produzione oggi derivati da PV reale (>40W).
