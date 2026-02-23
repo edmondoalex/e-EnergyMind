@@ -71,7 +71,7 @@ PV_ADJUST_INTERVAL_S = 60
 SAFE_SOC_MARGIN_PCT = 5.0
 SOLAR_END_W_THRESHOLD = 100.0
 SOLAR_START_END_PCT = 0.05
-SOLAR_REAL_MIN_W = 40.0
+SOLAR_REAL_MIN_W = 100.0
 MQTT_PUBLISH_INTERVAL_S = 5
 FORECAST_CACHE_INTERVAL_S = 10
 
@@ -1236,7 +1236,7 @@ def _nearest_value(series: list[tuple[int, float]], ts: int, max_delta_s: int = 
     return best[1]
 
 
-def _solar_window_today_real(conn: sqlite3.Connection, pv_entity_id: str | None, now_ts: int) -> tuple[int | None, int | None]:
+def _solar_window_today_real(conn: sqlite3.Connection, pv_entity_id: str | None, now_ts: int) -> tuple[float | None, float | None]:
     if not pv_entity_id:
         return None, None
     day_start = _day_start(now_ts)
@@ -1244,10 +1244,16 @@ def _solar_window_today_real(conn: sqlite3.Connection, pv_entity_id: str | None,
     series = _load_history_power_series(conn, pv_entity_id, day_start, day_end)
     if not series:
         return None, None
-    hours = [time.localtime(ts).tm_hour for ts, v in series if v >= SOLAR_REAL_MIN_W]
-    if not hours:
+    hits = [ts for ts, v in series if v >= SOLAR_REAL_MIN_W]
+    if not hits:
         return None, None
-    return min(hours), max(hours)
+    min_ts = min(hits)
+    max_ts = max(hits)
+    lt_min = time.localtime(min_ts)
+    lt_max = time.localtime(max_ts)
+    start = lt_min.tm_hour + (lt_min.tm_min / 60.0)
+    end = lt_max.tm_hour + (lt_max.tm_min / 60.0)
+    return start, end
 
 
 def _collect_rows() -> list[tuple]:
@@ -3126,8 +3132,8 @@ async def forecast():
                 "export_today_kwh": export_today,
                 "end_soc": round(end_soc_sim, 1) if end_soc_sim is not None else end_soc,
                 "end_soc_solar": round(end_soc_solar, 1) if end_soc_solar is not None else None,
-                "solar_start_hour": solar_start_hour,
-                "solar_end_hour": solar_end_hour,
+                "solar_start_hour": round(solar_start_hour, 2) if solar_start_hour is not None else None,
+                "solar_end_hour": round(solar_end_hour, 2) if solar_end_hour is not None else None,
                 "solar_start_hour_tom": solar_start_hour_tom,
                 "solar_end_hour_tom": solar_end_hour_tom,
                 "charge_complete_hour": charge_complete_h,

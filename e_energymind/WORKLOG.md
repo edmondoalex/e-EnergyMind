@@ -617,3 +617,5 @@
 - Forecast hourly: applicato offset +1h per allineare i timestamp del sensore (Europe/Rome).
 ## 2026-02-23
 - Finestra solare oggi basata su dati reali (PV > 40W). Domani resta da forecast.
+## 2026-02-23
+- Finestra solare reale: soglia 100W e minuti (HH:MM) per inizio/fine produzione.
