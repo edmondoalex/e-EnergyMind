@@ -998,7 +998,7 @@ def _daily_energy_kwh_multi(conn: sqlite3.Connection, entity_ids: list[str], day
     return round(total, 3)
 
 
-def _hourly_from_forecast_entity(entity_id: str | None, day_start: int) -> list[float] | None:
+def _hourly_from_forecast_entity(entity_id: str | None, day_start: int, tz_offset_s: int = 3600) -> list[float] | None:
     if not entity_id:
         return None
     st = ha.states.get(entity_id)
@@ -1014,7 +1014,7 @@ def _hourly_from_forecast_entity(entity_id: str | None, day_start: int) -> list[
     counts = [0] * 24
     for k, v in data.items():
         try:
-            ts = int(datetime.fromisoformat(str(k)).timestamp())
+            ts = int(datetime.fromisoformat(str(k)).timestamp()) + tz_offset_s
         except Exception:
             continue
         if ts < day_start or ts >= day_start + 86400:

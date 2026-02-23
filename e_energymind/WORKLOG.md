@@ -613,3 +613,5 @@
 - Finestra solare stimata da storico PV (mediana ultimi 7 giorni) per inizio/fine produzione.
 ## 2026-02-22
 - UI: aggiunta pagina "Spiegazioni" con logiche e fonti per ogni voce forecast.
+## 2026-02-23
+- Forecast hourly: applicato offset +1h per allineare i timestamp del sensore (Europe/Rome).

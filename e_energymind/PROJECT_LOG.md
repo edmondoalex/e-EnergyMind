@@ -623,3 +623,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Inizio/fine produzione solare stimati dallo storico PV (mediana 7 giorni).
 ## 2026-02-22
 - UI: pagina Spiegazioni con dettaglio calcoli e sorgenti dati.
+## 2026-02-23
+- Forecast orario: offset +1h sui timestamp per allineamento timezone.
