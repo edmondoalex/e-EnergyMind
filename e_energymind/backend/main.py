@@ -2920,8 +2920,11 @@ async def forecast():
                 if solar_start_hour is not None and charge_complete_h is not None and charge_complete_h < solar_start_hour:
                     charge_complete_h = solar_start_hour
                 end_soc_solar = None
-                if solar_end_hour is not None and 0 <= solar_end_hour < len(hourly):
-                    end_soc_solar = hourly[solar_end_hour].get("soc")
+                if solar_end_hour is not None:
+                    # solar_end_hour can be fractional (minute precision). Clamp to a valid list index.
+                    idx = int(round(solar_end_hour))
+                    idx = max(0, min(len(hourly) - 1, idx))
+                    end_soc_solar = hourly[idx].get("soc")
                 end_soc_sim = end_soc_solar if end_soc_solar is not None else soc_sim
 
             if pv_id and load_id:
