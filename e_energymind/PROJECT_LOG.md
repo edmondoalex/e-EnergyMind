@@ -617,3 +617,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - SOC fine simulato ora riferito alla fine produzione solare.
 ## 2026-02-22
 - UI: aggiunta ora stimata fine produzione solare.
+## 2026-02-22
+- Previsioni: vincolo fine carica alla finestra solare e aggiunto inizio produzione solare (stima).

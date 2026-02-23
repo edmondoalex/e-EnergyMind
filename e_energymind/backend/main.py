@@ -2761,8 +2761,13 @@ async def forecast():
                 if (load_daily_id and not load_daily_is_today) and load_today_kwh is not None and load_sum > 0:
                     load_scale = (load_today_kwh * 1000.0) / load_sum
 
+                solar_start_hour = None
                 solar_end_hour = None
                 if pv_profile:
+                    for h in range(0, 24):
+                        if (pv_profile[h] * pv_scale) >= SOLAR_END_W_THRESHOLD:
+                            solar_start_hour = h
+                            break
                     for h in range(23, -1, -1):
                         if (pv_profile[h] * pv_scale) >= SOLAR_END_W_THRESHOLD:
                             solar_end_hour = h
@@ -2803,6 +2808,18 @@ async def forecast():
                 if (load_daily_id and not load_daily_is_today) and load_tom_kwh is not None and load_sum_tom > 0:
                     load_scale_tom = (load_tom_kwh * 1000.0) / load_sum_tom
 
+                solar_start_hour_tom = None
+                solar_end_hour_tom = None
+                if pv_profile_tom:
+                    for h in range(0, 24):
+                        if (pv_profile_tom[h] * pv_scale_tom) >= SOLAR_END_W_THRESHOLD:
+                            solar_start_hour_tom = h
+                            break
+                    for h in range(23, -1, -1):
+                        if (pv_profile_tom[h] * pv_scale_tom) >= SOLAR_END_W_THRESHOLD:
+                            solar_end_hour_tom = h
+                            break
+
                 max_soc_eff = max_soc if max_soc is not None else 100.0
                 min_soc_eff = min_soc if min_soc is not None else 0.0
 
@@ -2831,7 +2848,10 @@ async def forecast():
                             grid_export_w = max(0.0, surplus_w - batt_charge_w)
                             soc_sim += (batt_charge_w / 1000.0) / cap_kwh * 100.0
                             soc_sim = max(min_soc_eff, min(max_soc_eff, soc_sim))
-                            if charge_complete_h is None and soc_sim >= max_soc_eff - 0.01:
+                            in_solar_window = True
+                            if solar_start_hour is not None and solar_end_hour is not None:
+                                in_solar_window = solar_start_hour <= h <= solar_end_hour
+                            if charge_complete_h is None and in_solar_window and soc_sim >= max_soc_eff - 0.01:
                                 charge_complete_h = h
                         else:
                             deficit_w = -surplus_w
@@ -2870,6 +2890,8 @@ async def forecast():
                 load_now = _state_num(load_id) or 0.0
                 surplus_now = max(0.0, pv_now - load_now)
                 extra_now_w = min(extra_now_w, surplus_now) if extra_now_w is not None else surplus_now
+                if solar_start_hour is not None and charge_complete_h is not None and charge_complete_h < solar_start_hour:
+                    charge_complete_h = solar_start_hour
                 end_soc_solar = None
                 if solar_end_hour is not None and 0 <= solar_end_hour < len(hourly):
                     end_soc_solar = hourly[solar_end_hour].get("soc")
@@ -2897,7 +2919,10 @@ async def forecast():
                             grid_export_w = max(0.0, surplus_w - batt_charge_w)
                             soc_sim_tom += (batt_charge_w / 1000.0) / cap_kwh * 100.0
                             soc_sim_tom = max(min_soc_eff, min(max_soc_eff, soc_sim_tom))
-                            if charge_complete_h_tom is None and soc_sim_tom >= max_soc_eff - 0.01:
+                            in_solar_window_tom = True
+                            if solar_start_hour_tom is not None and solar_end_hour_tom is not None:
+                                in_solar_window_tom = solar_start_hour_tom <= h <= solar_end_hour_tom
+                            if charge_complete_h_tom is None and in_solar_window_tom and soc_sim_tom >= max_soc_eff - 0.01:
                                 charge_complete_h_tom = h
                         else:
                             deficit_w = -surplus_w
@@ -2914,6 +2939,8 @@ async def forecast():
                     import_sim_kwh_tom += grid_import_w / 1000.0
                     charge_sim_kwh_tom += batt_charge_w / 1000.0
                     discharge_sim_kwh_tom += batt_discharge_w / 1000.0
+                if solar_start_hour_tom is not None and charge_complete_h_tom is not None and charge_complete_h_tom < solar_start_hour_tom:
+                    charge_complete_h_tom = solar_start_hour_tom
                     extra_w = grid_export_w
                     hourly_tomorrow.append({
                         "h": h,
@@ -3061,7 +3088,10 @@ async def forecast():
                 "export_today_kwh": export_today,
                 "end_soc": round(end_soc_sim, 1) if end_soc_sim is not None else end_soc,
                 "end_soc_solar": round(end_soc_solar, 1) if end_soc_solar is not None else None,
+                "solar_start_hour": solar_start_hour,
                 "solar_end_hour": solar_end_hour,
+                "solar_start_hour_tom": solar_start_hour_tom,
+                "solar_end_hour_tom": solar_end_hour_tom,
                 "charge_complete_hour": charge_complete_h,
                 "charge_complete_hour_tomorrow": charge_complete_h_tom,
                 "extra_now_w": extra_now_w,
