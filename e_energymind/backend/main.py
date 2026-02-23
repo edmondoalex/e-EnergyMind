@@ -1794,13 +1794,30 @@ async def mqtt_clear():
 async def get_status():
     cfg = load_config()
     now_ts = int(time.time())
-    tz_name = time.tzname[0] if time.tzname else "local"
-    utc_offset_min = int((time.mktime(time.localtime(now_ts)) - time.mktime(time.gmtime(now_ts))) / 60)
+    cfg_tz = None
+    try:
+        cfg_tz = (cfg.get("runtime", {}) or {}).get("timezone")
+    except Exception:
+        cfg_tz = None
+    if isinstance(cfg_tz, str) and cfg_tz.strip():
+        tz_name = cfg_tz.strip()
+        try:
+            dt = datetime.fromtimestamp(now_ts, ZoneInfo(tz_name))
+            server_time = dt.strftime("%Y-%m-%d %H:%M:%S")
+            utc_offset_min = int(dt.utcoffset().total_seconds() / 60) if dt.utcoffset() else 0
+        except Exception:
+            tz_name = time.tzname[0] if time.tzname else "local"
+            server_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now_ts))
+            utc_offset_min = int((time.mktime(time.localtime(now_ts)) - time.mktime(time.gmtime(now_ts))) / 60)
+    else:
+        tz_name = time.tzname[0] if time.tzname else "local"
+        server_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now_ts))
+        utc_offset_min = int((time.mktime(time.localtime(now_ts)) - time.mktime(time.gmtime(now_ts))) / 60)
     return {
         "version": APP_VERSION,
         "runtime_mode": cfg.get("runtime", {}).get("mode", "dry-run"),
         "ha_connected": bool(ha._session) and ha.enabled,
-        "server_time": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now_ts)),
+        "server_time": server_time,
         "server_tz": tz_name,
         "server_utc_offset_min": utc_offset_min,
     }
