@@ -380,6 +380,76 @@
             <div class="help">Esempio: Europe/Rome. Usata dallo scheduler.</div>
           </div>
         </div>
+        <div class="card inner" v-if="bmsHistory?.sites?.length">
+          <div class="row row-between">
+            <strong>Storico BMS</strong>
+            <div class="row bms-toolbar">
+              <label class="muted">Giorni</label>
+              <select v-model="bmsHistoryDays" @change="loadBmsHistory">
+                <option v-for="d in [7,14,21,30]" :key="`bms-d-${d}`" :value="d">{{ d }}</option>
+              </select>
+              <label class="muted">Metrica</label>
+              <select v-model="bmsMetric">
+                <option v-for="m in bmsMetricOptions" :key="`bms-m-${m.key}`" :value="m.key">{{ m.label }}</option>
+              </select>
+            </div>
+          </div>
+          <div v-for="site in bmsHistory.sites" :key="`bms-${site.site}`" class="bms-block">
+            <div class="row"><strong>{{ siteTitle(site.site) }}</strong></div>
+            <div v-if="site.missing?.length" class="muted">
+              Dati mancanti: {{ site.missing.join(', ') }}
+            </div>
+            <div v-else>
+              <div class="bms-chart">
+                <svg v-if="bmsSeries(site).length" class="chart" viewBox="0 0 640 220" preserveAspectRatio="none">
+                  <g class="axis">
+                    <line x1="40" y1="10" x2="40" y2="210" />
+                    <line x1="40" y1="210" x2="630" y2="210" />
+                    <g v-for="(t, i) in chartMeta(bmsSeries(site)).yTicks" :key="`bms-y-${site.site}-${i}`">
+                      <line :x1="40" :y1="t.y" :x2="630" :y2="t.y" class="grid"/>
+                      <text :x="36" :y="t.y + 4" text-anchor="end">{{ t.label }}</text>
+                    </g>
+                    <g v-for="(t, i) in chartMeta(bmsSeries(site)).xTicks" :key="`bms-x-${site.site}-${i}`">
+                      <line :x1="t.x" :y1="210" :x2="t.x" :y2="10" class="grid"/>
+                      <text :x="t.x" :y="218" text-anchor="middle">{{ t.label }}</text>
+                    </g>
+                  </g>
+                  <path :d="chartMeta(bmsSeries(site)).path" fill="none" stroke="var(--accent)" stroke-width="2" />
+                </svg>
+                <div v-else class="muted">Nessun dato storico disponibile.</div>
+                <div v-if="bmsSeries(site).length" class="muted">
+                  Metrica: {{ bmsMetricLabel(bmsMetric) }} · unità {{ bmsMetricUnit(bmsMetric) || '-' }}
+                </div>
+              </div>
+              <div class="bms-table-wrap">
+                <table class="bms-table">
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Max carica (W)</th>
+                      <th>Max scarica (W)</th>
+                      <th>Carica tipica %</th>
+                      <th>Surplus medio (W)</th>
+                      <th>Export medio (W)</th>
+                      <th>Campioni</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="item in site.items" :key="`bms-row-${site.site}-${item.date}`">
+                      <td>{{ item.date }}</td>
+                      <td>{{ item.max_charge_w }}</td>
+                      <td>{{ item.max_discharge_w }}</td>
+                      <td>{{ item.charge_pct ?? 'n/d' }}</td>
+                      <td>{{ item.surplus_avg_w ?? 'n/d' }}</td>
+                      <td>{{ item.export_avg_w ?? 'n/d' }}</td>
+                      <td>{{ item.samples }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div class="form" v-if="sp">
           <h3 class="section">Consumi extra-safe (opzionali)</h3>
@@ -982,6 +1052,9 @@ const insights = ref({ global: null, sites: [] })
 const forecast = ref(null)
 const showLegend = ref(false)
 const mqttAdminStatus = ref('')
+const bmsHistory = ref({ days: 14, sites: [] })
+const bmsHistoryDays = ref(14)
+const bmsMetric = ref('charge_pct')
   const viewCardSlots = computed(() => {
     const cfg = sp.value?.view_card || {}
     const count = Number(cfg.count || 0)
@@ -1890,6 +1963,7 @@ async function refresh(){
       insights.value = await ins.json()
       const fc = await fetch(apiUrl('api/forecast'))
       forecast.value = await fc.json()
+      await loadBmsHistory()
     } catch {}
     await refreshExtraStates()
   }
@@ -2017,6 +2091,29 @@ async function clearMqtt(){
   } catch {
     mqttAdminStatus.value = 'Clear fallito'
   }
+}
+const bmsMetricOptions = [
+  { key: 'charge_pct', label: 'Carica tipica %', unit: '%' },
+  { key: 'max_charge_w', label: 'Max carica W', unit: 'W' },
+  { key: 'max_discharge_w', label: 'Max scarica W', unit: 'W' },
+  { key: 'surplus_avg_w', label: 'Surplus medio W', unit: 'W' },
+  { key: 'export_avg_w', label: 'Export medio W', unit: 'W' },
+]
+const bmsMetricLabel = (key) => (bmsMetricOptions.find(m => m.key === key)?.label || key)
+const bmsMetricUnit = (key) => (bmsMetricOptions.find(m => m.key === key)?.unit || '')
+const bmsSeries = (site) => {
+  const items = site?.items || []
+  return items
+    .filter(i => i[bmsMetric.value] !== null && i[bmsMetric.value] !== undefined)
+    .map(i => ({ ts: i.ts, value: i[bmsMetric.value] }))
+}
+async function loadBmsHistory(){
+  try {
+    const days = Math.max(1, Math.min(60, Number(bmsHistoryDays.value || 14)))
+    const r = await fetch(apiUrl(`api/bms_history?days=${days}`))
+    if (!r.ok) return
+    bmsHistory.value = await r.json()
+  } catch {}
 }
 async function loadAll(){
   await loadConfig()
@@ -2579,6 +2676,43 @@ body{
   text-transform:uppercase;
   letter-spacing:0.04em;
   color:var(--muted);
+}
+.bms-table-wrap{
+  overflow:auto;
+  margin-top:10px;
+}
+.bms-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:12px;
+}
+.bms-table th,
+.bms-table td{
+  padding:8px 10px;
+  border-bottom:1px solid var(--line);
+  text-align:left;
+  white-space:nowrap;
+}
+.bms-table th{
+  color:var(--muted);
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:0.04em;
+}
+.bms-toolbar{
+  gap:8px;
+  align-items:center;
+}
+.bms-toolbar select{
+  background:#0c131b;
+  border:1px solid var(--line);
+  color:var(--text);
+  border-radius:8px;
+  padding:4px 8px;
+  font-size:12px;
+}
+.bms-block{
+  margin-top:12px;
 }
 .entity-list-full{
   max-height:520px;

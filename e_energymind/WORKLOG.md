@@ -601,3 +601,5 @@
 - UI: avviso "Oggi 100% NON raggiungibile con PV attuale" nelle previsioni.
 ## 2026-02-22
 - Oggi: PV/Consumo/Surplus/Export calcolati da dati reali (senza forecast). Domani resta forecast corretto da pv_adjust.
+## 2026-02-22
+- BMS: endpoint /api/bms_history e UI con tabella + grafico storico (max C/D, carica tipica, surplus/export medi).

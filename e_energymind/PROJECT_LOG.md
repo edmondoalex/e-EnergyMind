@@ -611,3 +611,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Extra SAFE: blocco extra aggiuntivo quando il target non è raggiungibile; avviso UI nelle previsioni.
 ## 2026-02-22
 - Forecast: oggi basato su dati reali; domani resta forecast corretto da pv_adjust.
+## 2026-02-22
+- Storico BMS in UI (tabella+grafico) con endpoint dedicato.

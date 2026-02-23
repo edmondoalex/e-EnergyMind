@@ -2316,6 +2316,90 @@ async def insights():
     })
 
 
+@app.get("/api/bms_history")
+async def bms_history(days: int = 14):
+    cfg = load_config()
+    ent_cfg = cfg.get("entities", {}) or {}
+    export_positive = bool(cfg.get("runtime", {}).get("grid_export_positive", True))
+    now_ts = int(time.time())
+    days = max(1, min(60, int(days or 14)))
+
+    def _eid(site: int, key: str) -> str | None:
+        return ent_cfg.get(f"s{site}_{key}")
+
+    sites_out = []
+    with sqlite3.connect(DB_PATH) as conn:
+        for site in (1, 2, 3):
+            if site > int(cfg.get("runtime", {}).get("sites_count", 2)):
+                continue
+            pv_id = _eid(site, "pv_power_total") or _eid(site, "pv_power")
+            load_id = _eid(site, "load_power")
+            grid_id = _eid(site, "grid_power")
+            batt_id = _eid(site, "battery_power")
+            missing = []
+            if not pv_id:
+                missing.append("pv")
+            if not load_id:
+                missing.append("load")
+            if not grid_id:
+                missing.append("grid")
+            if not batt_id:
+                missing.append("battery")
+
+            items = []
+            if not missing:
+                for d in range(days):
+                    day_start = _day_start(now_ts - (d * 86400))
+                    day_end = day_start + 86400
+                    pv_series = _load_history_series_window(conn, pv_id, day_start, day_end)
+                    load_series = _load_history_series_window(conn, load_id, day_start, day_end)
+                    grid_series = _load_history_series_window(conn, grid_id, day_start, day_end)
+                    batt_series = _load_history_series_window(conn, batt_id, day_start, day_end)
+                    if not pv_series or not load_series or not grid_series or not batt_series:
+                        continue
+
+                    max_charge = max((abs(v) for _, v in batt_series if v < 0), default=0.0)
+                    max_discharge = max((abs(v) for _, v in batt_series if v > 0), default=0.0)
+
+                    charge_fracs = []
+                    surplus_vals = []
+                    export_vals = []
+                    for ts, pv in pv_series:
+                        load = _nearest_value(load_series, ts)
+                        grid = _nearest_value(grid_series, ts)
+                        batt = _nearest_value(batt_series, ts)
+                        if load is None or grid is None or batt is None:
+                            continue
+                        surplus = pv - load
+                        if surplus <= 0:
+                            continue
+                        surplus_vals.append(surplus)
+                        if _grid_exporting(grid, export_positive):
+                            export_vals.append(abs(grid))
+                        if batt < 0:
+                            charge_fracs.append(min(1.0, abs(batt) / surplus))
+
+                    charge_pct = round((sum(charge_fracs) / len(charge_fracs)) * 100.0, 1) if charge_fracs else None
+                    surplus_avg = round(sum(surplus_vals) / len(surplus_vals), 1) if surplus_vals else None
+                    export_avg = round(sum(export_vals) / len(export_vals), 1) if export_vals else None
+
+                    items.append({
+                        "date": time.strftime("%Y-%m-%d", time.localtime(day_start)),
+                        "ts": day_start,
+                        "max_charge_w": int(round(max_charge)) if max_charge else 0,
+                        "max_discharge_w": int(round(max_discharge)) if max_discharge else 0,
+                        "charge_pct": charge_pct,
+                        "surplus_avg_w": surplus_avg,
+                        "export_avg_w": export_avg,
+                        "samples": len(pv_series),
+                    })
+
+            items.sort(key=lambda x: x["ts"])
+            sites_out.append({"site": site, "items": items, "missing": missing})
+
+    return JSONResponse({"days": days, "sites": sites_out})
+
+
 @app.get("/api/forecast")
 async def forecast():
     cfg = load_config()
