@@ -980,6 +980,48 @@ def _hourly_profile(conn: sqlite3.Connection, entity_id: str, days: int = 7) -> 
     return out
 
 
+def _hourly_profile_today(conn: sqlite3.Connection, entity_id: str, day_start: int, now_ts: int) -> list[float | None]:
+    series = _load_history_power_series(conn, entity_id, day_start, now_ts)
+    if len(series) < 2:
+        return [None] * 24
+
+    sums_ws = [0.0] * 24
+    sums_s = [0.0] * 24
+    for i in range(1, len(series)):
+        t0, v0 = series[i - 1]
+        t1, v1 = series[i]
+        if t1 <= t0:
+            continue
+        seg_start = t0
+        seg_end = t1
+        while seg_start < seg_end:
+            lt = time.localtime(seg_start)
+            hour_start = int(time.mktime((lt.tm_year, lt.tm_mon, lt.tm_mday, lt.tm_hour, 0, 0, lt.tm_wday, lt.tm_yday, lt.tm_isdst)))
+            hour_end = hour_start + 3600
+            chunk_end = min(seg_end, hour_end)
+            dt = chunk_end - seg_start
+            if dt <= 0:
+                break
+            total_dt = t1 - t0
+            r0 = (seg_start - t0) / total_dt
+            r1 = (chunk_end - t0) / total_dt
+            v_start = v0 + (v1 - v0) * r0
+            v_end = v0 + (v1 - v0) * r1
+            avg_v = (v_start + v_end) / 2.0
+            h = lt.tm_hour
+            sums_ws[h] += avg_v * dt
+            sums_s[h] += dt
+            seg_start = chunk_end
+
+    out: list[float | None] = []
+    for h in range(24):
+        if sums_s[h] == 0:
+            out.append(None)
+        else:
+            out.append(sums_ws[h] / sums_s[h])
+    return out
+
+
 def _hourly_profile_multi(conn: sqlite3.Connection, entity_ids: list[str], days: int = 7) -> list[float]:
     if not entity_ids:
         return [0.0] * 24
@@ -987,6 +1029,19 @@ def _hourly_profile_multi(conn: sqlite3.Connection, entity_ids: list[str], days:
     for eid in entity_ids:
         prof = _hourly_profile(conn, eid, days)
         acc = [a + b for a, b in zip(acc, prof)]
+    return acc
+
+
+def _hourly_profile_today_multi(conn: sqlite3.Connection, entity_ids: list[str], day_start: int, now_ts: int) -> list[float | None]:
+    if not entity_ids:
+        return [None] * 24
+    acc: list[float | None] = [None] * 24
+    for eid in entity_ids:
+        prof = _hourly_profile_today(conn, eid, day_start, now_ts)
+        for i in range(24):
+            if prof[i] is None:
+                continue
+            acc[i] = (acc[i] or 0.0) + float(prof[i])
     return acc
 
 
@@ -2747,13 +2802,17 @@ async def forecast():
             schedule_info = _extra_safe_schedule_info(cfg, now_ts)
             schedule_pct = float(schedule_info.get("percent") or 0.0)
             if pv_id and load_id:
-                pv_profile = _hourly_from_forecast_entity(pv_fc_today_hourly_id, today_start) or _hourly_profile(conn, pv_id, 7)
-                load_profile = _hourly_profile(conn, load_id, 7)
+                pv_profile_fc = _hourly_from_forecast_entity(pv_fc_today_hourly_id, today_start) or _hourly_profile(conn, pv_id, 7)
+                load_profile_fc = _hourly_profile(conn, load_id, 7)
+                pv_profile_today = _hourly_profile_today(conn, pv_id, today_start, now_ts)
+                load_profile_today = _hourly_profile_today(conn, load_id, today_start, now_ts)
+                safe_profile_fc = None
+                safe_profile_today = None
                 if safe_entities:
-                    safe_profile = _hourly_profile_multi(conn, safe_entities, 7)
-                    load_profile = [max(0.0, a - b) for a, b in zip(load_profile, safe_profile)]
-                pv_sum = sum(pv_profile)
-                load_sum = sum(load_profile)
+                    safe_profile_fc = _hourly_profile_multi(conn, safe_entities, 7)
+                    safe_profile_today = _hourly_profile_today_multi(conn, safe_entities, today_start, now_ts)
+                pv_sum = sum(pv_profile_fc)
+                load_sum = sum(load_profile_fc)
                 pv_scale = 1.0
                 load_scale = 1.0
 
@@ -2765,9 +2824,9 @@ async def forecast():
                     frac = (now_lt.tm_min + (now_lt.tm_sec / 60.0)) / 60.0
                     forecast_wh = 0.0
                     for h in range(0, min(24, h_now)):
-                        forecast_wh += pv_profile[h] * pv_scale
+                        forecast_wh += pv_profile_fc[h]
                     if 0 <= h_now < 24:
-                        forecast_wh += pv_profile[h_now] * pv_scale * max(0.0, min(1.0, frac))
+                        forecast_wh += pv_profile_fc[h_now] * max(0.0, min(1.0, frac))
                     intraday_forecast_kwh = round(forecast_wh / 1000.0, 3)
                     if intraday_forecast_kwh and intraday_forecast_kwh > 0:
                         intraday_error_pct = round((intraday_actual_kwh - intraday_forecast_kwh) / intraday_forecast_kwh * 100.0, 1)
@@ -2801,8 +2860,39 @@ async def forecast():
                 load_today_kwh = load_today_real_kwh if load_today_real_kwh is not None else (load_fc_today if load_fc_today is not None else load_base)
                 load_tom_kwh = load_today_kwh
 
-                if pv_today_kwh is not None and pv_sum > 0:
-                    pv_scale = (pv_today_kwh * 1000.0) / pv_sum
+                # Scale forecast profile to daily forecast (today), then merge in real hours.
+                pv_scale_fc = 1.0
+                if pv_fc_today is not None and pv_sum > 0:
+                    pv_scale_fc = (pv_fc_today * pv_factor * 1000.0) / pv_sum
+                elif pv_base is not None and pv_sum > 0:
+                    pv_scale_fc = (pv_base * 1000.0) / pv_sum
+                pv_profile_fc = [v * pv_scale_fc for v in pv_profile_fc]
+
+                # Merge real hours for today (up to current hour) with scaled forecast for remaining hours.
+                now_lt = time.localtime(now_ts)
+                h_now = now_lt.tm_hour
+                pv_profile = []
+                load_profile = []
+                for h in range(24):
+                    pv_h = pv_profile_fc[h]
+                    if pv_profile_today[h] is not None and h <= h_now:
+                        pv_h = pv_profile_today[h]
+                    pv_profile.append(pv_h)
+                    load_h = load_profile_fc[h]
+                    if load_profile_today[h] is not None and h <= h_now:
+                        load_h = load_profile_today[h]
+                    if safe_entities and safe_profile_fc is not None:
+                        safe_h = None
+                        if safe_profile_today is not None and safe_profile_today[h] is not None and h <= h_now:
+                            safe_h = safe_profile_today[h]
+                        else:
+                            safe_h = safe_profile_fc[h]
+                        load_h = max(0.0, load_h - (safe_h or 0.0))
+                    load_profile.append(load_h)
+
+                pv_sum = sum(pv_profile)
+                load_sum = sum(load_profile)
+                pv_scale = 1.0
                 # Only scale the load profile if the user explicitly provides a daily load target.
                 if (load_daily_id and not load_daily_is_today) and load_today_kwh is not None and load_sum > 0:
                     load_scale = (load_today_kwh * 1000.0) / load_sum
