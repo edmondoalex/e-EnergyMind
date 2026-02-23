@@ -621,3 +621,5 @@ Data export: 2026-02-08 (Europe/Rome)
 - Previsioni: vincolo fine carica alla finestra solare e aggiunto inizio produzione solare (stima).
 ## 2026-02-22
 - Inizio/fine produzione solare stimati dallo storico PV (mediana 7 giorni).
+## 2026-02-22
+- UI: pagina Spiegazioni con dettaglio calcoli e sorgenti dati.

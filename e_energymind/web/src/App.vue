@@ -23,6 +23,7 @@
             <button :class="{active: tab==='automation_settings'}" @click="tab='automation_settings'">Automation setting</button>
             <button :class="{active: tab==='automation_interface'}" @click="tab='automation_interface'">Automazioni interface</button>
             <button :class="{active: tab==='view_card'}" @click="tab='view_card'">View-Card</button>
+            <button :class="{active: tab==='explanations'}" @click="tab='explanations'">Spiegazioni</button>
           </nav>
         </div>
       </div>
@@ -995,6 +996,24 @@
           </div>
         </div>
       </section>
+      <section v-else-if="tab==='explanations'" class="card">
+        <h2>Spiegazioni</h2>
+        <p class="muted">Per ogni voce trovi il valore attuale e la logica di calcolo usata.</p>
+        <div v-if="!forecast?.sites?.length" class="muted">In attesa dati previsioni...</div>
+        <div v-else class="explain-list">
+          <div class="card inner" v-for="row in forecast.sites" :key="`ex-${row.site}`">
+            <div class="row"><strong>{{ row.name || siteTitle(row.site) }}</strong></div>
+            <div class="explain-table">
+              <div v-for="item in explainRows(row)" :key="item.key || item.label" class="explain-row" :class="item.type">
+                <div class="explain-label">{{ item.label }}</div>
+                <div class="explain-value" v-if="item.type==='item'">{{ item.value }}</div>
+                <div class="explain-source" v-if="item.type==='item'">{{ item.source }}</div>
+                <div class="explain-formula" v-if="item.type==='item'">{{ item.formula }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
       <section v-else class="card">
         <h2>Pagina</h2>
         <p class="muted">Seleziona una tab.</p>
@@ -1218,6 +1237,49 @@ const forecastFieldRows = (row) => ([
   { key: 'intra_vs_fc', label: 'PV Intraday Reale vs Forecast (kWh)', value: fmtKwhPair(row.factors?.intraday_actual_kwh, row.factors?.intraday_forecast_kwh), desc: 'Confronto kWh reale/forecast fino ad ora.' },
   { key: 'pv_factor', label: 'Fattore PV (stimato)', value: fmtFactor(row.factors?.pv_adjust), desc: 'Moltiplicatore applicato alle previsioni.' },
   { key: 'pv_adjust', label: 'PV Adjust', value: `${fmtFactor(row.factors?.pv_adjust)} · ${fmtPctSigned(pvAdjustPct(row.factors?.pv_adjust))}`, desc: 'Correzione PV in fattore e %.' },
+])
+const explainRows = (row) => ([
+  { type: 'section', label: 'Reale (oggi)' },
+  { type: 'item', label: 'PV Oggi (reale)', value: fmtKwh(row.pv_today_kwh), source: 'Storico PV di oggi', formula: 'Somma kWh FV misurati finora.' },
+  { type: 'item', label: 'Consumo Oggi (reale)', value: fmtKwh(row.load_today_kwh), source: 'Storico Load di oggi', formula: 'Somma kWh consumo finora, esclusi extra-safe.' },
+  { type: 'item', label: 'Consumo Extra-safe ora', value: fmtW(row.extra_safe_load_now_w), source: 'Entità extra-safe (W)', formula: 'Somma istantanea dei carichi extra-safe.' },
+  { type: 'item', label: 'Extra-safe Consumi Oggi', value: fmtKwh(row.extra_safe_load_today_kwh), source: 'Storico extra-safe', formula: 'Energia extra-safe consumata oggi.' },
+  { type: 'item', label: 'Surplus Oggi (reale)', value: fmtKwh(row.surplus_today_kwh), source: 'PV − Consumo', formula: 'PV_reale − Consumo_reale.' },
+  { type: 'item', label: 'Export Oggi (reale)', value: fmtKwh(row.export_today_kwh), source: 'Surplus e headroom', formula: 'max(0, surplus − carica_oggi).' },
+
+  { type: 'section', label: 'Extra SAFE (ora)' },
+  { type: 'item', label: 'Carica necessaria ora (stima)', value: fmtW(row.required_charge_w), source: 'Target SOC + ore residue', formula: 'kWh mancanti / ore fino a fine produzione.' },
+  { type: 'item', label: 'Extra SAFE aggiuntivo ora', value: fmtW(row.extra_safe_now_w ?? row.extra_now_w), source: 'Surplus reale + regole SAFE', formula: 'Surplus_now − Carica_necessaria, con scheduler e blocchi.' },
+  { type: 'item', label: 'Extra SAFE totale ora', value: fmtW(extraSafeTotalNow(row)), source: 'Aggiuntivo + consumi extra-safe', formula: 'Extra_aggiuntivo + Consumo_extra_safe_ora.' },
+  { type: 'item', label: 'Extra ora (sim)', value: fmtW(row.extra_now_w), source: 'Simulazione oraria', formula: 'Export simulato nell’ora corrente.' },
+
+  { type: 'section', label: 'Stime (domani / simulazioni)' },
+  { type: 'item', label: 'PV Domani (stima)', value: fmtKwh(row.pv_tomorrow_kwh), source: 'Forecast PV + pv_adjust', formula: 'Forecast × fattore PV.' },
+  { type: 'item', label: 'Consumo Domani (stima)', value: fmtKwh(row.load_tomorrow_kwh), source: 'Profilo storico/target', formula: 'Profilo orario scalato.' },
+  { type: 'item', label: 'Export (sim)', value: fmtKwh(row.export_sim_today_kwh), source: 'Simulazione oraria', formula: 'Export simulato con limiti C/D.' },
+  { type: 'item', label: 'Extra (safe) Oggi (stima)', value: fmtKwh(row.extra_safe_today_kwh), source: 'Simulazione SAFE', formula: 'Extra sicuro oggi senza perdere target.' },
+  { type: 'item', label: 'Extra (sim) Domani', value: fmtKwh(row.export_sim_tomorrow_kwh), source: 'Simulazione oraria domani', formula: 'Export simulato domani.' },
+  { type: 'item', label: 'Fine Carica Oggi (stima)', value: fmtHour(row.charge_complete_hour), source: 'Simulazione oraria', formula: 'Prima ora in finestra solare con SOC >= target.' },
+  { type: 'item', label: 'Fine Carica Domani (stima)', value: fmtHour(row.charge_complete_hour_tomorrow), source: 'Simulazione oraria domani', formula: 'Prima ora in finestra solare con SOC >= target.' },
+  { type: 'item', label: 'SOC Fine (sim)', value: fmtPct(row.end_soc), source: 'Simulazione oraria', formula: 'SOC a fine produzione solare.' },
+
+  { type: 'section', label: 'Finestra solare' },
+  { type: 'item', label: 'Inizio Produzione Solare', value: fmtHour(row.solar_start_hour), source: 'Storico PV (7 giorni)', formula: 'Mediana delle ore di inizio produzione.' },
+  { type: 'item', label: 'Fine Produzione Solare', value: fmtHour(row.solar_end_hour), source: 'Storico PV (7 giorni)', formula: 'Mediana delle ore di fine produzione.' },
+
+  { type: 'section', label: 'BMS e limiti' },
+  { type: 'item', label: 'Cap. kWh (stimata)', value: fmtNum(row.capacity_kwh), source: 'Storico SOC/energia', formula: 'Capacità stimata dai dati storici.' },
+  { type: 'item', label: 'Max C/D W (reale)', value: fmtChargeDischarge(row.max_charge_w_learned, row.max_discharge_w_learned), source: 'Storico batteria', formula: 'Percentile 95% della potenza.' },
+  { type: 'item', label: 'Max C/D W (usato)', value: fmtChargeDischarge(row.max_charge_w, row.max_discharge_w), source: 'Config o auto', formula: 'Limiti applicati alle simulazioni.' },
+  { type: 'item', label: 'Target SOC', value: fmtPct(row.target_soc), source: 'Regola target', formula: 'Target fissato a 100% (o max SOC).' },
+
+  { type: 'section', label: 'Allineamento PV' },
+  { type: 'item', label: 'Allineamento PV (reale)', value: fmtPctSigned(row.factors?.error_pct), source: 'Reale vs forecast giornaliero', formula: '(Reale − Forecast) / Forecast.' },
+  { type: 'item', label: 'PV Reale vs Forecast (kWh)', value: fmtKwhPair(row.factors?.actual_last_kwh, row.factors?.forecast_last_kwh), source: 'Confronto kWh', formula: 'Reale / Forecast.' },
+  { type: 'item', label: 'Allineamento PV (intraday)', value: fmtPctSigned(row.factors?.intraday_error_pct), source: 'Reale vs forecast finora', formula: '(Reale finora − Forecast finora) / Forecast.' },
+  { type: 'item', label: 'PV Intraday Reale vs Forecast (kWh)', value: fmtKwhPair(row.factors?.intraday_actual_kwh, row.factors?.intraday_forecast_kwh), source: 'Confronto kWh finora', formula: 'Reale finora / Forecast finora.' },
+  { type: 'item', label: 'Fattore PV (stimato)', value: fmtFactor(row.factors?.pv_adjust), source: 'Allineamento automatico', formula: 'Moltiplicatore per forecast.' },
+  { type: 'item', label: 'PV Adjust', value: `${fmtFactor(row.factors?.pv_adjust)} · ${fmtPctSigned(pvAdjustPct(row.factors?.pv_adjust))}`, source: 'Fattore PV', formula: 'Fattore e % di correzione.' },
 ])
 const ensureExtraSafeSchedule = () => {
   if (!sp.value?.automation) return
@@ -2724,6 +2786,50 @@ body{
 .bms-block{
   margin-top:12px;
 }
+.explain-list{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.explain-table{
+  margin-top:8px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.explain-row{
+  display:grid;
+  grid-template-columns: 1.2fr 0.6fr 0.9fr 1.3fr;
+  gap:10px;
+  padding:8px 10px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#0f1620;
+  font-size:12px;
+}
+.explain-row.section{
+  grid-template-columns:1fr;
+  background:#0b121a;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+  color:var(--muted);
+}
+.explain-label{
+  color:#e6eff7;
+  font-weight:600;
+}
+.explain-value{
+  text-align:right;
+  font-weight:700;
+  color:#63e6be;
+}
+.explain-source{
+  color:#9fb1c6;
+}
+.explain-formula{
+  color:#b9c6d6;
+}
 .entity-list-full{
   max-height:520px;
   overflow:auto;
@@ -3166,6 +3272,8 @@ body{
   .f-val{ text-align:left; }
   .forecast-summary{ flex-direction:column; align-items:flex-start; }
   .forecast-summary-meta{ white-space:normal; }
+  .explain-row{ grid-template-columns:1fr; }
+  .explain-value{ text-align:left; }
 }
 @media (max-width: 900px){
   .top-inner{ grid-template-columns:1fr; justify-items:start; }
