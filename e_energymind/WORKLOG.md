@@ -609,3 +609,5 @@
 - UI: mostrata Fine Produzione Solare stimata nelle previsioni.
 ## 2026-02-22
 - Previsioni: aggiunti inizio produzione solare e fine carica vincolata alla finestra solare; fix override extra quando SOC quasi target.
+## 2026-02-22
+- Finestra solare stimata da storico PV (mediana ultimi 7 giorni) per inizio/fine produzione.

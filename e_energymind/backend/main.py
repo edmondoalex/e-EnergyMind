@@ -70,6 +70,7 @@ LEARN_UPDATE_S = 7200
 PV_ADJUST_INTERVAL_S = 60
 SAFE_SOC_MARGIN_PCT = 5.0
 SOLAR_END_W_THRESHOLD = 100.0
+SOLAR_START_END_PCT = 0.05
 MQTT_PUBLISH_INTERVAL_S = 5
 FORECAST_CACHE_INTERVAL_S = 10
 
@@ -1232,6 +1233,48 @@ def _nearest_value(series: list[tuple[int, float]], ts: int, max_delta_s: int = 
     if abs(best[0] - ts) > max_delta_s:
         return None
     return best[1]
+
+
+def _learn_solar_window(conn: sqlite3.Connection, pv_entity_id: str | None, now_ts: int, days: int = 7) -> tuple[int | None, int | None]:
+    if not pv_entity_id:
+        return None, None
+    start_hours = []
+    end_hours = []
+    for d in range(1, days + 1):
+        day_start = _day_start(now_ts - (d * 86400))
+        day_end = day_start + 86400
+        series = _load_history_power_series(conn, pv_entity_id, day_start, day_end)
+        if not series:
+            continue
+        hourly = [0.0] * 24
+        counts = [0] * 24
+        for ts, v in series:
+            h = time.localtime(ts).tm_hour
+            hourly[h] += v
+            counts[h] += 1
+        for h in range(24):
+            if counts[h] > 0:
+                hourly[h] /= counts[h]
+        max_v = max(hourly)
+        if max_v <= 0:
+            continue
+        thr = max_v * SOLAR_START_END_PCT
+        s = None
+        e = None
+        for h in range(0, 24):
+            if hourly[h] >= thr:
+                s = h
+                break
+        for h in range(23, -1, -1):
+            if hourly[h] >= thr:
+                e = h
+                break
+        if s is not None and e is not None:
+            start_hours.append(s)
+            end_hours.append(e)
+    if not start_hours or not end_hours:
+        return None, None
+    return int(round(_median(start_hours))), int(round(_median(end_hours)))
 
 
 def _collect_rows() -> list[tuple]:
@@ -2698,6 +2741,7 @@ async def forecast():
             intraday_forecast_kwh = None
             intraday_actual_kwh = None
             intraday_error_pct = None
+            required_charge_w = None
             schedule_info = _extra_safe_schedule_info(cfg, now_ts)
             schedule_pct = float(schedule_info.get("percent") or 0.0)
             if pv_id and load_id:
@@ -2763,7 +2807,11 @@ async def forecast():
 
                 solar_start_hour = None
                 solar_end_hour = None
-                if pv_profile:
+                learned_start, learned_end = _learn_solar_window(conn, pv_id, now_ts, days=7)
+                if learned_start is not None and learned_end is not None:
+                    solar_start_hour = learned_start
+                    solar_end_hour = learned_end
+                elif pv_profile:
                     for h in range(0, 24):
                         if (pv_profile[h] * pv_scale) >= SOLAR_END_W_THRESHOLD:
                             solar_start_hour = h
@@ -2810,7 +2858,10 @@ async def forecast():
 
                 solar_start_hour_tom = None
                 solar_end_hour_tom = None
-                if pv_profile_tom:
+                if learned_start is not None and learned_end is not None:
+                    solar_start_hour_tom = learned_start
+                    solar_end_hour_tom = learned_end
+                elif pv_profile_tom:
                     for h in range(0, 24):
                         if (pv_profile_tom[h] * pv_scale_tom) >= SOLAR_END_W_THRESHOLD:
                             solar_start_hour_tom = h
@@ -3009,7 +3060,24 @@ async def forecast():
                 if extra_safe_now_w is None:
                     extra_safe_now_w = surplus_now
                 else:
-                    extra_safe_now_w = (0.8 * surplus_now) + (0.2 * extra_safe_now_w)
+                    extra_safe_now_w = (0.95 * surplus_now) + (0.05 * extra_safe_now_w)
+
+                # Ensure enough power goes to battery to reach target by solar end
+                required_charge_w = None
+                if (
+                    solar_end_hour is not None
+                    and target_soc is not None
+                    and soc_now is not None
+                    and cap_kwh
+                ):
+                    now_lt = time.localtime(now_ts)
+                    hour_now = now_lt.tm_hour
+                    frac = (now_lt.tm_min + (now_lt.tm_sec / 60.0)) / 60.0
+                    hours_left = (solar_end_hour + 1) - (hour_now + frac)
+                    if hours_left > 0:
+                        remaining_kwh = cap_kwh * max(0.0, (target_soc - soc_now) / 100.0)
+                        required_charge_w = (remaining_kwh * 1000.0) / hours_left
+                        extra_safe_now_w = max(0.0, min(extra_safe_now_w, surplus_now - required_charge_w))
                 if extra_safe_now_w is not None and schedule_pct:
                     extra_safe_now_w = max(0.0, extra_safe_now_w * (1.0 + (schedule_pct / 100.0)))
 
@@ -3108,6 +3176,7 @@ async def forecast():
                 "import_sim_tomorrow_kwh": round(import_sim_kwh_tom, 2),
                 "charge_sim_tomorrow_kwh": round(charge_sim_kwh_tom, 2),
                 "discharge_sim_tomorrow_kwh": round(discharge_sim_kwh_tom, 2),
+                "required_charge_w": round(required_charge_w, 1) if required_charge_w is not None else None,
                 "capacity_kwh": cap_kwh,
                 "max_charge_w": max_charge_w,
                 "max_discharge_w": max_discharge_w,
