@@ -975,13 +975,13 @@ def _hourly_profile(conn: sqlite3.Connection, entity_id: str, days: int = 7) -> 
         seg_start = t0
         seg_end = t1
         while seg_start < seg_end:
-            dt = _local_dt(seg_start, tz_name)
-            hour_start_dt = dt.replace(minute=0, second=0, microsecond=0)
+            dt_local = _local_dt(seg_start, tz_name)
+            hour_start_dt = dt_local.replace(minute=0, second=0, microsecond=0)
             hour_start = int(hour_start_dt.timestamp())
             hour_end = hour_start + 3600
             chunk_end = min(seg_end, hour_end)
-            dt = chunk_end - seg_start
-            if dt <= 0:
+            dt_seconds = chunk_end - seg_start
+            if dt_seconds <= 0:
                 break
             # linear interpolation for v at seg_start and chunk_end
             total_dt = t1 - t0
@@ -990,9 +990,9 @@ def _hourly_profile(conn: sqlite3.Connection, entity_id: str, days: int = 7) -> 
             v_start = v0 + (v1 - v0) * r0
             v_end = v0 + (v1 - v0) * r1
             avg_v = (v_start + v_end) / 2.0
-            h = dt.hour
-            sums_ws[h] += avg_v * dt
-            sums_s[h] += dt
+            h = dt_local.hour
+            sums_ws[h] += avg_v * dt_seconds
+            sums_s[h] += dt_seconds
             seg_start = chunk_end
 
     out = []
@@ -1020,13 +1020,13 @@ def _hourly_profile_today(conn: sqlite3.Connection, entity_id: str, day_start: i
         seg_start = t0
         seg_end = t1
         while seg_start < seg_end:
-            dt = _local_dt(seg_start, tz_name)
-            hour_start_dt = dt.replace(minute=0, second=0, microsecond=0)
+            dt_local = _local_dt(seg_start, tz_name)
+            hour_start_dt = dt_local.replace(minute=0, second=0, microsecond=0)
             hour_start = int(hour_start_dt.timestamp())
             hour_end = hour_start + 3600
             chunk_end = min(seg_end, hour_end)
-            dt = chunk_end - seg_start
-            if dt <= 0:
+            dt_seconds = chunk_end - seg_start
+            if dt_seconds <= 0:
                 break
             total_dt = t1 - t0
             r0 = (seg_start - t0) / total_dt
@@ -1034,9 +1034,9 @@ def _hourly_profile_today(conn: sqlite3.Connection, entity_id: str, day_start: i
             v_start = v0 + (v1 - v0) * r0
             v_end = v0 + (v1 - v0) * r1
             avg_v = (v_start + v_end) / 2.0
-            h = dt.hour
-            sums_ws[h] += avg_v * dt
-            sums_s[h] += dt
+            h = dt_local.hour
+            sums_ws[h] += avg_v * dt_seconds
+            sums_s[h] += dt_seconds
             seg_start = chunk_end
 
     out: list[float | None] = []
