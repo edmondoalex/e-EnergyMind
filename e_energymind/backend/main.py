@@ -3299,6 +3299,9 @@ async def forecast():
                     if hours_left > 0:
                         remaining_kwh = cap_kwh * max(0.0, (target_soc - soc_now) / 100.0)
                         required_charge_w = (remaining_kwh * 1000.0) / hours_left
+                        # Respect BMS max charge limit
+                        if max_charge_eff is not None:
+                            required_charge_w = min(required_charge_w, max_charge_eff)
                         extra_safe_now_w = max(0.0, min(extra_safe_now_w, surplus_now - required_charge_w))
                 if extra_safe_now_w is not None and schedule_pct:
                     extra_safe_now_w = max(0.0, extra_safe_now_w * (1.0 + (schedule_pct / 100.0)))
