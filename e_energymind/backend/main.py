@@ -54,6 +54,7 @@ last_forecast_cache: dict[int, dict[str, Any]] = {}
 last_forecast_ts: float = 0.0
 last_forecast_api_cache: dict[str, Any] | None = None
 last_forecast_api_ts: float = 0.0
+last_forecast_api_key: str | None = None
 last_status_cache: dict[str, Any] | None = None
 last_status_ts: float = 0.0
 action_log: list[str] = []
@@ -79,9 +80,9 @@ SOLAR_REAL_MIN_W = 100.0
 SOLAR_REAL_MIN_ON_MIN = 5
 SOLAR_REAL_MIN_OFF_MIN = 10
 MQTT_PUBLISH_INTERVAL_S = 5
-FORECAST_CACHE_INTERVAL_S = 10
-FORECAST_API_CACHE_S = 10
-STATUS_CACHE_S = 5
+FORECAST_CACHE_INTERVAL_S = 30
+FORECAST_API_CACHE_S = 30
+STATUS_CACHE_S = 10
 
 
 def _parse_hhmm(value: str) -> int | None:
@@ -2671,10 +2672,8 @@ async def bms_history(days: int = 14):
 
 @app.get("/api/forecast")
 async def forecast():
-    global last_forecast_api_cache, last_forecast_api_ts
+    global last_forecast_api_cache, last_forecast_api_ts, last_forecast_api_key
     now_ts = int(time.time())
-    if last_forecast_api_cache is not None and (now_ts - last_forecast_api_ts) < FORECAST_API_CACHE_S:
-        return JSONResponse(last_forecast_api_cache)
     cfg = load_config()
     ent_cfg = cfg.get("entities", {}) or {}
     forecast_cfg = cfg.get("forecast", {}) or {}
@@ -2692,6 +2691,41 @@ async def forecast():
 
     today_start = _day_start(now_ts)
     results = []
+
+    # Build a lightweight key from current entity states to avoid heavy recompute
+    try:
+        key_parts: list[str] = []
+        sites_count = int(cfg.get("runtime", {}).get("sites_count", 2))
+        for site in (1, 2, 3):
+            if site > sites_count:
+                continue
+            pv_id_k = ent_cfg.get(f"s{site}_pv_power_total") or ent_cfg.get(f"s{site}_pv_power")
+            load_id_k = ent_cfg.get(f"s{site}_load_power")
+            batt_id_k = ent_cfg.get(f"s{site}_battery_power")
+            soc_id_k = ent_cfg.get(f"s{site}_battery_soc")
+            grid_id_k = ent_cfg.get(f"s{site}_grid_power")
+            pv_fc_today_k = (forecast_cfg.get(f"s{site}", {}) or {}).get("pv_forecast_today")
+            pv_fc_tom_k = (forecast_cfg.get(f"s{site}", {}) or {}).get("pv_forecast_tomorrow")
+            load_daily_k = (forecast_cfg.get(f"s{site}", {}) or {}).get("load_daily")
+            for eid in (pv_id_k, load_id_k, batt_id_k, soc_id_k, grid_id_k, pv_fc_today_k, pv_fc_tom_k, load_daily_k):
+                if not eid:
+                    continue
+                st = ha.states.get(eid)
+                raw = st.get("state") if st else None
+                key_parts.append(f"{eid}:{raw}")
+        # include minute bucket so it naturally refreshes
+        key_parts.append(f"t:{now_ts // 60}")
+        forecast_key = "|".join(key_parts)
+    except Exception:
+        forecast_key = None
+
+    if (
+        last_forecast_api_cache is not None
+        and forecast_key is not None
+        and last_forecast_api_key == forecast_key
+        and (now_ts - last_forecast_api_ts) < FORECAST_API_CACHE_S
+    ):
+        return JSONResponse(last_forecast_api_cache)
 
     with sqlite3.connect(DB_PATH) as conn:
         for site in (1, 2, 3):
@@ -3606,6 +3640,7 @@ async def forecast():
     }
     last_forecast_api_cache = payload
     last_forecast_api_ts = now_ts
+    last_forecast_api_key = forecast_key
     return JSONResponse(payload)
 
 
