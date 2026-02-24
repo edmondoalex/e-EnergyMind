@@ -1248,6 +1248,9 @@ const forecastFieldRows = (row) => ([
 const explainRows = (row) => ([
   { type: 'section', label: 'Reale (oggi)' },
   { type: 'item', label: 'PV Oggi (reale)', value: fmtKwh(row.pv_today_kwh), source: 'Storico PV di oggi', formula: 'Somma kWh FV misurati finora.' },
+  { type: 'item', label: 'PV Atteso Oggi (ML)', value: fmtKwh(row.pv_expected_today_kwh), source: 'Reale + storico + forecast', formula: 'PV_reale_finora + mix(storico restante, forecast restante).' },
+  { type: 'item', label: 'PV Restante da Forecast', value: fmtKwh(row.pv_remaining_fc_kwh), source: 'Forecast corretto', formula: 'Forecast oggi − PV reale finora (min 0).' },
+  { type: 'item', label: 'PV Restante da Storico', value: fmtKwh(row.pv_remaining_hist_kwh), source: 'Profilo storico (mediana)', formula: 'Somma ore restanti dal profilo storico.' },
   { type: 'item', label: 'Consumo Oggi (reale)', value: fmtKwh(row.load_today_kwh), source: 'Storico Load di oggi', formula: 'Somma kWh consumo finora, esclusi extra-safe.' },
   { type: 'item', label: 'Consumo Extra-safe ora', value: fmtW(row.extra_safe_load_now_w), source: 'Entità extra-safe (W)', formula: 'Somma istantanea dei carichi extra-safe.' },
   { type: 'item', label: 'Extra-safe Consumi Oggi', value: fmtKwh(row.extra_safe_load_today_kwh), source: 'Storico extra-safe', formula: 'Energia extra-safe consumata oggi.' },
@@ -1266,13 +1269,17 @@ const explainRows = (row) => ([
   { type: 'item', label: 'Export (sim)', value: fmtKwh(row.export_sim_today_kwh), source: 'Simulazione oraria', formula: 'Export simulato con limiti C/D.' },
   { type: 'item', label: 'Extra (safe) Oggi (stima)', value: fmtKwh(row.extra_safe_today_kwh), source: 'Simulazione SAFE', formula: 'Extra sicuro oggi senza perdere target.' },
   { type: 'item', label: 'Extra (sim) Domani', value: fmtKwh(row.export_sim_tomorrow_kwh), source: 'Simulazione oraria domani', formula: 'Export simulato domani.' },
-  { type: 'item', label: 'Fine Carica Oggi (stima)', value: fmtHour(row.charge_complete_hour), source: 'Simulazione oraria', formula: 'Prima ora in finestra solare con SOC >= target.' },
+  { type: 'item', label: 'Fine Carica Oggi (stima)', value: fmtHour(row.charge_complete_hour), source: 'Simulazione oraria + auto-fix', formula: 'Prima ora in finestra solare con SOC >= target, corretta se qualità bassa.' },
   { type: 'item', label: 'Fine Carica Domani (stima)', value: fmtHour(row.charge_complete_hour_tomorrow), source: 'Simulazione oraria domani', formula: 'Prima ora in finestra solare con SOC >= target.' },
   { type: 'item', label: 'SOC Fine (sim)', value: fmtPct(row.end_soc), source: 'Simulazione oraria', formula: 'SOC a fine produzione solare.' },
 
   { type: 'section', label: 'Finestra solare' },
-  { type: 'item', label: 'Inizio Produzione Solare', value: fmtHour(row.solar_start_hour), source: 'Storico PV (7 giorni)', formula: 'Mediana delle ore di inizio produzione.' },
-  { type: 'item', label: 'Fine Produzione Solare', value: fmtHour(row.solar_end_hour), source: 'Storico PV (7 giorni)', formula: 'Mediana delle ore di fine produzione.' },
+  { type: 'item', label: 'Inizio Produzione Solare', value: fmtHour(row.solar_start_hour), source: 'Storico PV di oggi', formula: 'Prima lettura PV > soglia (oggi, dati reali).' },
+  { type: 'item', label: 'Fine Produzione Solare', value: fmtHour(row.solar_end_hour), source: 'Storico PV di oggi + PV live', formula: 'Ultima lettura PV > soglia; se PV live > soglia, aggiornato a ora.' },
+
+  { type: 'section', label: 'Qualità dati' },
+  { type: 'item', label: 'Affidabilità dati', value: `${row.quality ?? 'n/d'}%`, source: 'Controlli automatici', formula: '100 − penalità per incongruenze.' },
+  { type: 'item', label: 'Incongruenze rilevate', value: (row.warnings?.length ? row.warnings.join(' · ') : 'Nessuna'), source: 'Sanity checks', formula: 'Regole di coerenza su PV/consumi/finestre.' },
 
   { type: 'section', label: 'BMS e limiti' },
   { type: 'item', label: 'Cap. kWh (stimata)', value: fmtNum(row.capacity_kwh), source: 'Storico SOC/energia', formula: 'Capacità stimata dai dati storici.' },
