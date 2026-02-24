@@ -57,6 +57,8 @@ last_forecast_api_ts: float = 0.0
 last_forecast_api_key: str | None = None
 last_status_cache: dict[str, Any] | None = None
 last_status_ts: float = 0.0
+last_insights_cache: dict[str, Any] | None = None
+last_insights_ts: float = 0.0
 action_log: list[str] = []
 last_history_state: dict[str, tuple[str | None, int]] = {}
 last_report_date: str | None = None
@@ -80,9 +82,10 @@ SOLAR_REAL_MIN_W = 100.0
 SOLAR_REAL_MIN_ON_MIN = 5
 SOLAR_REAL_MIN_OFF_MIN = 10
 MQTT_PUBLISH_INTERVAL_S = 5
-FORECAST_CACHE_INTERVAL_S = 30
-FORECAST_API_CACHE_S = 30
-STATUS_CACHE_S = 10
+FORECAST_CACHE_INTERVAL_S = 60
+FORECAST_API_CACHE_S = 60
+STATUS_CACHE_S = 15
+INSIGHTS_CACHE_S = 60
 
 
 def _parse_hhmm(value: str) -> int | None:
@@ -2479,6 +2482,10 @@ async def get_history(entity_id: str = "", site: int = 1, hours: int = 24):
 
 @app.get("/api/insights")
 async def insights():
+    global last_insights_cache, last_insights_ts
+    now_ts = int(time.time())
+    if last_insights_cache is not None and (now_ts - last_insights_ts) < INSIGHTS_CACHE_S:
+        return JSONResponse(last_insights_cache)
     cfg = load_config()
     ent_cfg = cfg.get("entities", {}) or {}
     export_positive = bool(cfg.get("runtime", {}).get("grid_export_positive", True))
@@ -2576,14 +2583,17 @@ async def insights():
     global_status = "OK"
     if site1["status"] == "CARICA_PARZIALE" or site2["status"] == "CARICA_PARZIALE":
         global_status = "CARICA_PARZIALE"
-    return JSONResponse({
+    payload = {
         "global": {
             "status": global_status,
             "notes": "Analisi in tempo reale basata su sensori correnti."
         },
         "sites": [site1, site2],
         "learned_rules": learned
-    })
+    }
+    last_insights_cache = payload
+    last_insights_ts = now_ts
+    return JSONResponse(payload)
 
 
 @app.get("/api/bms_history")
