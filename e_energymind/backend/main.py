@@ -3394,6 +3394,17 @@ async def forecast():
                 elif quality < 85:
                     extra_safe_now_w = max(0.0, extra_safe_now_w * 0.5)
 
+            # Auto-fix: if quality is low, avoid optimistic early "fine carica"
+            if charge_complete_h is not None:
+                if quality < 70 and target_reachable is False:
+                    charge_complete_h = None
+                elif charge_complete_h < (now_hour - 0.1):
+                    # If we are not yet near target, don't report a past completion time
+                    if soc_now is not None and target_soc is not None and soc_now < (target_soc - 1.0):
+                        charge_complete_h = None
+                    else:
+                        charge_complete_h = max(charge_complete_h, now_hour)
+
             results.append({
                 "site": site,
                 "name": (cfg.get("devices", {}).get(f"s{site}", {}) or {}).get("name", "") or f"Utenza {site}",
