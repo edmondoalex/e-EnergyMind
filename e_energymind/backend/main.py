@@ -72,6 +72,8 @@ SAFE_SOC_MARGIN_PCT = 5.0
 SOLAR_END_W_THRESHOLD = 100.0
 SOLAR_START_END_PCT = 0.05
 SOLAR_REAL_MIN_W = 100.0
+SOLAR_REAL_MIN_ON_MIN = 5
+SOLAR_REAL_MIN_OFF_MIN = 10
 MQTT_PUBLISH_INTERVAL_S = 5
 FORECAST_CACHE_INTERVAL_S = 10
 
@@ -1387,26 +1389,80 @@ def _solar_window_today_real(conn: sqlite3.Connection, pv_entity_id: str | None,
     day_start = _day_start(now_ts)
     day_end = day_start + 86400
     series = _load_history_power_series(conn, pv_entity_id, day_start, day_end)
-    hits = [ts for ts, v in series if v >= SOLAR_REAL_MIN_W] if series else []
-    # If live PV is above threshold, ensure "end" is at least now (history might lag).
+    if not series:
+        series = []
+
+    # If live PV is above threshold, extend series to "now" (history might lag).
     live_v = None
     try:
         live_v = _state_num(pv_entity_id)
     except Exception:
         live_v = None
-    if live_v is not None and live_v >= SOLAR_REAL_MIN_W:
-        if not hits:
-            hits = [now_ts]
-        else:
-            hits = hits + [now_ts]
-    if not hits:
+    if live_v is not None:
+        series = series + [(now_ts, float(live_v))]
+
+    if len(series) < 2:
         return None, None
-    min_ts = min(hits)
-    max_ts = max(hits)
+
+    series.sort(key=lambda x: x[0])
+    min_w = SOLAR_REAL_MIN_W
+    min_on_s = SOLAR_REAL_MIN_ON_MIN * 60
+    min_off_s = SOLAR_REAL_MIN_OFF_MIN * 60
+
+    runs: list[tuple[int, int]] = []
+    run_start = None
+    run_on_s = 0.0
+    last_run_end = None
+    below_s = 0.0
+    confirmed_end = None
+
+    for i in range(1, len(series)):
+        t0, v0 = series[i - 1]
+        t1, _v1 = series[i]
+        if t1 <= t0:
+            continue
+        dt = t1 - t0
+        if v0 >= min_w:
+            if run_start is None:
+                run_start = t0
+                run_on_s = 0.0
+            run_on_s += dt
+            below_s = 0.0
+        else:
+            if run_start is not None:
+                if run_on_s >= min_on_s:
+                    run_end = t0
+                    runs.append((run_start, run_end))
+                    last_run_end = run_end
+                run_start = None
+                run_on_s = 0.0
+            below_s += dt
+            if last_run_end is not None and below_s >= min_off_s:
+                confirmed_end = last_run_end
+
+    # Close run if still above at end
+    if run_start is not None and run_on_s >= min_on_s:
+        run_end = series[-1][0]
+        runs.append((run_start, run_end))
+        last_run_end = run_end
+
+    if not runs:
+        return None, None
+
+    start_ts = runs[0][0]
+    end_ts = None
+    if confirmed_end is not None:
+        end_ts = confirmed_end
+    else:
+        if live_v is not None and live_v >= min_w:
+            end_ts = now_ts
+
     tz_name = _get_runtime_tz_name()
-    dt_min = _local_dt(min_ts, tz_name)
-    dt_max = _local_dt(max_ts, tz_name)
+    dt_min = _local_dt(start_ts, tz_name)
     start = dt_min.hour + (dt_min.minute / 60.0)
+    if end_ts is None:
+        return start, None
+    dt_max = _local_dt(end_ts, tz_name)
     end = dt_max.hour + (dt_max.minute / 60.0)
     return start, end
 
@@ -2693,7 +2749,24 @@ async def forecast():
             safe_base = _median([v for v in safe_days if v > 0]) if safe_days else 0.0
 
             pv_today_unit = _state_unit(pv_today_id)
-            safe_today_kwh = _daily_energy_kwh_multi(conn, safe_entities, today_start, now_ts) if safe_entities else 0.0
+            # Battery-day starts at solar production start (not midnight)
+            solar_day_start_ts = today_start
+            if pv_id:
+                solar_start_est = None
+                real_start, _real_end = _solar_window_today_real(conn, pv_id, now_ts)
+                if real_start is not None:
+                    solar_start_est = real_start
+                else:
+                    pv_profile_fc_tmp = _hourly_from_forecast_entity(pv_fc_today_hourly_id, today_start) or _hourly_profile(conn, pv_id, 7)
+                    if pv_profile_fc_tmp:
+                        for h in range(0, 24):
+                            if pv_profile_fc_tmp[h] >= SOLAR_END_W_THRESHOLD:
+                                solar_start_est = float(h)
+                                break
+                if solar_start_est is not None:
+                    solar_day_start_ts = today_start + int(max(0.0, min(23.99, solar_start_est)) * 3600)
+
+            safe_today_kwh = _daily_energy_kwh_multi(conn, safe_entities, solar_day_start_ts, now_ts) if safe_entities else 0.0
             safe_now_w = None
             if safe_entities:
                 total = 0.0
@@ -2843,8 +2916,8 @@ async def forecast():
                 max_discharge_w = learned_max_discharge
 
             # Today: prefer real measured energy; Tomorrow: forecast corrected by pv_adjust
-            pv_today_real_kwh = _daily_energy_kwh(conn, pv_id, today_start, now_ts) if pv_id else None
-            load_today_real_kwh = _daily_energy_kwh(conn, load_id, today_start, now_ts) if load_id else None
+            pv_today_real_kwh = _daily_energy_kwh(conn, pv_id, solar_day_start_ts, now_ts) if pv_id else None
+            load_today_real_kwh = _daily_energy_kwh(conn, load_id, solar_day_start_ts, now_ts) if load_id else None
             pv_today_kwh = pv_today_real_kwh if pv_today_real_kwh is not None else ((pv_fc_today * pv_factor) if pv_fc_today is not None else pv_base)
             pv_tom_kwh = (pv_fc_tom * pv_factor) if pv_fc_tom is not None else pv_base
             load_today_kwh = load_today_real_kwh if load_today_real_kwh is not None else ((load_fc_today if load_fc_today is not None else load_base) or 0.0)
@@ -3030,18 +3103,21 @@ async def forecast():
                 solar_start_hour = None
                 solar_end_hour = None
                 real_start, real_end = _solar_window_today_real(conn, pv_id, now_ts)
-                if real_start is not None and real_end is not None:
+                if real_start is not None:
                     solar_start_hour = real_start
+                if real_end is not None:
                     solar_end_hour = real_end
-                elif pv_profile:
-                    for h in range(0, 24):
-                        if (pv_profile[h] * pv_scale) >= SOLAR_END_W_THRESHOLD:
-                            solar_start_hour = h
-                            break
-                    for h in range(23, -1, -1):
-                        if (pv_profile[h] * pv_scale) >= SOLAR_END_W_THRESHOLD:
-                            solar_end_hour = h
-                            break
+                if pv_profile:
+                    if solar_start_hour is None:
+                        for h in range(0, 24):
+                            if (pv_profile[h] * pv_scale) >= SOLAR_END_W_THRESHOLD:
+                                solar_start_hour = h
+                                break
+                    if solar_end_hour is None:
+                        for h in range(23, -1, -1):
+                            if (pv_profile[h] * pv_scale) >= SOLAR_END_W_THRESHOLD:
+                                solar_end_hour = h
+                                break
 
                 # Estimate surplus and end SOC (using adjusted forecast)
                 surplus_today = None
