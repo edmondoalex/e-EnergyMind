@@ -108,6 +108,13 @@
               <div v-if="row.target_reachable === false" class="forecast-warning">
                 Oggi 100% NON raggiungibile con PV attuale
               </div>
+              <div v-if="row.quality !== undefined" class="forecast-warning warn-alt">
+                Affidabilità dati: {{ row.quality }}%
+              </div>
+              <div v-if="row.warnings && row.warnings.length" class="forecast-warning warn-alt">
+                <div><strong>Incongruenze rilevate:</strong></div>
+                <div v-for="(w, i) in row.warnings" :key="`warn-${row.site}-${i}`">• {{ w }}</div>
+              </div>
               <div class="forecast-grid">
                 <div class="f-item" v-for="item in forecastFieldRows(row)" :key="item.key">
                   <div class="f-label" :class="item.emph ? 'emph' : ''">
@@ -2571,6 +2578,12 @@ body{
   color:#ffd166;
   font-size:12.5px;
   font-weight:600;
+}
+.forecast-warning.warn-alt{
+  background:rgba(62, 180, 137, 0.12);
+  border:1px solid rgba(62, 180, 137, 0.35);
+  color:#9ae6c1;
+  font-weight:500;
 }
 .forecast-grid{
   margin:6px 0 0;

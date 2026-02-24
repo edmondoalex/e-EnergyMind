@@ -1071,6 +1071,60 @@ def _hourly_profile_today_multi(conn: sqlite3.Connection, entity_ids: list[str],
     return acc
 
 
+def _hourly_profile_median(conn: sqlite3.Connection, entity_id: str, days: int = 7) -> list[float]:
+    now = int(time.time())
+    start_ts = now - days * 86400
+    tz_name = _get_runtime_tz_name()
+    cur = conn.execute(
+        "SELECT ts, raw, value, unit FROM history WHERE entity_id = ? AND ts >= ? ORDER BY ts ASC",
+        (entity_id, start_ts),
+    )
+    # Bucket by local date + hour
+    buckets: dict[tuple[str, int], list[float]] = {}
+    for ts, raw, val, unit in cur.fetchall():
+        v = val if val is not None else _num_or_none(raw)
+        if v is None:
+            continue
+        u = (unit or "").strip().lower()
+        if u in ("kwh", "wh"):
+            continue
+        if u == "kw":
+            v = v * 1000.0
+        dt_local = _local_dt(int(ts), tz_name)
+        key = (dt_local.strftime("%Y-%m-%d"), dt_local.hour)
+        buckets.setdefault(key, []).append(float(v))
+    if not buckets:
+        return [0.0] * 24
+    # Compute per-day-hour mean, then median across days for each hour
+    per_hour_vals: list[list[float]] = [[] for _ in range(24)]
+    for (day, hour), vals in buckets.items():
+        if not vals:
+            continue
+        per_hour_vals[hour].append(sum(vals) / len(vals))
+    out: list[float] = []
+    for h in range(24):
+        if not per_hour_vals[h]:
+            out.append(0.0)
+        else:
+            out.append(_median(per_hour_vals[h]) or 0.0)
+    return out
+
+
+def _remaining_kwh_from_profile(profile_w: list[float], now_ts: int) -> float:
+    tz_name = _get_runtime_tz_name()
+    dt_local = _local_dt(now_ts, tz_name)
+    h_now = dt_local.hour
+    frac = (dt_local.minute + (dt_local.second / 60.0)) / 60.0
+    remaining_wh = 0.0
+    # remaining part of current hour
+    if 0 <= h_now < 24:
+        remaining_wh += profile_w[h_now] * max(0.0, 1.0 - frac)
+    # remaining full hours
+    for h in range(h_now + 1, 24):
+        remaining_wh += profile_w[h]
+    return max(0.0, remaining_wh / 1000.0)
+
+
 def _daily_energy_kwh_multi(conn: sqlite3.Connection, entity_ids: list[str], day_start: int, day_end: int) -> float:
     if not entity_ids:
         return 0.0
@@ -2834,6 +2888,9 @@ async def forecast():
             intraday_forecast_kwh = None
             intraday_actual_kwh = None
             intraday_error_pct = None
+            pv_expected_today_kwh = None
+            pv_remaining_fc_kwh = None
+            pv_remaining_hist_kwh = None
             required_charge_w = None
             schedule_info = _extra_safe_schedule_info(cfg, now_ts)
             schedule_pct = float(schedule_info.get("percent") or 0.0)
@@ -2842,11 +2899,16 @@ async def forecast():
                 load_profile_fc = _hourly_profile(conn, load_id, 7)
                 pv_profile_today = _hourly_profile_today(conn, pv_id, today_start, now_ts)
                 load_profile_today = _hourly_profile_today(conn, load_id, today_start, now_ts)
+                pv_profile_hist = _hourly_profile_median(conn, pv_id, 14)
+                load_profile_hist = _hourly_profile_median(conn, load_id, 14)
                 safe_profile_fc = None
                 safe_profile_today = None
                 if safe_entities:
                     safe_profile_fc = _hourly_profile_multi(conn, safe_entities, 7)
                     safe_profile_today = _hourly_profile_today_multi(conn, safe_entities, today_start, now_ts)
+                    safe_profile_hist = _hourly_profile_median(conn, safe_entities[0], 14) if len(safe_entities) == 1 else _hourly_profile_multi(conn, safe_entities, 14)
+                else:
+                    safe_profile_hist = None
                 pv_sum = sum(pv_profile_fc)
                 load_sum = sum(load_profile_fc)
                 pv_scale = 1.0
@@ -2903,6 +2965,28 @@ async def forecast():
                 elif pv_base is not None and pv_sum > 0:
                     pv_scale_fc = (pv_base * 1000.0) / pv_sum
                 pv_profile_fc = [v * pv_scale_fc for v in pv_profile_fc]
+
+                # Build expected remaining energy using history vs forecast (ML-ish blending)
+                pv_remaining_fc_kwh = max(0.0, (pv_fc_today * pv_factor - (intraday_actual_kwh or 0.0))) if pv_fc_today is not None else None
+                pv_remaining_hist_kwh = _remaining_kwh_from_profile(pv_profile_hist, now_ts)
+                # Confidence: if intraday error is large, trust history more
+                hist_weight = 0.5
+                if intraday_error_pct is not None:
+                    if abs(intraday_error_pct) >= 30:
+                        hist_weight = 0.8
+                    elif abs(intraday_error_pct) >= 15:
+                        hist_weight = 0.65
+                    else:
+                        hist_weight = 0.5
+                if pv_remaining_fc_kwh is None:
+                    pv_expected_today_kwh = (intraday_actual_kwh or 0.0) + pv_remaining_hist_kwh
+                else:
+                    pv_expected_today_kwh = (intraday_actual_kwh or 0.0) + (hist_weight * pv_remaining_hist_kwh) + ((1 - hist_weight) * max(0.0, pv_remaining_fc_kwh))
+
+                # Re-scale forecast profile to expected today energy (intelligent correction)
+                if pv_expected_today_kwh is not None and pv_sum > 0:
+                    pv_scale_fc = (pv_expected_today_kwh * 1000.0) / pv_sum
+                    pv_profile_fc = [v * pv_scale_fc for v in pv_profile_fc]
 
                 # Merge real hours for today (up to current hour) with scaled forecast for remaining hours.
                 now_lt = _local_dt(now_ts, _get_runtime_tz_name())
@@ -3271,6 +3355,28 @@ async def forecast():
                 actual_last_kwh = actual_last_kwh if actual_last_kwh is not None else fallback_act_kwh
                 error_pct = error_pct if error_pct is not None else fallback_err_pct
 
+            # Self-checks / anomaly detection
+            warnings = []
+            quality = 100
+            now_local = _local_dt(now_ts, _get_runtime_tz_name())
+            now_hour = now_local.hour + (now_local.minute / 60.0)
+            pv_live = _state_num(pv_id) if pv_id else None
+            if pv_live is not None and pv_live >= SOLAR_REAL_MIN_W and solar_end_hour is not None:
+                if solar_end_hour < (now_hour - 0.2):
+                    warnings.append("Fine produzione reale antecedente all'ora attuale con PV live > soglia.")
+                    quality -= 25
+            if intraday_error_pct is not None and abs(intraday_error_pct) >= 30:
+                warnings.append("Forecast PV oggi molto distante dal reale (errore > 30%).")
+                quality -= 15
+            if pv_expected_today_kwh is not None and intraday_actual_kwh is not None:
+                if pv_expected_today_kwh < intraday_actual_kwh - 0.1:
+                    warnings.append("PV atteso oggi < PV già prodotto (incoerenza di forecast/consumi).")
+                    quality -= 20
+            if load_today_kwh is not None and load_today_kwh < 0:
+                warnings.append("Consumo oggi negativo: dati sensori incoerenti.")
+                quality -= 20
+            quality = max(0, min(100, quality))
+
             results.append({
                 "site": site,
                 "name": (cfg.get("devices", {}).get(f"s{site}", {}) or {}).get("name", "") or f"Utenza {site}",
@@ -3331,6 +3437,8 @@ async def forecast():
                 "hourly": hourly,
                 "hourly_tomorrow": hourly_tomorrow,
                 "hourly_safe": hourly_safe,
+                "warnings": warnings,
+                "quality": quality,
                 "sources": {
                     "pv_forecast_today": pv_fc_today_id or None,
                     "pv_forecast_tomorrow": pv_fc_tom_id or None,
