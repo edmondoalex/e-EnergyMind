@@ -1323,9 +1323,18 @@ def _solar_window_today_real(conn: sqlite3.Connection, pv_entity_id: str | None,
     day_start = _day_start(now_ts)
     day_end = day_start + 86400
     series = _load_history_power_series(conn, pv_entity_id, day_start, day_end)
-    if not series:
-        return None, None
-    hits = [ts for ts, v in series if v >= SOLAR_REAL_MIN_W]
+    hits = [ts for ts, v in series if v >= SOLAR_REAL_MIN_W] if series else []
+    # If live PV is above threshold, ensure "end" is at least now (history might lag).
+    live_v = None
+    try:
+        live_v = _state_num(pv_entity_id)
+    except Exception:
+        live_v = None
+    if live_v is not None and live_v >= SOLAR_REAL_MIN_W:
+        if not hits:
+            hits = [now_ts]
+        else:
+            hits = hits + [now_ts]
     if not hits:
         return None, None
     min_ts = min(hits)
