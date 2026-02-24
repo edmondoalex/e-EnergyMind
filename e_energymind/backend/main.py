@@ -52,6 +52,10 @@ last_mqtt_publish: float = 0.0
 last_mqtt_values: dict[str, float] = {}
 last_forecast_cache: dict[int, dict[str, Any]] = {}
 last_forecast_ts: float = 0.0
+last_forecast_api_cache: dict[str, Any] | None = None
+last_forecast_api_ts: float = 0.0
+last_status_cache: dict[str, Any] | None = None
+last_status_ts: float = 0.0
 action_log: list[str] = []
 last_history_state: dict[str, tuple[str | None, int]] = {}
 last_report_date: str | None = None
@@ -76,6 +80,8 @@ SOLAR_REAL_MIN_ON_MIN = 5
 SOLAR_REAL_MIN_OFF_MIN = 10
 MQTT_PUBLISH_INTERVAL_S = 5
 FORECAST_CACHE_INTERVAL_S = 10
+FORECAST_API_CACHE_S = 10
+STATUS_CACHE_S = 5
 
 
 def _parse_hhmm(value: str) -> int | None:
@@ -2003,8 +2009,11 @@ async def mqtt_clear():
 
 @app.get("/api/status")
 async def get_status():
-    cfg = load_config()
+    global last_status_cache, last_status_ts
     now_ts = int(time.time())
+    if last_status_cache is not None and (now_ts - last_status_ts) < STATUS_CACHE_S:
+        return last_status_cache
+    cfg = load_config()
     cfg_tz = None
     try:
         cfg_tz = (cfg.get("runtime", {}) or {}).get("timezone")
@@ -2024,7 +2033,7 @@ async def get_status():
         tz_name = time.tzname[0] if time.tzname else "local"
         server_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now_ts))
         utc_offset_min = int((time.mktime(time.localtime(now_ts)) - time.mktime(time.gmtime(now_ts))) / 60)
-    return {
+    payload = {
         "version": APP_VERSION,
         "runtime_mode": cfg.get("runtime", {}).get("mode", "dry-run"),
         "ha_connected": bool(ha._session) and ha.enabled,
@@ -2032,6 +2041,9 @@ async def get_status():
         "server_tz": tz_name,
         "server_utc_offset_min": utc_offset_min,
     }
+    last_status_cache = payload
+    last_status_ts = now_ts
+    return payload
 
 
 def _fmt_bytes(n: int) -> str:
@@ -2659,6 +2671,10 @@ async def bms_history(days: int = 14):
 
 @app.get("/api/forecast")
 async def forecast():
+    global last_forecast_api_cache, last_forecast_api_ts
+    now_ts = int(time.time())
+    if last_forecast_api_cache is not None and (now_ts - last_forecast_api_ts) < FORECAST_API_CACHE_S:
+        return JSONResponse(last_forecast_api_cache)
     cfg = load_config()
     ent_cfg = cfg.get("entities", {}) or {}
     forecast_cfg = cfg.get("forecast", {}) or {}
@@ -2674,7 +2690,6 @@ async def forecast():
     def _eid(site: int, key: str) -> str | None:
         return ent_cfg.get(f"s{site}_{key}")
 
-    now_ts = int(time.time())
     today_start = _day_start(now_ts)
     results = []
 
@@ -3585,10 +3600,13 @@ async def forecast():
 
     if pv_meta_dirty:
         save_config(cfg)
-    return JSONResponse({
+    payload = {
         "updated_at": now_ts,
         "sites": results,
-    })
+    }
+    last_forecast_api_cache = payload
+    last_forecast_api_ts = now_ts
+    return JSONResponse(payload)
 
 
 @app.get("/api/reports")
