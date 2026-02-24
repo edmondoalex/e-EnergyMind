@@ -50,6 +50,7 @@ proxy_session: aiohttp.ClientSession | None = None
 mqtt_client: MqttClient | None = None
 last_mqtt_publish: float = 0.0
 last_mqtt_values: dict[str, float] = {}
+last_mqtt_publish_ts: dict[str, float] = {}
 last_forecast_cache: dict[int, dict[str, Any]] = {}
 last_forecast_ts: float = 0.0
 last_forecast_api_cache: dict[str, Any] | None = None
@@ -450,8 +451,10 @@ def _mqtt_publish_states(cfg: Dict[str, Any]) -> None:
         # Consumo extra-safe ora (reale)
         value = _calc_extra_safe_now_w(cfg, site)
         key = f"s{site}_extra_safe_load_now"
-        if last_mqtt_values.get(key) != value:
+        now = time.time()
+        if last_mqtt_values.get(key) != value or (now - last_mqtt_publish_ts.get(key, 0)) >= 5:
             last_mqtt_values[key] = value
+            last_mqtt_publish_ts[key] = now
             mqtt_client.publish(f"{base_topic}/state/extra_safe_load_now/s{site}", value, retain=True)
 
         row = last_forecast_cache.get(site) or {}
@@ -462,8 +465,9 @@ def _mqtt_publish_states(cfg: Dict[str, Any]) -> None:
 
         if load_today is not None:
             key = f"s{site}_extra_safe_load_today"
-            if last_mqtt_values.get(key) != load_today:
+            if last_mqtt_values.get(key) != load_today or (now - last_mqtt_publish_ts.get(key, 0)) >= 5:
                 last_mqtt_values[key] = load_today
+                last_mqtt_publish_ts[key] = now
                 mqtt_client.publish(f"{base_topic}/state/extra_safe_load_today/s{site}", load_today, retain=True)
         if possible_now is not None:
             total_now = None
@@ -471,23 +475,27 @@ def _mqtt_publish_states(cfg: Dict[str, Any]) -> None:
                 total_now = round(float(possible_now) + float(value), 1)
             if total_now is not None:
                 key = f"s{site}_extra_safe_total_now"
-                if last_mqtt_values.get(key) != total_now:
+                if last_mqtt_values.get(key) != total_now or (now - last_mqtt_publish_ts.get(key, 0)) >= 5:
                     last_mqtt_values[key] = total_now
+                    last_mqtt_publish_ts[key] = now
                     mqtt_client.publish(f"{base_topic}/state/extra_safe_total_now/s{site}", total_now, retain=True)
         if possible_now is not None:
             key = f"s{site}_extra_safe_possible_now"
-            if last_mqtt_values.get(key) != possible_now:
+            if last_mqtt_values.get(key) != possible_now or (now - last_mqtt_publish_ts.get(key, 0)) >= 5:
                 last_mqtt_values[key] = possible_now
+                last_mqtt_publish_ts[key] = now
                 mqtt_client.publish(f"{base_topic}/state/extra_safe_possible_now/s{site}", possible_now, retain=True)
         if possible_today is not None:
             key = f"s{site}_extra_safe_possible_today"
-            if last_mqtt_values.get(key) != possible_today:
+            if last_mqtt_values.get(key) != possible_today or (now - last_mqtt_publish_ts.get(key, 0)) >= 5:
                 last_mqtt_values[key] = possible_today
+                last_mqtt_publish_ts[key] = now
                 mqtt_client.publish(f"{base_topic}/state/extra_safe_possible_today/s{site}", possible_today, retain=True)
         if possible_tomorrow is not None:
             key = f"s{site}_extra_safe_possible_tomorrow"
-            if last_mqtt_values.get(key) != possible_tomorrow:
+            if last_mqtt_values.get(key) != possible_tomorrow or (now - last_mqtt_publish_ts.get(key, 0)) >= 5:
                 last_mqtt_values[key] = possible_tomorrow
+                last_mqtt_publish_ts[key] = now
                 mqtt_client.publish(f"{base_topic}/state/extra_safe_possible_tomorrow/s{site}", possible_tomorrow, retain=True)
 
 
