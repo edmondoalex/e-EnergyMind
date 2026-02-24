@@ -2689,6 +2689,7 @@ async def forecast():
 
             pv_id = _eid(site, "pv_power_total") or _eid(site, "pv_power")
             load_id = _eid(site, "load_power")
+            grid_id = _eid(site, "grid_power")
             pv_today_id = _eid(site, "today_production_kwh")
             load_today_id = _eid(site, "today_load_kwh")
             soc_id = _eid(site, "battery_soc")
@@ -2710,6 +2711,7 @@ async def forecast():
                 pv_fc_tom = _state_num(pv_fc_tom_hourly_id)
             load_fc_today = _state_num(load_daily_id) if (load_daily_id and not load_daily_is_today) else None
 
+            export_positive = bool(cfg.get("runtime", {}).get("grid_export_positive", True))
             soc_now = _state_num(soc_id)
             export_limit = fc.get("export_limit_w") if fc.get("export_limit_w") is not None else _state_num(export_limit_id)
 
@@ -3379,6 +3381,17 @@ async def forecast():
                         if max_charge_eff is not None:
                             required_charge_w = min(required_charge_w, max_charge_eff)
                         extra_safe_now_w = max(0.0, min(extra_safe_now_w, surplus_now - required_charge_w))
+
+                # If we are exporting now, allow extra based on real export minus required charge.
+                if grid_id:
+                    grid_now = _state_num(grid_id)
+                    export_now_w = None
+                    if grid_now is not None:
+                        export_now_w = max(0.0, grid_now) if export_positive else max(0.0, -grid_now)
+                    if export_now_w is not None and export_now_w > 0:
+                        req = required_charge_w or 0.0
+                        extra_from_export = max(0.0, export_now_w - req)
+                        extra_safe_now_w = max(extra_safe_now_w or 0.0, extra_from_export)
                 if extra_safe_now_w is not None and schedule_pct:
                     extra_safe_now_w = max(0.0, extra_safe_now_w * (1.0 + (schedule_pct / 100.0)))
 
