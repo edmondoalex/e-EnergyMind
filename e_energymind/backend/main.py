@@ -3389,9 +3389,8 @@ async def forecast():
                     if grid_now is not None:
                         export_now_w = max(0.0, grid_now) if export_positive else max(0.0, -grid_now)
                     if export_now_w is not None and export_now_w > 0:
-                        req = required_charge_w or 0.0
-                        extra_from_export = max(0.0, export_now_w - req)
-                        extra_safe_now_w = max(extra_safe_now_w or 0.0, extra_from_export)
+                        export_contrib = export_now_w * 0.9
+                        extra_safe_now_w = (extra_safe_now_w or 0.0) + export_contrib
                 if extra_safe_now_w is not None and schedule_pct:
                     extra_safe_now_w = max(0.0, extra_safe_now_w * (1.0 + (schedule_pct / 100.0)))
 
