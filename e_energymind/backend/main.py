@@ -1110,6 +1110,16 @@ def _hourly_profile_median(conn: sqlite3.Connection, entity_id: str, days: int =
     return out
 
 
+def _hourly_profile_median_multi(conn: sqlite3.Connection, entity_ids: list[str], days: int = 7) -> list[float]:
+    if not entity_ids:
+        return [0.0] * 24
+    acc = [0.0] * 24
+    for eid in entity_ids:
+        prof = _hourly_profile_median(conn, eid, days)
+        acc = [a + b for a, b in zip(acc, prof)]
+    return acc
+
+
 def _remaining_kwh_from_profile(profile_w: list[float], now_ts: int) -> float:
     tz_name = _get_runtime_tz_name()
     dt_local = _local_dt(now_ts, tz_name)
@@ -2906,7 +2916,7 @@ async def forecast():
                 if safe_entities:
                     safe_profile_fc = _hourly_profile_multi(conn, safe_entities, 7)
                     safe_profile_today = _hourly_profile_today_multi(conn, safe_entities, today_start, now_ts)
-                    safe_profile_hist = _hourly_profile_median(conn, safe_entities[0], 14) if len(safe_entities) == 1 else _hourly_profile_multi(conn, safe_entities, 14)
+                    safe_profile_hist = _hourly_profile_median_multi(conn, safe_entities, 14)
                 else:
                     safe_profile_hist = None
                 pv_sum = sum(pv_profile_fc)
@@ -3282,9 +3292,9 @@ async def forecast():
                     and soc_now is not None
                     and cap_kwh
                 ):
-                    now_lt = time.localtime(now_ts)
-                    hour_now = now_lt.tm_hour
-                    frac = (now_lt.tm_min + (now_lt.tm_sec / 60.0)) / 60.0
+                    now_lt = _local_dt(now_ts, _get_runtime_tz_name())
+                    hour_now = now_lt.hour
+                    frac = (now_lt.minute + (now_lt.second / 60.0)) / 60.0
                     hours_left = (solar_end_hour + 1) - (hour_now + frac)
                     if hours_left > 0:
                         remaining_kwh = cap_kwh * max(0.0, (target_soc - soc_now) / 100.0)
@@ -3376,6 +3386,13 @@ async def forecast():
                 warnings.append("Consumo oggi negativo: dati sensori incoerenti.")
                 quality -= 20
             quality = max(0, min(100, quality))
+
+            # Auto-fix: if quality is low, tighten extra-safe automatically
+            if extra_safe_now_w is not None:
+                if quality < 70:
+                    extra_safe_now_w = 0.0
+                elif quality < 85:
+                    extra_safe_now_w = max(0.0, extra_safe_now_w * 0.5)
 
             results.append({
                 "site": site,
