@@ -3389,8 +3389,17 @@ async def forecast():
                     if grid_now is not None:
                         export_now_w = max(0.0, grid_now) if export_positive else max(0.0, -grid_now)
                     if export_now_w is not None and export_now_w > 0:
+                        # BMS-aware extra: export contribution + dynamic headroom
+                        batt_now = _state_num(batt_id) if batt_id else None
+                        batt_charge_now = abs(batt_now) if batt_now is not None and batt_now < 0 else 0.0
+                        bms_max = learned_max_charge if learned_max_charge is not None else (max_charge_eff if max_charge_eff is not None else 0.0)
+                        bms_headroom = max(0.0, bms_max - batt_charge_now)
+                        headroom_factor = 0.0
+                        if bms_max and bms_max > 0:
+                            headroom_factor = 1.0 - (batt_charge_now / bms_max)
+                            headroom_factor = max(0.2, min(0.8, headroom_factor))
                         export_contrib = export_now_w * 0.9
-                        extra_safe_now_w = (extra_safe_now_w or 0.0) + export_contrib
+                        extra_safe_now_w = (extra_safe_now_w or 0.0) + export_contrib + (bms_headroom * headroom_factor)
                 if extra_safe_now_w is not None and schedule_pct:
                     extra_safe_now_w = max(0.0, extra_safe_now_w * (1.0 + (schedule_pct / 100.0)))
 
