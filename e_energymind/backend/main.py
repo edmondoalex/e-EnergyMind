@@ -3465,7 +3465,13 @@ async def forecast():
                         if bms_max and bms_max > 0:
                             headroom_factor = 1.0 - (batt_charge_now / bms_max)
                             headroom_factor = max(0.2, min(0.8, headroom_factor))
-                        export_contrib = export_now_w * 0.9
+                        export_factor = 0.97
+                        try:
+                            export_factor = float((automation_cfg.get("extra_safe_export_factor")) or export_factor)
+                        except Exception:
+                            export_factor = 0.97
+                        export_factor = max(0.0, min(1.0, export_factor))
+                        export_contrib = export_now_w * export_factor
                         extra_safe_now_w = (extra_safe_now_w or 0.0) + export_contrib + (bms_headroom * headroom_factor)
                 if extra_safe_now_w is not None and schedule_pct:
                     extra_safe_now_w = max(0.0, extra_safe_now_w * (1.0 + (schedule_pct / 100.0)))

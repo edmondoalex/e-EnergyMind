@@ -464,6 +464,11 @@
         <div class="form" v-if="sp">
           <h3 class="section">Consumi extra-safe (opzionali)</h3>
           <div class="help">Queste entità (W) vengono escluse dal consumo casa per le logiche SAFE e dall'apprendimento.</div>
+          <div class="field">
+            <label>Fattore export per Extra SAFE</label>
+            <input type="number" step="0.01" min="0" max="1" v-model.number="sp.automation.extra_safe_export_factor" @change="saveConfig">
+            <div class="help">Percentuale dell’export reale usata per Extra SAFE (0–1). Esempio: 0.97 = 97%.</div>
+          </div>
           <details v-for="site in siteList" :key="`safe-admin-${site}`" class="set-section" open>
             <summary class="section-title">{{ siteTitle(site) }}</summary>
             <div class="field">

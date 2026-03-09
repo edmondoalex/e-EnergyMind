@@ -42,6 +42,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         },
         "extra_datalog_entities": [],
         "extra_safe_entities": [],
+        "extra_safe_export_factor": 0.97,
         "extra_safe_schedule": {
             "enabled": True,
             "days": {
@@ -213,6 +214,13 @@ def normalize_config(raw: Dict[str, Any]) -> Dict[str, Any]:
                     enabled = bool(item.get("enabled", True))
                     safe_list.append({"site": site, "entity_id": entity_id, "enabled": enabled})
         cfg["automation"]["extra_safe_entities"] = safe_list
+
+        if "extra_safe_export_factor" in automation:
+            try:
+                v = float(automation.get("extra_safe_export_factor"))
+            except Exception:
+                v = cfg["automation"]["extra_safe_export_factor"]
+            cfg["automation"]["extra_safe_export_factor"] = max(0.0, min(1.0, v))
 
         if "extra_safe_schedule" in automation:
             sched = automation.get("extra_safe_schedule", {})
